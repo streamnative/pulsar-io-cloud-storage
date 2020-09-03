@@ -1,4 +1,4 @@
-## Pulsar IO :: Template
+## Pulsar IO :: S3
 
 This is a template project for developing an enterprise-grade
 pulsar IO connector.
