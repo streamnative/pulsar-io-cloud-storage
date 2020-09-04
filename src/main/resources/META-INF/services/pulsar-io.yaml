@@ -17,18 +17,7 @@
 # under the License.
 #
 
-tenant: "public"
-namespace: "default"
-name: "activemq-sink"
-inputs: 
-  - "user-op-queue-topic"
-archive: "connectors/pulsar-io-activemq-2.5.1.nar"
-parallelism: 1
-
-configs:
-  bucket: "tcp"
-  region: "localhost"
-  formatType: "avro"
-  partitionerType: "default"
-  partitionerParam: "admin"
-  batchSize: "user-op-queue-pulsar"
+name: s3
+description: Writes data into s3
+sinkClass: org.apache.pulsar.ecosystem.io.s3.sink.S3GenericRecordSink
+sinkConfigClass: org.apache.pulsar.ecosystem.io.s3.sink.S3SinkConfig

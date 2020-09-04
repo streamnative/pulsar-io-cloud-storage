@@ -82,6 +82,11 @@
         <version>${pulsar.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.apache.pulsar</groupId>
+        <artifactId>pulsar-io-common</artifactId>
+        <version>${pulsar.version}</version>
+      </dependency>
+      <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
         <version>${jackson.version}</version>
@@ -226,6 +231,15 @@
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
       <version>3.11</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.pulsar</groupId>
+      <artifactId>pulsar-io-common</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.pulsar</groupId>
+      <artifactId>pulsar-functions-instance</artifactId>
+      <version>${pulsar.version}</version>
     </dependency>
   </dependencies>
 
