@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -18,11 +18,24 @@
  */
 package org.apache.pulsar.ecosystem.io.s3;
 
-import com.google.common.base.Preconditions;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import com.google.common.collect.ImmutableMap;
+
+import java.io.Serializable;
+import java.util.Map;
+
 import lombok.Data;
 import lombok.experimental.Accessors;
 
-import java.io.Serializable;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.pulsar.ecosystem.io.s3.format.AvroFormat;
+import org.apache.pulsar.ecosystem.io.s3.format.Format;
+import org.apache.pulsar.ecosystem.io.s3.format.JsonFormat;
+import org.apache.pulsar.ecosystem.io.s3.format.ParquetFormat;
+import org.apache.pulsar.ecosystem.io.s3.partitioner.Partitioner;
+import org.apache.pulsar.ecosystem.io.s3.partitioner.SimplePartitioner;
 
 /**
  * Configuration object for all Hbase Sink components.
@@ -32,6 +45,17 @@ import java.io.Serializable;
 public class BlobStoreAbstractConfig implements Serializable {
 
     private static final long serialVersionUID = -8945930873383593712L;
+
+    private static final Map<String, Format<?, ?>> formatMap = new ImmutableMap.Builder<String, Format<?, ?>>()
+            .put("avro", new AvroFormat<>())
+            .put("json", new JsonFormat<>())
+            .put("parquet", new ParquetFormat<>())
+            .build();
+    private static final Map<String, Partitioner<?>> partitionerMap = new ImmutableMap.Builder<String, Partitioner<?>>()
+            .put("default", new SimplePartitioner<>())
+            .build();
+
+    private String provider;
 
     private String bucket;
 
@@ -45,9 +69,21 @@ public class BlobStoreAbstractConfig implements Serializable {
 
     private int batchSize = 10;
 
+    private long batchTimeMs = 10;
+
+
     public void validate() {
-        Preconditions.checkNotNull(bucket, "zookeeperZnodeParent property not set.");
-        Preconditions.checkNotNull(region, "hbase tableName property not set.");
+        checkNotNull(bucket, "bucket property not set.");
+        checkNotNull(region, "region property not set.");
+
+        if (!formatMap.containsKey(StringUtils.lowerCase(formatType))) {
+            throw new IllegalArgumentException("formatType property not set.");
+        }
+
+        if (!partitionerMap.containsKey(StringUtils.lowerCase(partitionerType))) {
+            throw new IllegalArgumentException("partitionerType property not set.");
+        }
+        checkArgument(batchSize > 0, "batchSize property not set.");
     }
 
 }

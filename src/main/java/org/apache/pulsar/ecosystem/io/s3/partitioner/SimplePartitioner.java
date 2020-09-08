@@ -18,13 +18,23 @@
  */
 package org.apache.pulsar.ecosystem.io.s3.partitioner;
 
-import org.apache.commons.lang3.StringUtils;
-import org.apache.pulsar.ecosystem.io.s3.BlobStoreAbstractConfig;
-import org.apache.pulsar.functions.api.Record;
-
 import java.util.Optional;
 
+import org.apache.commons.lang3.StringUtils;
+import org.apache.pulsar.common.naming.TopicName;
+import org.apache.pulsar.ecosystem.io.s3.BlobStoreAbstractConfig;
+import org.apache.pulsar.functions.api.Record;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * use topic partition strategy.
+ * @param <T> config
+ */
 public class SimplePartitioner<T> implements Partitioner<T> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SimplePartitioner.class);
+
     @Override
     public void configure(BlobStoreAbstractConfig config) {
 
@@ -32,14 +42,19 @@ public class SimplePartitioner<T> implements Partitioner<T> {
 
     @Override
     public String encodePartition(Record<T> sinkRecord) {
-        Optional<String> partitionId = sinkRecord.getPartitionId();
         Optional<Long> recordSequence = sinkRecord.getRecordSequence();
-        return StringUtils.join("-", partitionId.orElse(null), recordSequence.orElse(null));
+        return recordSequence.map(String::valueOf).orElseThrow(() -> new RuntimeException("recordSequence not null"));
     }
 
     @Override
     public String generatePartitionedPath(String topic, String encodedPartition) {
-        return StringUtils.join("-", topic, encodedPartition);
+        TopicName topicName = TopicName.get(topic);
+        return StringUtils.joinWith("/",
+                topicName.getTenant(),
+                topicName.getNamespacePortion(),
+                topicName.getLocalName(),
+                encodedPartition
+        );
     }
 
 }

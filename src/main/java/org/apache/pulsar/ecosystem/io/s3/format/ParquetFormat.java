@@ -1,8 +1,27 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package org.apache.pulsar.ecosystem.io.s3.format;
 
+
 import com.google.common.io.ByteSource;
+import java.io.IOException;
 import org.apache.avro.Schema;
-import org.apache.avro.reflect.ReflectData;
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.parquet.avro.AvroParquetWriter;
 import org.apache.parquet.hadoop.ParquetFileWriter;
@@ -11,80 +30,61 @@ import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.apache.parquet.io.OutputFile;
 import org.apache.parquet.io.PositionOutputStream;
 import org.apache.pulsar.client.api.Message;
-import org.apache.pulsar.client.api.schema.SchemaDefinition;
-import org.apache.pulsar.common.schema.SchemaInfo;
+import org.apache.pulsar.client.api.schema.GenericRecord;
+import org.apache.pulsar.client.impl.MessageImpl;
+import org.apache.pulsar.client.impl.TopicMessageImpl;
+import org.apache.pulsar.ecosystem.io.s3.S3OutputStream;
+import org.apache.pulsar.ecosystem.io.s3.util.AvroRecordUtil;
 import org.apache.pulsar.functions.api.Record;
 
-import java.io.IOException;
-import java.util.Optional;
 
-public class ParquetFormat<C,T> implements Format<C, Record<T>>{
+/**
+ * parquet format.
+ */
+public class ParquetFormat<V> implements Format<V, Record<GenericRecord>>{
     @Override
     public String getExtension() {
         return ".parquet";
     }
 
     @Override
-    public ByteSource recordWriter(C config, Record<T> record) {
+    public ByteSource recordWriter(V config, Record<GenericRecord> record) throws Exception {
+        MessageImpl<GenericRecord> message = getMessage(record);
+        Schema rootAvroSchema = AvroRecordUtil.getAvroSchema(message.getSchema());
+        org.apache.avro.generic.GenericRecord writeRecord = AvroRecordUtil
+                .convertGenericRecord(record.getValue(), rootAvroSchema);
 
-        record.getDestinationTopic();
-        record.getTopicName();
-        record.getEventTime();
-        record.getPartitionId();
-        record.getRecordSequence();
-        record.getProperties();
+        int pageSize = 64 * 1024;
 
-        Optional<Message<T>> message = record.getMessage();
-        SchemaInfo schemaInfo = record.getSchema().getSchemaInfo();
-
-        Message<T> tMessage = message.get();
-        T recordValue = record.getValue();
-        Schema schema;
-        switch (record.getSchema().getSchemaInfo().getType()){
-            case AVRO:
-                schema = parseAvroSchema(schemaInfo.getSchemaDefinition());
-                break;
-            default:
-                schema = ReflectData.get().getSchema(recordValue.getClass());
-                break;
-        }
-
-        ParquetWriter<Object> build = null;
+        ParquetWriter<Object> parquetWriter = null;
+        S3ParquetOutputFile file = new S3ParquetOutputFile();
         try {
-            S3ParquetOutputFile file = new S3ParquetOutputFile();
-
-            build = AvroParquetWriter
+            parquetWriter = AvroParquetWriter
                     .builder(file)
+                    .withPageSize(pageSize)
                     .withWriteMode(ParquetFileWriter.Mode.OVERWRITE)
-                    .withCompressionCodec(CompressionCodecName.UNCOMPRESSED)
-                    .withSchema(schema)
+                    .withCompressionCodec(CompressionCodecName.SNAPPY)
+                    .withSchema(rootAvroSchema)
                     .build();
-            build.write(recordValue);
-        } catch (IOException e) {
-            e.printStackTrace();
+            parquetWriter.write(writeRecord);
+        } finally {
+            IOUtils.closeQuietly(parquetWriter);
         }
-        IOUtils.closeQuietly(build);
-        return null;
+        return ByteSource.wrap(file.toBytes());
     }
 
-    protected static org.apache.avro.Schema parseAvroSchema(String schemaJson) {
-        final Schema.Parser parser = new Schema.Parser();
-        parser.setValidateDefaults(false);
-        return parser.parse(schemaJson);
-    }
-
-    protected static Schema extractAvroSchema(SchemaDefinition schemaDefinition, Class pojo) {
-        try {
-            return parseAvroSchema(pojo.getDeclaredField("SCHEMA$").get(null).toString());
-        } catch (NoSuchFieldException | IllegalAccessException | IllegalArgumentException ignored) {
-            return schemaDefinition.getAlwaysAllowNull() ? ReflectData.AllowNull.get().getSchema(pojo)
-                    : ReflectData.get().getSchema(pojo);
+    private MessageImpl<GenericRecord> getMessage(Record<GenericRecord> record) {
+        Message<GenericRecord> message = record.getMessage().get();
+        if (message instanceof TopicMessageImpl){
+            message = ((TopicMessageImpl<GenericRecord>) message).getMessage();
         }
+        return (MessageImpl<GenericRecord>) message;
     }
 
     private static class S3ParquetOutputFile implements OutputFile {
         private static final int DEFAULT_BLOCK_SIZE = 0;
 
+        private S3OutputStream s3out;
 
         S3ParquetOutputFile() {
 
@@ -92,12 +92,14 @@ public class ParquetFormat<C,T> implements Format<C, Record<T>>{
 
         @Override
         public PositionOutputStream create(long l) throws IOException {
-            return null;
+            s3out = new S3OutputStream();
+            return s3out;
         }
 
         @Override
         public PositionOutputStream createOrOverwrite(long l) throws IOException {
-            return null;
+            s3out = new S3OutputStream();
+            return s3out;
         }
 
         @Override
@@ -107,7 +109,14 @@ public class ParquetFormat<C,T> implements Format<C, Record<T>>{
 
         @Override
         public long defaultBlockSize() {
-            return 0;
+            return DEFAULT_BLOCK_SIZE;
+        }
+
+        private byte[] toBytes(){
+            if (s3out == null){
+                return null;
+            }
+            return s3out.getByteArrayOutputStream().toByteArray();
         }
     }
 }

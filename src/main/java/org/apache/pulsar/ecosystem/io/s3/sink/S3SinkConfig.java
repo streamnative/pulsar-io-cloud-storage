@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -18,18 +18,22 @@
  */
 package org.apache.pulsar.ecosystem.io.s3.sink;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.google.common.base.Preconditions;
+import java.io.File;
+import java.io.IOException;
+import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 import org.apache.pulsar.ecosystem.io.s3.BlobStoreAbstractConfig;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Map;
-
+/**
+ * s3 sink configuration.
+ */
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
@@ -60,11 +64,11 @@ public class S3SinkConfig extends BlobStoreAbstractConfig {
     @Override
     public void validate() {
         super.validate();
-        Preconditions.checkNotNull(accessKeyId, "zookeeperQuorum property not set.");
-        Preconditions.checkNotNull(secretAccessKey, "zookeeperClientPort property not set.");
-        Preconditions.checkNotNull(role, "hbase tableName property not set.");
-        Preconditions.checkNotNull(roleSessionName, "hbase tableName property not set.");
+        checkNotNull(accessKeyId, "accessKeyId property not set.");
+        checkNotNull(secretAccessKey, "secretAccessKey property not set.");
+//        Preconditions.checkNotNull(role, "role property not set.");
+//        Preconditions.checkNotNull(roleSessionName, "roleSessionName property not set.");
 
-        Preconditions.checkArgument(batchSize > 0, "batchSize must be a positive integer.");
+        checkArgument(batchSize > 0, "batchSize must be a positive integer.");
     }
 }

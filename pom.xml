@@ -49,11 +49,13 @@
     <jclouds.version>2.2.1</jclouds.version>
     <parquet.version>1.11.1</parquet.version>
     <awsjavasdk.version>1.11.774</awsjavasdk.version>
+
     <!-- test dependencies -->
     <junit.version>4.12</junit.version>
     <mockito.version>2.22.0</mockito.version>
     <powermock.version>2.0.0-beta.5</powermock.version>
     <testcontainers.version>1.8.3</testcontainers.version>
+    <streamnative-tests.version>2.4.2</streamnative-tests.version>
 
     <!-- build plugin dependencies -->
     <license.plugin.version>3.0</license.plugin.version>
@@ -124,6 +126,11 @@
       <dependency>
         <groupId>org.apache.parquet</groupId>
         <artifactId>parquet-avro</artifactId>
+        <version>${parquet.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.parquet</groupId>
+        <artifactId>parquet-hadoop</artifactId>
         <version>${parquet.version}</version>
       </dependency>
       <!-- test dependencies -->
@@ -200,7 +207,32 @@
       <groupId>org.apache.parquet</groupId>
       <artifactId>parquet-avro</artifactId>
     </dependency>
-
+    <dependency>
+      <groupId>org.apache.parquet</groupId>
+      <artifactId>parquet-hadoop</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-client</artifactId>
+      <version>3.3.0</version>
+<!--      <exclusions>-->
+<!--        <exclusion>-->
+<!--          <groupId>*</groupId>-->
+<!--          <artifactId>*</artifactId>-->
+<!--        </exclusion>-->
+<!--      </exclusions>-->
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-common</artifactId>
+      <version>3.3.0</version>
+<!--      <exclusions>-->
+<!--        <exclusion>-->
+<!--          <groupId>*</groupId>-->
+<!--          <artifactId>*</artifactId>-->
+<!--        </exclusion>-->
+<!--      </exclusions>-->
+    </dependency>
     <!-- test dependencies -->
     <dependency>
       <groupId>junit</groupId>
@@ -228,6 +260,31 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>io.streamnative.tests</groupId>
+      <artifactId>framework-common</artifactId>
+      <version>${streamnative-tests.version}</version>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>io.streamnative.tests</groupId>
+      <artifactId>framework-pulsar</artifactId>
+      <version>${streamnative-tests.version}</version>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
       <version>3.11</version>
@@ -240,6 +297,29 @@
       <groupId>org.apache.pulsar</groupId>
       <artifactId>pulsar-functions-instance</artifactId>
       <version>${pulsar.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.pulsar</groupId>
+      <artifactId>pulsar-client-original</artifactId>
+      <version>${pulsar.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.pulsar</groupId>
+      <artifactId>pulsar-client-admin-original</artifactId>
+      <version>${pulsar.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.pulsar</groupId>
+      <artifactId>pulsar-common</artifactId>
+      <version>${pulsar.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-all</artifactId>
+      <version>4.1.48.Final</version>
     </dependency>
   </dependencies>
 
@@ -303,6 +383,13 @@
             <excludes>
               <exclude>LICENSE</exclude>
               <exclude>NOTICE</exclude>
+              <exclude>Jenkinsfile</exclude>
+              <exclude>resources/license.template</exclude>
+              <exclude>scripts/**</exclude>
+              <exclude>**/build/**</exclude>
+              <exclude>**/ahc.properties</exclude>
+              <exclude>**/.idea/**</exclude>
+              <exclude>**/.github/**</exclude>
             </excludes>
             <mapping>
               <proto>JAVADOC_STYLE</proto>
@@ -405,5 +492,16 @@
       </plugin>
     </plugins>
   </build>
-
+  <repositories>
+    <repository>
+      <id>central</id>
+      <layout>default</layout>
+      <url>https://repo1.maven.org/maven2</url>
+    </repository>
+    <repository>
+      <id>bintray-streamnative-maven</id>
+      <name>bintray</name>
+      <url>https://dl.bintray.com/streamnative/maven</url>
+    </repository>
+  </repositories>
 </project>

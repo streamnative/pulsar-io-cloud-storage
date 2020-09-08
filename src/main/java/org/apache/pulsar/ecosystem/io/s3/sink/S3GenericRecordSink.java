@@ -18,19 +18,20 @@
  */
 package org.apache.pulsar.ecosystem.io.s3.sink;
 
-import com.google.common.base.Preconditions;
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import java.io.IOException;
+import java.util.Map;
+
 import lombok.extern.slf4j.Slf4j;
-import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.io.core.SinkContext;
 import org.apache.pulsar.io.core.annotations.Connector;
 import org.apache.pulsar.io.core.annotations.IOType;
 import org.jclouds.ContextBuilder;
 import org.jclouds.blobstore.BlobStoreContext;
-import java.io.IOException;
-import java.util.Map;
 
 /**
- * A Simple hbase sink, which interprets input Record in generic record.
+ * A Simple s3 sink, which interprets input Record in generic record.
  */
 @Connector(
     name = "s3",
@@ -39,21 +40,21 @@ import java.util.Map;
     configClass = S3SinkConfig.class
 )
 @Slf4j
-public class S3GenericRecordSink extends BlobStoreAbstractSink<S3SinkConfig, GenericRecord> {
-
+public class S3GenericRecordSink extends BlobStoreAbstractSink<S3SinkConfig> {
 
     @Override
     public S3SinkConfig loadConfig(Map<String, Object> config, SinkContext sinkContext) throws IOException {
+
         S3SinkConfig sinkConfig = S3SinkConfig.load(config);
-        Preconditions.checkNotNull(sinkConfig.getAccessKeyId(), "accessKeyId property not set.");
-        Preconditions.checkNotNull(sinkConfig.getSecretAccessKey(), "secretAccessKey property not set.");
+        checkNotNull(sinkConfig.getAccessKeyId(), "accessKeyId property not set.");
+        checkNotNull(sinkConfig.getSecretAccessKey(), "secretAccessKey property not set.");
         return sinkConfig;
     }
 
     @Override
     protected BlobStoreContext buildBlobStoreContext(S3SinkConfig sinkConfig) {
-        return ContextBuilder.newBuilder(sinkConfig.getRegion())
+        return ContextBuilder.newBuilder(sinkConfig.getProvider())
                 .credentials(sinkConfig.getAccessKeyId(), sinkConfig.getSecretAccessKey())
-                .buildView(BlobStoreContext.class);
+                .buildApi(BlobStoreContext.class);
     }
 }

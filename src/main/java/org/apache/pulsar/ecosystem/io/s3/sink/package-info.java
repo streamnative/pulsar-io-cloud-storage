@@ -16,28 +16,4 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.pulsar.ecosystem.io.s3.format;
-
-import com.google.common.io.ByteSource;
-
-/**
- * record format.
- */
-public interface Format<V, T> {
-    /**
-     * get format extension.
-     *
-     * @return format extension
-     */
-    String getExtension();
-
-    /**
-     * format record to bytes.
-     *
-     * @param config configuration
-     * @param record record
-     * @return      bytes warp
-     * @throws Exception exception
-     */
-    ByteSource recordWriter(V config, T record) throws Exception;
-}
+package org.apache.pulsar.ecosystem.io.s3.sink;

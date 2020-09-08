@@ -16,7 +16,4 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * Classes for implementing a pulsar IO connector that generates randomized messages.
- */
 package org.apache.pulsar.ecosystem.io.s3;
