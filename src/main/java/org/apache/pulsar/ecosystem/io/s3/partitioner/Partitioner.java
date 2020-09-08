@@ -19,8 +19,11 @@
 package org.apache.pulsar.ecosystem.io.s3.partitioner;
 
 
+import org.apache.commons.lang3.StringUtils;
+import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.ecosystem.io.s3.BlobStoreAbstractConfig;
 import org.apache.pulsar.functions.api.Record;
+import java.io.File;
 
 /**
  * Partition incoming records, and generates directories and file names in which to store the
@@ -29,6 +32,10 @@ import org.apache.pulsar.functions.api.Record;
  * @param <T> The type representing the field schemas.
  */
 public interface Partitioner<T> {
+
+  String PATH_SEPARATOR = File.separator;
+
+
   void configure(BlobStoreAbstractConfig config);
 
   /**
@@ -51,6 +58,13 @@ public interface Partitioner<T> {
     return encodePartition(sinkRecord);
   }
 
-  String generatePartitionedPath(String topic, String encodedPartition);
-
+  default String generatePartitionedPath(String topic, String encodedPartition){
+      TopicName topicName = TopicName.get(topic);
+      return StringUtils.joinWith(PATH_SEPARATOR,
+              topicName.getTenant(),
+              topicName.getNamespacePortion(),
+              topicName.getLocalName(),
+              encodedPartition
+      );
+  }
 }

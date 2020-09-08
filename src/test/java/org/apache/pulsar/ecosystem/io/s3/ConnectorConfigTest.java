@@ -42,7 +42,8 @@ public class ConnectorConfigTest extends PulsarTestBase {
         config.put("region", "localhost");
         config.put("formatType", "avro");
         config.put("partitionerType", "default");
-        config.put("partitionerParam", "");
+        config.put("timePartitionPattern", "yyyy-MM-dd");
+        config.put("timePartitionDuration", "2d");
         config.put("batchSize", 10);
         S3SinkConfig s3SinkConfig = S3SinkConfig.load(config);
         s3SinkConfig.validate();
@@ -55,7 +56,53 @@ public class ConnectorConfigTest extends PulsarTestBase {
         Assert.assertEquals(config.get("region"), s3SinkConfig.getRegion());
         Assert.assertEquals(config.get("formatType"), s3SinkConfig.getFormatType());
         Assert.assertEquals(config.get("partitionerType"), s3SinkConfig.getPartitionerType());
-        Assert.assertEquals(config.get("partitionerParam"), s3SinkConfig.getPartitionerParam());
+        Assert.assertEquals(config.get("timePartitionPattern"), s3SinkConfig.getTimePartitionPattern());
+        Assert.assertEquals(config.get("timePartitionDuration"), s3SinkConfig.getTimePartitionDuration());
         Assert.assertEquals(config.get("batchSize"), s3SinkConfig.getBatchSize());
+    }
+
+    @Test
+    public void timePartitionDurationTest() throws IOException {
+        Map<String, Object> config = new HashMap<>();
+        config.put("provider", "s3");
+        config.put("accessKeyId", "aws-s3");
+        config.put("secretAccessKey", "aws-s3");
+        config.put("bucket", "testbucket");
+        config.put("region", "localhost");
+        config.put("formatType", "avro");
+        config.put("partitionerType", "time");
+        config.put("timePartitionPattern", "yyyy-MM-dd");
+        config.put("timePartitionDuration", "2d");
+        config.put("batchSize", 10);
+        try {
+            S3SinkConfig.load(config).validate();
+        } catch (Exception e) {
+            Assert.fail();
+        }
+        try {
+            config.put("timePartitionDuration", "1000");
+            S3SinkConfig.load(config).validate();
+            Assert.fail();
+        } catch (Exception e) {
+        }
+        try {
+            config.put("timePartitionDuration", "1000h");
+            S3SinkConfig.load(config).validate();
+        } catch (Exception e) {
+            Assert.fail();
+        }
+        try {
+            config.put("timePartitionDuration", "1000d");
+            S3SinkConfig.load(config).validate();
+        } catch (Exception e) {
+            Assert.fail();
+        }
+
+        try {
+            config.put("timePartitionDuration", "1000y");
+            S3SinkConfig.load(config).validate();
+            Assert.fail();
+        } catch (Exception e) {
+        }
     }
 }

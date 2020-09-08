@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.ecosystem.io.s3.BlobStoreAbstractConfig;
 import org.apache.pulsar.ecosystem.io.s3.format.AvroFormat;
@@ -44,6 +45,7 @@ import org.apache.pulsar.ecosystem.io.s3.format.JsonFormat;
 import org.apache.pulsar.ecosystem.io.s3.format.ParquetFormat;
 import org.apache.pulsar.ecosystem.io.s3.partitioner.Partitioner;
 import org.apache.pulsar.ecosystem.io.s3.partitioner.SimplePartitioner;
+import org.apache.pulsar.ecosystem.io.s3.partitioner.TimePartitioner;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.core.Sink;
 import org.apache.pulsar.io.core.SinkContext;
@@ -106,8 +108,14 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
             default:
                 format = new AvroFormat<>();
         }
-
-        partitioner = new SimplePartitioner<>();
+        switch (sinkConfig.getPartitionerType()) {
+            case "time":
+                partitioner = new TimePartitioner<>();
+                break;
+            case "default":
+            default:
+                partitioner = new SimplePartitioner<>();
+        }
         partitioner.configure(sinkConfig);
 
         long batchTimeMs = 1000;

@@ -24,7 +24,11 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.collect.ImmutableMap;
 
 import java.io.Serializable;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -36,6 +40,9 @@ import org.apache.pulsar.ecosystem.io.s3.format.JsonFormat;
 import org.apache.pulsar.ecosystem.io.s3.format.ParquetFormat;
 import org.apache.pulsar.ecosystem.io.s3.partitioner.Partitioner;
 import org.apache.pulsar.ecosystem.io.s3.partitioner.SimplePartitioner;
+import org.apache.pulsar.ecosystem.io.s3.partitioner.TimePartitioner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Configuration object for all Hbase Sink components.
@@ -43,6 +50,8 @@ import org.apache.pulsar.ecosystem.io.s3.partitioner.SimplePartitioner;
 @Data
 @Accessors(chain = true)
 public class BlobStoreAbstractConfig implements Serializable {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(BlobStoreAbstractConfig.class);
 
     private static final long serialVersionUID = -8945930873383593712L;
 
@@ -53,6 +62,7 @@ public class BlobStoreAbstractConfig implements Serializable {
             .build();
     private static final Map<String, Partitioner<?>> partitionerMap = new ImmutableMap.Builder<String, Partitioner<?>>()
             .put("default", new SimplePartitioner<>())
+            .put("time", new TimePartitioner<>())
             .build();
 
     private String provider;
@@ -65,7 +75,9 @@ public class BlobStoreAbstractConfig implements Serializable {
 
     private String partitionerType;
 
-    private String partitionerParam;
+    private String timePartitionPattern;
+
+    private String timePartitionDuration;
 
     private int batchSize = 10;
 
@@ -82,6 +94,17 @@ public class BlobStoreAbstractConfig implements Serializable {
 
         if (!partitionerMap.containsKey(StringUtils.lowerCase(partitionerType))) {
             throw new IllegalArgumentException("partitionerType property not set.");
+        }
+        if ("time".equalsIgnoreCase(partitionerType)){
+            if (StringUtils.isNoneBlank(timePartitionPattern)){
+                LOGGER.info("test timePartitionPattern is ok {} {}",
+                        timePartitionPattern,
+                        DateTimeFormatter.ofPattern(timePartitionPattern).format(Instant.now().atOffset(ZoneOffset.UTC))
+                );
+            }
+            if (StringUtils.isNoneBlank(timePartitionDuration)){
+                checkArgument(Pattern.matches("^\\d+[dhDH]$",timePartitionDuration), "timePartitionDuration invalid.");
+            }
         }
         checkArgument(batchSize > 0, "batchSize property not set.");
     }
