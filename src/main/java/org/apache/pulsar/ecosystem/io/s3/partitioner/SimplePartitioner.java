@@ -35,6 +35,8 @@ public class SimplePartitioner<T> implements Partitioner<T> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SimplePartitioner.class);
 
+    private static final String LINE_SEPARATOR = System.lineSeparator();
+
     @Override
     public void configure(BlobStoreAbstractConfig config) {
 
@@ -42,14 +44,20 @@ public class SimplePartitioner<T> implements Partitioner<T> {
 
     @Override
     public String encodePartition(Record<T> sinkRecord) {
-        Optional<Long> recordSequence = sinkRecord.getRecordSequence();
-        return recordSequence.map(String::valueOf).orElseThrow(() -> new RuntimeException("recordSequence not null"));
+        String topicName = sinkRecord.getTopicName().orElseThrow(() -> new RuntimeException("topicName not null"));
+        String partitionId = sinkRecord.getPartitionId().orElseThrow(() -> new RuntimeException("partitionId not null"));
+        String number = StringUtils.removeStart(partitionId, topicName).replace("-", "").trim();
+        if (!StringUtils.isNumeric(number)){
+           throw new RuntimeException("partitionId is fail " + partitionId);
+        }
+        Long recordSequence = sinkRecord.getRecordSequence().orElseThrow(() -> new RuntimeException("recordSequence not null"));
+        return "partition-" + number + LINE_SEPARATOR + recordSequence;
     }
 
     @Override
     public String generatePartitionedPath(String topic, String encodedPartition) {
         TopicName topicName = TopicName.get(topic);
-        return StringUtils.joinWith("/",
+        return StringUtils.joinWith(LINE_SEPARATOR,
                 topicName.getTenant(),
                 topicName.getNamespacePortion(),
                 topicName.getLocalName(),
