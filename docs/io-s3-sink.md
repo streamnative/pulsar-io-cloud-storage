@@ -6,9 +6,9 @@ language: Java
 document: 
 source: "https://github.com/streamnative/pulsar-io-activemq/tree/v2.5.1/src/main/java/org/apache/pulsar/ecosystem/io/activemq"
 license: Apache License 2.0
-tags: ["Pulsar IO", "ActiveMQ", "Sink"]
+tags: ["Pulsar IO", "S3", "Sink"]
 alias: ActiveMQ Sink
-features: ["Use ActiveMQ sink connector to sync data from Pulsar"]
+features: ["Use S3 sink connector to sync data from Pulsar"]
 license_link: "https://www.apache.org/licenses/LICENSE-2.0"
 icon: "http://activemq.apache.org/assets/img/activemq_logo_black_small.png"
 download: "https://github.com/streamnative/pulsar-io-activemq/releases/download/v2.5.1/pulsar-io-activemq-2.5.1.nar"

@@ -19,16 +19,19 @@
 
 tenant: "public"
 namespace: "default"
-name: "activemq-sink"
+name: "s3-sink"
 inputs: 
   - "user-op-queue-topic"
-archive: "connectors/pulsar-io-activemq-2.5.1.nar"
+archive: "connectors/pulsar-io-s3-0.0.1.nar"
 parallelism: 1
 
 configs:
-  bucket: "tcp"
-  region: "localhost"
-  formatType: "avro"
+  provider: "s3"
+  accessKeyId: "sSs7gUYFtwVIJh"
+  secretAccessKey: "8WGoYQnJV9DC9JaeA95Wj"
+  bucket: "testBucket"
+  region: "local"
+  formatType: "parquet"
   partitionerType: "default"
   partitionerParam: "admin"
-  batchSize: "user-op-queue-pulsar"
+  batchSize: "1"
