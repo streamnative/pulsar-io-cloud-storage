@@ -16,26 +16,30 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.pulsar.ecosystem.io.s3.format;
+package org.apache.pulsar.ecosystem.io.s3.bo;
 
-import junit.framework.TestCase;
-import org.apache.pulsar.ecosystem.io.s3.BlobStoreAbstractConfig;
-import org.junit.Assert;
-import org.junit.Test;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
- * format test.
+ * test use class.
  */
-public class FormatTest extends TestCase {
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class TestRecord {
+   private String name;
+   private int number;
+   private TestSubRecord subRecord;
 
-    @Test
-    public void testGetExtension() {
-        AvroFormat<BlobStoreAbstractConfig> avroFormat = new AvroFormat<>();
-        Assert.assertEquals(avroFormat.getExtension(), ".avro");
-    }
-
-    public void testRecordWriter() {
-        AvroFormat<BlobStoreAbstractConfig> avroFormat = new AvroFormat<>();
-//        avroFormat.recordWriter(null,)
-    }
+   /**
+    * test use class.
+    */
+   @Data
+   @AllArgsConstructor
+   @NoArgsConstructor
+   public static class TestSubRecord{
+       private String name;
+   }
 }
