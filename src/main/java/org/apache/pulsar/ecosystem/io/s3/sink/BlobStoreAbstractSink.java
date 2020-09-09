@@ -104,13 +104,13 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                 format = new ParquetFormat<>();
                 break;
             default:
-                format = new AvroFormat<>();
+                format = new JsonFormat<>();
         }
         switch (sinkConfig.getPartitionerType()) {
             case "time":
                 partitioner = new TimePartitioner<>();
                 break;
-            case "default":
+            case "partition":
             default:
                 partitioner = new SimplePartitioner<>();
         }

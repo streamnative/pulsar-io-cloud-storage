@@ -21,17 +21,22 @@ tenant: "public"
 namespace: "default"
 name: "s3-sink"
 inputs: 
-  - "user-op-queue-topic"
+  - "user-json-topic"
+  - "user-avro-topic"
 archive: "connectors/pulsar-io-s3-0.0.1.nar"
 parallelism: 1
 
 configs:
-  provider: "s3"
   accessKeyId: "sSs7gUYFtwVIJh"
   secretAccessKey: "8WGoYQnJV9DC9JaeA95Wj"
+  role: "none"
+  roleSessionName: "none"
   bucket: "testBucket"
   region: "local"
+  endpoint: "us-standard"
   formatType: "parquet"
-  partitionerType: "default"
-  partitionerParam: "admin"
-  batchSize: "1"
+  partitionerType: "time"
+  timePartitionPattern: "yyyy-MM-dd"
+  timePartitionDuration: "1d"
+  batchSize: 10
+  batchTimeMs: 1000

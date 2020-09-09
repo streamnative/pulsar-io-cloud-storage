@@ -83,7 +83,7 @@ public class BlobStoreAbstractConfig implements Serializable {
 
     private int batchSize = 10;
 
-    private long batchTimeMs = 10;
+    private long batchTimeMs = 1000;
 
 
     public void validate() {
