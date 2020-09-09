@@ -36,7 +36,6 @@ import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.ecosystem.io.s3.BlobStoreAbstractConfig;
 import org.apache.pulsar.ecosystem.io.s3.format.AvroFormat;
@@ -58,7 +57,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A Simple abstract class for Hbase sink.
+ * A Simple abstract class for BlobStore sink.
  * Users need to implement extractKeyValue function to use this sink
  */
 @Slf4j
@@ -87,8 +86,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         checkNotNull(sinkConfig.getRegion(), "region property not set.");
         context = buildBlobStoreContext(sinkConfig);
         blobStore = context.getBlobStore();
-        boolean testCase = "transient".equalsIgnoreCase(sinkConfig.getProvider())
-                || "filesystem".equalsIgnoreCase(sinkConfig.getProvider());
+        boolean testCase = "transient".equalsIgnoreCase(sinkConfig.getProvider());
         if (!blobStore.containerExists(sinkConfig.getBucket()) && testCase) {
             //test use
             blobStore.createContainerInLocation(null, sinkConfig.getBucket());

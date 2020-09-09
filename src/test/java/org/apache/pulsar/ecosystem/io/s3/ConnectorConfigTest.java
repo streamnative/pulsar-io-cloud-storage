@@ -35,11 +35,11 @@ public class ConnectorConfigTest extends PulsarTestBase {
     @Test
     public void loadBasicConfigTest() throws IOException {
         Map<String, Object> config = new HashMap<>();
-        config.put("provider", "aws-s3");
         config.put("accessKeyId", "aws-s3");
         config.put("secretAccessKey", "aws-s3");
         config.put("bucket", "testbucket");
         config.put("region", "localhost");
+        config.put("endpoint", "us-standard");
         config.put("formatType", "avro");
         config.put("partitionerType", "default");
         config.put("timePartitionPattern", "yyyy-MM-dd");
@@ -49,7 +49,7 @@ public class ConnectorConfigTest extends PulsarTestBase {
         s3SinkConfig.validate();
 
 
-        Assert.assertEquals(config.get("provider"), s3SinkConfig.getProvider());
+        Assert.assertEquals("aws-s3", s3SinkConfig.getProvider());
         Assert.assertEquals(config.get("accessKeyId"), s3SinkConfig.getAccessKeyId());
         Assert.assertEquals(config.get("secretAccessKey"), s3SinkConfig.getSecretAccessKey());
         Assert.assertEquals(config.get("bucket"), s3SinkConfig.getBucket());
@@ -64,11 +64,11 @@ public class ConnectorConfigTest extends PulsarTestBase {
     @Test
     public void timePartitionDurationTest() throws IOException {
         Map<String, Object> config = new HashMap<>();
-        config.put("provider", "s3");
         config.put("accessKeyId", "aws-s3");
         config.put("secretAccessKey", "aws-s3");
         config.put("bucket", "testbucket");
         config.put("region", "localhost");
+        config.put("endpoint", "us-standard");
         config.put("formatType", "avro");
         config.put("partitionerType", "time");
         config.put("timePartitionPattern", "yyyy-MM-dd");

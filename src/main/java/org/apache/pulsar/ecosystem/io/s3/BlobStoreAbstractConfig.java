@@ -71,6 +71,8 @@ public class BlobStoreAbstractConfig implements Serializable {
 
     private String region;
 
+    private String endpoint;
+
     private String formatType;
 
     private String partitionerType;
@@ -86,7 +88,7 @@ public class BlobStoreAbstractConfig implements Serializable {
 
     public void validate() {
         checkNotNull(bucket, "bucket property not set.");
-        checkNotNull(region, "region property not set.");
+        checkNotNull(endpoint, "endpoint property not set.");
 
         if (!formatMap.containsKey(StringUtils.lowerCase(formatType))) {
             throw new IllegalArgumentException("formatType property not set.");
@@ -103,10 +105,11 @@ public class BlobStoreAbstractConfig implements Serializable {
                 );
             }
             if (StringUtils.isNoneBlank(timePartitionDuration)){
-                checkArgument(Pattern.matches("^\\d+[dhDH]$",timePartitionDuration), "timePartitionDuration invalid.");
+                checkArgument(Pattern.matches("^\\d+[dhDH]$", timePartitionDuration), "timePartitionDuration invalid.");
             }
         }
         checkArgument(batchSize > 0, "batchSize property not set.");
+        checkArgument(batchTimeMs > 0, "batchTimeMs property not set.");
     }
 
 }

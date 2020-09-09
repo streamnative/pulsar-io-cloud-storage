@@ -18,7 +18,6 @@
  */
 package org.apache.pulsar.ecosystem.io.s3.sink;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,8 +48,6 @@ public class S3SinkConfig extends BlobStoreAbstractConfig {
 
     private String roleSessionName;
 
-    private int batchSize = 200;
-
     public static S3SinkConfig load(String yamlFile) throws IOException {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         return mapper.readValue(new File(yamlFile), S3SinkConfig.class);
@@ -62,13 +59,14 @@ public class S3SinkConfig extends BlobStoreAbstractConfig {
     }
 
     @Override
+    public String getProvider() {
+        return "aws-s3";
+    }
+
+    @Override
     public void validate() {
         super.validate();
         checkNotNull(accessKeyId, "accessKeyId property not set.");
         checkNotNull(secretAccessKey, "secretAccessKey property not set.");
-//        Preconditions.checkNotNull(role, "role property not set.");
-//        Preconditions.checkNotNull(roleSessionName, "roleSessionName property not set.");
-
-        checkArgument(batchSize > 0, "batchSize must be a positive integer.");
     }
 }

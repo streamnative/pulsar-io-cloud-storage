@@ -1,15 +1,37 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package org.apache.pulsar.ecosystem.io.s3.partitioner;
+
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.ecosystem.io.s3.BlobStoreAbstractConfig;
 import org.apache.pulsar.functions.api.Record;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
 
+/**
+ * partition by day, hour.
+ * @param <T>
+ */
 public class TimePartitioner<T> implements Partitioner<T> {
 
     private static final long DEFAULT_PARTITION_DURATION = 24 * 3600 * 1000L;
@@ -34,8 +56,10 @@ public class TimePartitioner<T> implements Partitioner<T> {
         String number = timePartitionDuration.substring(0, timePartitionDuration.length() - 1);
         switch (timePartitionDuration.charAt(timePartitionDuration.length() - 1)) {
             case 'd':
+            case 'D':
                 return Integer.parseInt(number) * 24 * 3600 * 1000L;
             case 'h':
+            case 'H':
                 return Integer.parseInt(number) * 3600 * 1000L;
             default:
                 throw new RuntimeException("not support timePartitionPattern " + timePartitionDuration);
@@ -53,7 +77,8 @@ public class TimePartitioner<T> implements Partitioner<T> {
         long publishTime = recordMessage.getPublishTime();
         long parsed = (publishTime / partitionDuration) * partitionDuration;
         String timeString = dateTimeFormatter.format(Instant.ofEpochMilli(parsed).atOffset(ZoneOffset.UTC));
-        return timeString + PATH_SEPARATOR +
-                sinkRecord.getRecordSequence().orElseThrow(() -> new RuntimeException("recordSequence not null"));
+        return timeString
+                + PATH_SEPARATOR
+                + sinkRecord.getRecordSequence().orElseThrow(() -> new RuntimeException("recordSequence not null"));
     }
 }

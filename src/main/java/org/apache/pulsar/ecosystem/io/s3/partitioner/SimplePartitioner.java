@@ -39,13 +39,16 @@ public class SimplePartitioner<T> implements Partitioner<T> {
 
     @Override
     public String encodePartition(Record<T> sinkRecord) {
-        String topicName = sinkRecord.getTopicName().orElseThrow(() -> new RuntimeException("topicName not null"));
-        String partitionId = sinkRecord.getPartitionId().orElseThrow(() -> new RuntimeException("partitionId not null"));
+        String topicName = sinkRecord.getTopicName().
+                orElseThrow(() -> new RuntimeException("topicName not null"));
+        String partitionId = sinkRecord.getPartitionId()
+                .orElseThrow(() -> new RuntimeException("partitionId not null"));
         String number = StringUtils.removeStart(partitionId, topicName).replace("-", "").trim();
         if (!StringUtils.isNumeric(number)){
            throw new RuntimeException("partitionId is fail " + partitionId);
         }
-        Long recordSequence = sinkRecord.getRecordSequence().orElseThrow(() -> new RuntimeException("recordSequence not null"));
+        Long recordSequence = sinkRecord.getRecordSequence()
+                .orElseThrow(() -> new RuntimeException("recordSequence not null"));
         return "partition-" + number + PATH_SEPARATOR + recordSequence;
     }
 }

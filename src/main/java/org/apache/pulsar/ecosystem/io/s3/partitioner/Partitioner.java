@@ -18,12 +18,12 @@
  */
 package org.apache.pulsar.ecosystem.io.s3.partitioner;
 
+import java.io.File;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.ecosystem.io.s3.BlobStoreAbstractConfig;
 import org.apache.pulsar.functions.api.Record;
-import java.io.File;
 
 /**
  * Partition incoming records, and generates directories and file names in which to store the
