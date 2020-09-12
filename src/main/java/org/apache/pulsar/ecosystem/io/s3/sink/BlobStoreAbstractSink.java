@@ -19,7 +19,6 @@
 package org.apache.pulsar.ecosystem.io.s3.sink;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.Lists;
 import com.google.common.io.ByteSource;
@@ -43,7 +42,6 @@ import org.apache.pulsar.ecosystem.io.s3.format.Format;
 import org.apache.pulsar.ecosystem.io.s3.format.JsonFormat;
 import org.apache.pulsar.ecosystem.io.s3.format.ParquetFormat;
 import org.apache.pulsar.ecosystem.io.s3.partitioner.Partitioner;
-import org.apache.pulsar.ecosystem.io.s3.partitioner.SimplePartitioner;
 import org.apache.pulsar.ecosystem.io.s3.partitioner.TimePartitioner;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.core.Sink;
@@ -81,9 +79,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
     @Override
     public void open(Map<String, Object> config, SinkContext sinkContext) throws Exception {
         sinkConfig = loadConfig(config, sinkContext);
-
-        checkNotNull(sinkConfig.getBucket(), "bucket property not set.");
-        checkNotNull(sinkConfig.getRegion(), "region property not set.");
+        sinkConfig.validate();
         context = buildBlobStoreContext(sinkConfig);
         blobStore = context.getBlobStore();
         boolean testCase = "transient".equalsIgnoreCase(sinkConfig.getProvider());
@@ -92,35 +88,43 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
             blobStore.createContainerInLocation(null, sinkConfig.getBucket());
         }
         checkArgument(blobStore.containerExists(sinkConfig.getBucket()), "%s bucket not exist", sinkConfig.getBucket());
-        String formatType = StringUtils.defaultIfBlank(sinkConfig.getFormatType(), "avro");
-        switch (formatType) {
-            case "avro":
-                format = new AvroFormat<>();
-                break;
-            case "json":
-                format = new JsonFormat<>();
-                break;
-            case "parquet":
-                format = new ParquetFormat<>();
-                break;
-            default:
-                format = new JsonFormat<>();
-        }
-        switch (sinkConfig.getPartitionerType()) {
+        format = buildFormat(sinkConfig);
+        partitioner = buildPartitioner(sinkConfig);
+
+        long batchTimeMs = sinkConfig.getBatchTimeMs();
+        incomingList = Lists.newArrayList();
+        flushExecutor = Executors.newScheduledThreadPool(1);
+        flushExecutor.scheduleAtFixedRate(() -> flush(),
+                batchTimeMs, batchTimeMs, TimeUnit.MILLISECONDS);
+    }
+
+    private Partitioner<GenericRecord> buildPartitioner(V sinkConfig) {
+        Partitioner<GenericRecord> partitioner;
+        String partitionerType = StringUtils.defaultIfBlank(sinkConfig.getPartitionerType(), "partition");
+        switch (partitionerType) {
             case "time":
                 partitioner = new TimePartitioner<>();
                 break;
             case "partition":
             default:
-                partitioner = new SimplePartitioner<>();
+                throw new RuntimeException("not support partitioner type " + partitionerType);
         }
         partitioner.configure(sinkConfig);
+        return partitioner;
+    }
 
-        long batchTimeMs = 1000;
-        incomingList = Lists.newArrayList();
-        flushExecutor = Executors.newScheduledThreadPool(1);
-        flushExecutor.scheduleAtFixedRate(() -> flush(),
-                batchTimeMs, batchTimeMs, TimeUnit.MILLISECONDS);
+    private Format<V, Record<GenericRecord>> buildFormat(V sinkConfig) {
+        String formatType = StringUtils.defaultIfBlank(sinkConfig.getFormatType(), "json");
+        switch (formatType) {
+            case "avro":
+                return new AvroFormat<>();
+            case "parquet":
+                return new ParquetFormat<>();
+            case "json":
+                return new JsonFormat<>();
+            default:
+                throw new RuntimeException("not support formatType " + formatType);
+        }
     }
 
     protected abstract V loadConfig(Map<String, Object> config, SinkContext sinkContext) throws IOException;
@@ -136,24 +140,22 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
     @Override
     public void write(Record<GenericRecord> record) throws Exception {
+        final Long sequenceId = record.getRecordSequence().get();
+        LOGGER.info("write message[recordSequence={}]", sequenceId);
 
-        LOGGER.info("write message[recordSequence={}]", record.getRecordSequence().get());
         String filepath = buildPartitionPath(record, partitioner, format);
-
         ByteSource payload = bindValue(record, format);
-
         Blob blob = blobStore.blobBuilder(filepath)
                 .payload(payload)
                 .contentLength(payload.size())
                 .build();
-
         int currentSize;
 
         synchronized (this) {
             incomingList.add(Pair.of(record, blob));
             currentSize = incomingList.size();
         }
-        LOGGER.info("build blob success[recordSequence={}]", record.getRecordSequence().get());
+        LOGGER.info("build blob success[recordSequence={}]", sequenceId);
         if (currentSize == sinkConfig.getBatchSize()) {
             flushExecutor.submit(() -> flush());
         }
@@ -184,8 +186,6 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                 log.error("Bad message", e);
                 blobPair.getLeft().fail();
                 iter.remove();
-            } catch (Exception e){
-                log.error("write message failed", e);
             }
         }
     }
@@ -202,8 +202,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         String encodePartition = partitioner.encodePartition(message, System.currentTimeMillis());
         String partitionedPath = partitioner.generatePartitionedPath(message.getTopicName().get(), encodePartition);
         String path = partitionedPath + format.getExtension();
-        LOGGER.info("write message[recordSequence={}] savePath: {}", message.getRecordSequence().get(), path);
-
+        LOGGER.info("generate message[recordSequence={}] savePath: {}", message.getRecordSequence().get(), path);
         return path;
     }
 

@@ -34,7 +34,7 @@ import org.apache.pulsar.ecosystem.io.s3.BlobStoreAbstractConfig;
  * s3 sink configuration.
  */
 @Data
-@EqualsAndHashCode(callSuper = false)
+@EqualsAndHashCode(callSuper = true)
 @Accessors(chain = true)
 public class S3SinkConfig extends BlobStoreAbstractConfig {
 

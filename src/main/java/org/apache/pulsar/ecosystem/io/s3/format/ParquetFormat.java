@@ -29,10 +29,7 @@ import org.apache.parquet.hadoop.ParquetWriter;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.apache.parquet.io.OutputFile;
 import org.apache.parquet.io.PositionOutputStream;
-import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.client.api.schema.GenericRecord;
-import org.apache.pulsar.client.impl.MessageImpl;
-import org.apache.pulsar.client.impl.TopicMessageImpl;
 import org.apache.pulsar.ecosystem.io.s3.S3OutputStream;
 import org.apache.pulsar.ecosystem.io.s3.util.AvroRecordUtil;
 import org.apache.pulsar.functions.api.Record;
@@ -49,8 +46,7 @@ public class ParquetFormat<V> implements Format<V, Record<GenericRecord>>{
 
     @Override
     public ByteSource recordWriter(V config, Record<GenericRecord> record) throws Exception {
-        MessageImpl<GenericRecord> message = getMessage(record);
-        Schema rootAvroSchema = AvroRecordUtil.getAvroSchema(message.getSchema());
+        Schema rootAvroSchema = AvroRecordUtil.getAvroSchema(record.getSchema());
         org.apache.avro.generic.GenericRecord writeRecord = AvroRecordUtil
                 .convertGenericRecord(record.getValue(), rootAvroSchema);
 
@@ -70,15 +66,7 @@ public class ParquetFormat<V> implements Format<V, Record<GenericRecord>>{
         } finally {
             IOUtils.closeQuietly(parquetWriter);
         }
-        return ByteSource.wrap(file.toBytes());
-    }
-
-    private MessageImpl<GenericRecord> getMessage(Record<GenericRecord> record) {
-        Message<GenericRecord> message = record.getMessage().get();
-        if (message instanceof TopicMessageImpl){
-            message = ((TopicMessageImpl<GenericRecord>) message).getMessage();
-        }
-        return (MessageImpl<GenericRecord>) message;
+        return ByteSource.wrap(file.toByteArray());
     }
 
     private static class S3ParquetOutputFile implements OutputFile {
@@ -112,7 +100,7 @@ public class ParquetFormat<V> implements Format<V, Record<GenericRecord>>{
             return DEFAULT_BLOCK_SIZE;
         }
 
-        private byte[] toBytes(){
+        private byte[] toByteArray(){
             if (s3out == null){
                 return null;
             }

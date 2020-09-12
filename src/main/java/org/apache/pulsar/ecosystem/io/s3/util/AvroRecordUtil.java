@@ -23,8 +23,6 @@ import java.nio.charset.StandardCharsets;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.pulsar.client.api.schema.GenericRecord;
-import org.apache.pulsar.client.impl.schema.generic.GenericAvroRecord;
-import org.apache.pulsar.client.impl.schema.generic.GenericJsonRecord;
 import org.apache.pulsar.common.schema.SchemaInfo;
 
 /**
@@ -40,9 +38,6 @@ public class AvroRecordUtil {
 
     public static org.apache.avro.generic.GenericRecord convertGenericRecord(GenericRecord recordValue,
                                                                              Schema rootAvroSchema) {
-        if (recordValue instanceof GenericAvroRecord){
-            return ((GenericAvroRecord) recordValue).getAvroRecord();
-        }
         org.apache.avro.generic.GenericRecord recordHolder = new GenericData.Record(rootAvroSchema);
         for (org.apache.pulsar.client.api.schema.Field field : recordValue.getFields()) {
             Schema.Field field1 = rootAvroSchema.getField(field.getName());
@@ -64,15 +59,15 @@ public class AvroRecordUtil {
     }
 
     private static Object readValue(GenericRecord recordValue, org.apache.pulsar.client.api.schema.Field field) {
-        // If the field has no value, NullPointerException will be thrown
-        if (recordValue instanceof GenericJsonRecord) {
-            try {
-                return recordValue.getField(field);
-            } catch (NullPointerException ignore) {
-                return null;
-            }
+        if (recordValue == null || field == null){
+            return null;
         }
-        return recordValue.getField(field);
+        //  If the field has no value, NullPointerException will be thrown, for GenericJsonRecord
+        try {
+            return recordValue.getField(field);
+        } catch (NullPointerException ignore) {
+            return null;
+        }
     }
 
 }

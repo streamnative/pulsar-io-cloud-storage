@@ -19,21 +19,27 @@
 package org.apache.pulsar.ecosystem.io.s3.format;
 
 import com.google.common.io.ByteSource;
+import java.io.ByteArrayOutputStream;
 import org.apache.avro.Schema;
-import org.apache.pulsar.client.api.Message;
+import org.apache.avro.file.CodecFactory;
+import org.apache.avro.file.DataFileWriter;
+import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.pulsar.client.api.schema.GenericRecord;
-import org.apache.pulsar.client.impl.MessageImpl;
-import org.apache.pulsar.client.impl.TopicMessageImpl;
-import org.apache.pulsar.client.impl.schema.writer.AvroWriter;
 import org.apache.pulsar.ecosystem.io.s3.BlobStoreAbstractConfig;
 import org.apache.pulsar.ecosystem.io.s3.util.AvroRecordUtil;
 import org.apache.pulsar.functions.api.Record;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * avro format.
  * @param <V> config
  */
 public class AvroFormat<V extends BlobStoreAbstractConfig> implements Format<V, Record<GenericRecord>> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AvroFormat.class);
+
+    final DataFileWriter<Object> writer = new DataFileWriter<>(new GenericDatumWriter<>());
 
     @Override
     public String getExtension() {
@@ -42,21 +48,16 @@ public class AvroFormat<V extends BlobStoreAbstractConfig> implements Format<V, 
 
     @Override
     public ByteSource recordWriter(V config, Record<GenericRecord> record) throws Exception {
-
-        MessageImpl<GenericRecord> message = getMessage(record);
-        Schema rootAvroSchema = AvroRecordUtil.getAvroSchema(message.getSchema());
+        Schema rootAvroSchema = AvroRecordUtil.getAvroSchema(record.getSchema());
         org.apache.avro.generic.GenericRecord writeRecord = AvroRecordUtil
                 .convertGenericRecord(record.getValue(), rootAvroSchema);
 
-        AvroWriter<org.apache.avro.generic.GenericRecord> avroWriter = new AvroWriter<>(rootAvroSchema, true);
-        return ByteSource.wrap(avroWriter.write(writeRecord));
-    }
-
-    private MessageImpl<GenericRecord> getMessage(Record<GenericRecord> record) {
-        Message<GenericRecord> message = record.getMessage().get();
-        if (message instanceof TopicMessageImpl){
-            message = ((TopicMessageImpl<GenericRecord>) message).getMessage();
+        final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        writer.setCodec(CodecFactory.snappyCodec());
+        try (DataFileWriter<Object> fileWriter = writer.create(rootAvroSchema, byteArrayOutputStream)){
+            fileWriter.append(writeRecord);
+            fileWriter.flush();
         }
-        return (MessageImpl<GenericRecord>) message;
+        return ByteSource.wrap(byteArrayOutputStream.toByteArray());
     }
 }

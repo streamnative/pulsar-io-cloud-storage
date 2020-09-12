@@ -22,17 +22,22 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
+import java.util.function.Supplier;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.ecosystem.io.s3.BlobStoreAbstractConfig;
 import org.apache.pulsar.functions.api.Record;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * partition by day, hour.
  * @param <T>
  */
 public class TimePartitioner<T> implements Partitioner<T> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(TimePartitioner.class);
 
     private static final long DEFAULT_PARTITION_DURATION = 24 * 3600 * 1000L;
     private static final String DEFAULT_PARTITION_PATTERN = "yyyy-MM-dd";
@@ -57,10 +62,10 @@ public class TimePartitioner<T> implements Partitioner<T> {
         switch (timePartitionDuration.charAt(timePartitionDuration.length() - 1)) {
             case 'd':
             case 'D':
-                return Integer.parseInt(number) * 24 * 3600 * 1000L;
+                return Long.parseLong(number) * 24 * 3600 * 1000L;
             case 'h':
             case 'H':
-                return Integer.parseInt(number) * 3600 * 1000L;
+                return Long.parseLong(number) * 3600 * 1000L;
             default:
                 throw new RuntimeException("not support timePartitionPattern " + timePartitionDuration);
         }
@@ -73,12 +78,22 @@ public class TimePartitioner<T> implements Partitioner<T> {
 
     @Override
     public String encodePartition(Record<T> sinkRecord, long nowInMillis) {
-        Message<T> recordMessage = sinkRecord.getMessage().orElseThrow(() -> new RuntimeException("Message not exist"));
-        long publishTime = recordMessage.getPublishTime();
+        long publishTime = getPublishTime(sinkRecord, nowInMillis);
         long parsed = (publishTime / partitionDuration) * partitionDuration;
         String timeString = dateTimeFormatter.format(Instant.ofEpochMilli(parsed).atOffset(ZoneOffset.UTC));
-        return timeString
+        final String result = timeString
                 + PATH_SEPARATOR
                 + sinkRecord.getRecordSequence().orElseThrow(() -> new RuntimeException("recordSequence not null"));
+        return result;
+    }
+
+    private long getPublishTime(Record<T> sinkRecord, Long defaultTime) {
+        final Supplier<Long> defaultTimeSupplier = () -> {
+            LOGGER.warn("record not exist Message {}", sinkRecord.getRecordSequence().get());
+            return defaultTime;
+        };
+        return sinkRecord.getMessage()
+                .map(Message::getPublishTime)
+                .orElseGet(defaultTimeSupplier);
     }
 }

@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 public class S3OutputStream extends PositionOutputStream {
     private static final Logger log = LoggerFactory.getLogger(S3OutputStream.class);
 
-    private Long position;
+    private long position;
 
     private ByteArrayOutputStream byteArrayOutputStream;
 
@@ -46,7 +46,7 @@ public class S3OutputStream extends PositionOutputStream {
     @Override
     public void write(int b) throws IOException {
         byteArrayOutputStream.write(b);
-        position++;
+        position += 1;
     }
 
     @Override
@@ -57,6 +57,7 @@ public class S3OutputStream extends PositionOutputStream {
 
     @Override
     public void close() throws IOException {
+        position = 0L;
         byteArrayOutputStream.close();
     }
 
