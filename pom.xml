@@ -224,12 +224,6 @@
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-client</artifactId>
       <version>3.3.0</version>
-<!--      <exclusions>-->
-<!--        <exclusion>-->
-<!--          <groupId>*</groupId>-->
-<!--          <artifactId>*</artifactId>-->
-<!--        </exclusion>-->
-<!--      </exclusions>-->
       <exclusions>
         <exclusion>
           <groupId>org.apache.hadoop</groupId>
@@ -243,10 +237,6 @@
           <groupId>org.apache.hadoop</groupId>
           <artifactId>hadoop-yarn-common</artifactId>
         </exclusion>
-<!--        <exclusion>-->
-<!--          <groupId>org.apache.hadoop</groupId>-->
-<!--          <artifactId>hadoop-mapreduce-client-core</artifactId>-->
-<!--        </exclusion>-->
         <exclusion>
           <groupId>org.apache.hadoop</groupId>
           <artifactId>hadoop-mapreduce-client-jobclient</artifactId>
