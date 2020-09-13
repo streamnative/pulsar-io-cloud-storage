@@ -16,6 +16,8 @@ support: StreamNative
 support_link: https://streamnative.io
 support_img: "/images/connectors/streamnative.png"
 dockerfile: 
+owner_name: ""
+owner_img: ""
 id: "io-S3-sink"
 ---
 
@@ -69,8 +71,8 @@ Before using the S3 sink connector, you need to create a configuration file thro
        "archive": "connectors/pulsar-io-s3-0.0.1.nar",
        "parallelism": 1,
        "configs": {
-          "accessKeyId": "sSs7gUYFtwVIJh",
-          "secretAccessKey": "8WGoYQnJV9DC9JaeA95Wj",
+          "accessKeyId": "accessKeyId",
+          "secretAccessKey": "secretAccessKey",
           "role": "none",
           "roleSessionName": "none",
           "bucket": "testBucket",
@@ -99,8 +101,8 @@ Before using the S3 sink connector, you need to create a configuration file thro
     parallelism: 1
     
     configs:
-      accessKeyId: "sSs7gUYFtwVIJh"
-      secretAccessKey: "8WGoYQnJV9DC9JaeA95Wj"
+      accessKeyId: "accessKeyId"
+      secretAccessKey: "secretAccessKey"
       role: "none"
       roleSessionName: "none"
       bucket: "testBucket"
@@ -118,11 +120,11 @@ Before using the S3 sink connector, you need to create a configuration file thro
 
 1. Prepare S3 service.
 
-    Please prepare the aws-s3 service you use.Test can use mockaws
+    Please prepare the aws-s3 service you use.Test can use s3mock
 
     ```
-    docker pull rmohr/activemq
-    docker run -p 61616:61616 -p 8161:8161 rmohr/activemq
+    docker pull apachepulsar/s3mock:latest
+    docker run -p 9090:9090 -e initialBuckets=pulsar-integtest apachepulsar/s3mock:latest
     ```
 
 2. Put the `pulsar-io-s3-2.5.1.nar` in the pulsar connectors catalog.
@@ -145,45 +147,37 @@ Before using the S3 sink connector, you need to create a configuration file thro
 
 5. Send Pulsar messages.
 
-    ```
-    $PULSAR_HOME/bin/pulsar-client produce public/default/user-json-topic --messages '{"age":1,"status":"ok"}' -n 10
-    ```
-
-6. Check S3 data.
-
-    Use the test method `receiveMessage` of the class `org.apache.pulsar.ecosystem.io.activemq.ActiveMQDemo` 
-    to consume ActiveMQ messages.
-
-    ```
-    @Test
-    private void receiveMessage() throws JMSException, InterruptedException {
-    
-        ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory("tcp://localhost:61616");
-    
-        @Cleanup
-        Connection connection = connectionFactory.createConnection();
-        connection.start();
-    
-        @Cleanup
-        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-    
-        Destination destination = session.createQueue("user-op-queue-pulsar");
-    
-        @Cleanup
-        MessageConsumer consumer = session.createConsumer(destination);
-    
-        consumer.setMessageListener(new MessageListener() {
-            @Override
-            public void onMessage(Message message) {
-                if (message instanceof ActiveMQTextMessage) {
-                    try {
-                        System.out.println("get message ----------------- ");
-                        System.out.println("receive: " + ((ActiveMQTextMessage) message).getText());
-                    } catch (JMSException e) {
-                        e.printStackTrace();
-                    }
+    *The topic schema can only use `avro` or `json`.*
+    Java example:
+    ```java
+     try (
+                PulsarClient pulsarClient = PulsarClient.builder()
+                        .serviceUrl("pulsar://localhost:6650")
+                        .build();
+                Producer<TestRecord> producer = pulsarClient.newProducer(Schema.AVRO(TestRecord.class))
+                        .topic("public/default/test-parquet-avro")
+                        .create();
+                ) {
+                List<TestRecord> testRecords = Arrays.asList(
+                        new TestRecord("key1", 1, null),
+                        new TestRecord("key2", 1, new TestRecord.TestSubRecord("aaa"))
+                );
+                for (TestRecord record : testRecords) {
+                    producer.send(record);
                 }
             }
-        });
-    }
     ```
+
+6. Valid S3 data.
+
+    example: 
+    use topic:  persistent://public/default/s3-topic
+
+    The saved path consists of `basepath` and `partition`，
+    
+    - basepath: `public/default/s3-topic`
+    - path by time Partition: `${basepath}/${timePartitionPattern}/${messageRecordSequenceId}.${formatType}`
+        example: `public/default/s3-topic/2020-09-14/123456.parquet`
+       
+    - path by partition Partition: `${basepath}/partition-${partitionId}/${messageRecordSequenceId}.${formatType}`
+        example: `public/default/s3-topic/partition-0/123456.parquet`

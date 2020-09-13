@@ -27,13 +27,13 @@ archive: "connectors/pulsar-io-s3-0.0.1.nar"
 parallelism: 1
 
 configs:
-  accessKeyId: "sSs7gUYFtwVIJh"
-  secretAccessKey: "8WGoYQnJV9DC9JaeA95Wj"
-  role: "none"
+  accessKeyId: "accessKeyId"
+  secretAccessKey: "secretAccessKey"
+  role: ""
   roleSessionName: "none"
-  bucket: "testBucket"
+  bucket: "s3-sink-test"
   region: "local"
-  endpoint: "us-standard"
+  endpoint: "https://s3-ap-northeast-1.amazonaws.com"
   formatType: "parquet"
   partitionerType: "time"
   timePartitionPattern: "yyyy-MM-dd"
