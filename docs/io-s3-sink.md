@@ -10,8 +10,8 @@ tags: ["Pulsar IO", "S3", "Sink"]
 alias: S3 Sink
 features: ["Use S3 sink connector to sync data from Pulsar"]
 license_link: "https://www.apache.org/licenses/LICENSE-2.0"
-icon: "http://activemq.apache.org/assets/img/activemq_logo_black_small.png"
-download: "https://github.com/streamnative/pulsar-io-s3/releases/download/v2.5.1/pulsar-io-S3-2.5.1.nar"
+icon: "https://a0.awsstatic.com/libra-css/images/logos/aws_logo_smile_179x109.png"
+download: "https://github.com/streamnative/pulsar-io-s3/releases/download/v2.5.1/pulsar-io-s3-2.5.1.nar"
 support: StreamNative
 support_link: https://streamnative.io
 support_img: "/images/connectors/streamnative.png"

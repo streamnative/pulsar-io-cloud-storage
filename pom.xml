@@ -30,7 +30,7 @@
 
   <groupId>org.apache.pulsar.ecosystem</groupId>
   <artifactId>pulsar-io-s3</artifactId>
-  <version>0.0.1</version>
+  <version>2.5.1</version>
   <name>Pulsar Ecosystem :: IO Connector :: S3 Project</name>
   <description>S3 Connector integrates Apache Pulsar with S3.</description>
 
