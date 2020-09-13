@@ -19,5 +19,5 @@
 
 name: s3
 description: Writes data into s3
-sinkClass: org.apache.pulsar.ecosystem.io.s3.sink.S3GenericRecordSink
-sinkConfigClass: org.apache.pulsar.ecosystem.io.s3.sink.S3SinkConfig
+sinkClass: org.apache.pulsar.io.s3.sink.S3GenericRecordSink
+sinkConfigClass: org.apache.pulsar.io.s3.sink.S3SinkConfig
