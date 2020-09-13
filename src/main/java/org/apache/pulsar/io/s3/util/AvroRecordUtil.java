@@ -19,6 +19,8 @@
 package org.apache.pulsar.io.s3.util;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
@@ -30,10 +32,14 @@ import org.apache.pulsar.common.schema.SchemaInfo;
  */
 public class AvroRecordUtil {
 
+    private static final Map<byte[], Schema> SCHEMA_CACHES = new ConcurrentHashMap<>();
+
     public static Schema getAvroSchema(org.apache.pulsar.client.api.Schema<?> pulsarSchema) {
-        SchemaInfo schemaInfo = pulsarSchema.getSchemaInfo();
-        String rootAvroSchemaString = new String(schemaInfo.getSchema(), StandardCharsets.UTF_8);
-        return new Schema.Parser().parse(rootAvroSchemaString);
+        final SchemaInfo schemaInfo = pulsarSchema.getSchemaInfo();
+        return SCHEMA_CACHES.computeIfAbsent(schemaInfo.getSchema(), (schema) -> {
+            String rootAvroSchemaString = new String(schema, StandardCharsets.UTF_8);
+            return new Schema.Parser().parse(rootAvroSchemaString);
+        });
     }
 
     public static org.apache.avro.generic.GenericRecord convertGenericRecord(GenericRecord recordValue,
