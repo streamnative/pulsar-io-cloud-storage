@@ -62,10 +62,10 @@ public class TimePartitioner<T> implements Partitioner<T> {
         switch (timePartitionDuration.charAt(timePartitionDuration.length() - 1)) {
             case 'd':
             case 'D':
-                return Long.parseLong(number) * 24 * 3600 * 1000L;
+                return Long.parseLong(number) * 24L * 3600L * 1000L;
             case 'h':
             case 'H':
-                return Long.parseLong(number) * 3600 * 1000L;
+                return Long.parseLong(number) * 3600L * 1000L;
             default:
                 throw new RuntimeException("not support timePartitionPattern " + timePartitionDuration);
         }
