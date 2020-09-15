@@ -30,6 +30,8 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
 import lombok.extern.slf4j.Slf4j;
@@ -73,6 +75,8 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
     protected Format<V, Record<GenericRecord>> format;
 
     private List<Pair<Record<GenericRecord>, Blob>> incomingList;
+
+    private ReadWriteLock rwlock = new ReentrantReadWriteLock();
 
     private ScheduledExecutorService flushExecutor;
 
@@ -151,9 +155,12 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                 .build();
         int currentSize;
 
-        synchronized (this) {
+        rwlock.writeLock().lock();
+        try {
             incomingList.add(Pair.of(record, blob));
             currentSize = incomingList.size();
+        } finally {
+            rwlock.writeLock().unlock();
         }
         LOGGER.info("build blob success[recordSequence={}]", sequenceId);
         if (currentSize == sinkConfig.getBatchSize()) {
@@ -164,15 +171,16 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
     private void flush() {
         final List<Pair<Record<GenericRecord>, Blob>> recordsToInsert;
 
-        synchronized (this) {
+        rwlock.writeLock().lock();
+        try {
             if (incomingList.isEmpty()) {
                 return;
             }
-
             recordsToInsert = incomingList;
             incomingList = Lists.newArrayList();
+        } finally {
+            rwlock.writeLock().unlock();
         }
-
         final Iterator<Pair<Record<GenericRecord>, Blob>> iter = recordsToInsert.iterator();
 
         while (iter.hasNext()) {
