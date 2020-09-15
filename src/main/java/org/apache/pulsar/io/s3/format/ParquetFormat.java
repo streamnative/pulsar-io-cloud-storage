@@ -46,7 +46,7 @@ public class ParquetFormat<V> implements Format<V, Record<GenericRecord>>{
 
     @Override
     public ByteSource recordWriter(V config, Record<GenericRecord> record) throws Exception {
-        Schema rootAvroSchema = AvroRecordUtil.getAvroSchema(record.getSchema());
+        Schema rootAvroSchema = AvroRecordUtil.getAvroSchema(record);
         org.apache.avro.generic.GenericRecord writeRecord = AvroRecordUtil
                 .convertGenericRecord(record.getValue(), rootAvroSchema);
 

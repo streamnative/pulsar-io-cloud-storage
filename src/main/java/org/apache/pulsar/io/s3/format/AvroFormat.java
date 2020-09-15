@@ -48,7 +48,7 @@ public class AvroFormat<V extends BlobStoreAbstractConfig> implements Format<V, 
 
     @Override
     public ByteSource recordWriter(V config, Record<GenericRecord> record) throws Exception {
-        Schema rootAvroSchema = AvroRecordUtil.getAvroSchema(record.getSchema());
+        Schema rootAvroSchema = AvroRecordUtil.getAvroSchema(record);
         org.apache.avro.generic.GenericRecord writeRecord = AvroRecordUtil
                 .convertGenericRecord(record.getValue(), rootAvroSchema);
 
@@ -60,4 +60,6 @@ public class AvroFormat<V extends BlobStoreAbstractConfig> implements Format<V, 
         }
         return ByteSource.wrap(byteArrayOutputStream.toByteArray());
     }
+
+
 }

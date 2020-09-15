@@ -18,28 +18,73 @@
  */
 package org.apache.pulsar.io.s3.util;
 
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
+import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.common.schema.SchemaInfo;
+import org.apache.pulsar.functions.api.Record;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * avro util.
  */
 public class AvroRecordUtil {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(AvroRecordUtil.class);
+
     private static final Map<byte[], Schema> SCHEMA_CACHES = new ConcurrentHashMap<>();
 
-    public static Schema getAvroSchema(org.apache.pulsar.client.api.Schema<?> pulsarSchema) {
-        final SchemaInfo schemaInfo = pulsarSchema.getSchemaInfo();
-        return SCHEMA_CACHES.computeIfAbsent(schemaInfo.getSchema(), (schema) -> {
-            String rootAvroSchemaString = new String(schema, StandardCharsets.UTF_8);
-            return new Schema.Parser().parse(rootAvroSchemaString);
+    public static Schema getAvroSchema(
+            Record<GenericRecord> record) {
+        final Message<GenericRecord> message = record.getMessage()
+                .orElseThrow(() -> new RuntimeException("Message not exist in record"));
+
+        return SCHEMA_CACHES.computeIfAbsent(message.getSchemaVersion(), (schemaVersion) -> {
+            org.apache.pulsar.client.api.Schema<GenericRecord> schema = extractPulsarSchema(message);
+            return convertToAvroSchema(schema);
         });
+    }
+
+    private static org.apache.pulsar.client.api.Schema<GenericRecord> extractPulsarSchema(
+            Message<GenericRecord> message) {
+        try {
+            //There is no good way to handle `PulsarRecord#getSchema` in the pulsar function,
+            // first read the schema information in the Message through reflection.
+            // You can replace this method when the schema is available in the Record.
+            final ClassLoader pulsarFunctionClassLoader = message.getClass().getClassLoader();
+            Message<GenericRecord> rawMessage = message;
+            if (message.getClass().getCanonicalName().equals("TopicMessageImpl")){
+                final Class<?> classTopicMessageImpl =
+                        pulsarFunctionClassLoader.loadClass("org.apache.pulsar.client.impl.TopicMessageImpl");
+                final Method getMessage = classTopicMessageImpl.getDeclaredMethod("getMessage");
+                @SuppressWarnings("unchecked")
+                final Message<GenericRecord> invoke = (Message<GenericRecord>) getMessage.invoke(message);
+                rawMessage = invoke;
+            }
+            final Class<?> classMessageImpl =
+                    pulsarFunctionClassLoader.loadClass("org.apache.pulsar.client.impl.MessageImpl");
+            final Method getSchema = classMessageImpl.getDeclaredMethod("getSchema");
+            @SuppressWarnings("unchecked")
+            org.apache.pulsar.client.api.Schema<GenericRecord> schema =
+                    (org.apache.pulsar.client.api.Schema<GenericRecord>) getSchema.invoke(rawMessage);
+            return schema;
+        } catch (Throwable e) {
+            LOGGER.error("getPulsarSchema error", e);
+            throw new RuntimeException("getPulsarSchema error", e);
+        }
+    }
+
+    public static Schema convertToAvroSchema(org.apache.pulsar.client.api.Schema<?> pulsarSchema) {
+        SchemaInfo schemaInfo = pulsarSchema.getSchemaInfo();
+        String rootAvroSchemaString = new String(schemaInfo.getSchema(), StandardCharsets.UTF_8);
+        return new Schema.Parser().parse(rootAvroSchemaString);
     }
 
     public static org.apache.avro.generic.GenericRecord convertGenericRecord(GenericRecord recordValue,
