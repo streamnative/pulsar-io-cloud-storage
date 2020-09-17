@@ -16,15 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.pulsar.ecosystem.io.s3.partitioner;
+package org.apache.pulsar.io.s3.partitioner;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.pulsar.ecosystem.io.s3.BlobStoreAbstractConfig;
 import org.apache.pulsar.functions.api.Record;
+import org.apache.pulsar.io.s3.BlobStoreAbstractConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.Optional;
-
+/**
+ * use topic partition strategy.
+ * @param <T> config
+ */
 public class SimplePartitioner<T> implements Partitioner<T> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SimplePartitioner.class);
+
     @Override
     public void configure(BlobStoreAbstractConfig config) {
 
@@ -32,14 +39,16 @@ public class SimplePartitioner<T> implements Partitioner<T> {
 
     @Override
     public String encodePartition(Record<T> sinkRecord) {
-        Optional<String> partitionId = sinkRecord.getPartitionId();
-        Optional<Long> recordSequence = sinkRecord.getRecordSequence();
-        return StringUtils.join("-", partitionId.orElse(null), recordSequence.orElse(null));
+        String topicName = sinkRecord.getTopicName().
+                orElseThrow(() -> new RuntimeException("topicName not null"));
+        String partitionId = sinkRecord.getPartitionId()
+                .orElseThrow(() -> new RuntimeException("partitionId not null"));
+        String number = StringUtils.removeStart(partitionId, topicName).replace("-", "").trim();
+        if (!StringUtils.isNumeric(number)){
+           throw new RuntimeException("partitionId is fail " + partitionId);
+        }
+        Long recordSequence = sinkRecord.getRecordSequence()
+                .orElseThrow(() -> new RuntimeException("recordSequence not null"));
+        return "partition-" + number + PATH_SEPARATOR + recordSequence;
     }
-
-    @Override
-    public String generatePartitionedPath(String topic, String encodedPartition) {
-        return StringUtils.join("-", topic, encodedPartition);
-    }
-
 }

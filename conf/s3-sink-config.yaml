@@ -19,16 +19,24 @@
 
 tenant: "public"
 namespace: "default"
-name: "activemq-sink"
+name: "s3-sink"
 inputs: 
-  - "user-op-queue-topic"
-archive: "connectors/pulsar-io-activemq-2.5.1.nar"
+  - "user-json-topic"
+  - "user-avro-topic"
+archive: "connectors/pulsar-io-s3-0.0.1.nar"
 parallelism: 1
 
 configs:
-  bucket: "tcp"
-  region: "localhost"
-  formatType: "avro"
-  partitionerType: "default"
-  partitionerParam: "admin"
-  batchSize: "user-op-queue-pulsar"
+  accessKeyId: "accessKeyId"
+  secretAccessKey: "secretAccessKey"
+  role: ""
+  roleSessionName: "none"
+  bucket: "s3-sink-test"
+  region: "local"
+  endpoint: "https://s3-ap-northeast-1.amazonaws.com"
+  formatType: "parquet"
+  partitionerType: "time"
+  timePartitionPattern: "yyyy-MM-dd"
+  timePartitionDuration: "1d"
+  batchSize: 10
+  batchTimeMs: 1000

@@ -1,75 +1,90 @@
 ---
-description: The ActiveMQ sink connector pulls messages from Pulsar topics and persist messages to ActiveMQ.
+description: The S3 sink connector pulls messages from Pulsar topics and persist messages to S3.
 author: ["ASF"]
 contributors: ["ASF"]
 language: Java
 document: 
-source: "https://github.com/streamnative/pulsar-io-activemq/tree/v2.5.1/src/main/java/org/apache/pulsar/ecosystem/io/activemq"
+source: "https://github.com/streamnative/pulsar-io-S3/tree/v2.5.1/src/main/java/org/apache/pulsar/ecosystem/io/activemq"
 license: Apache License 2.0
-tags: ["Pulsar IO", "ActiveMQ", "Sink"]
-alias: ActiveMQ Sink
-features: ["Use ActiveMQ sink connector to sync data from Pulsar"]
+tags: ["Pulsar IO", "S3", "Sink"]
+alias: S3 Sink
+features: ["Use S3 sink connector to sync data from Pulsar"]
 license_link: "https://www.apache.org/licenses/LICENSE-2.0"
-icon: "http://activemq.apache.org/assets/img/activemq_logo_black_small.png"
-download: "https://github.com/streamnative/pulsar-io-activemq/releases/download/v2.5.1/pulsar-io-activemq-2.5.1.nar"
+icon: "https://a0.awsstatic.com/libra-css/images/logos/aws_logo_smile_179x109.png"
+download: "https://github.com/streamnative/pulsar-io-s3/releases/download/v2.5.1/pulsar-io-s3-2.5.1.nar"
 support: StreamNative
 support_link: https://streamnative.io
 support_img: "/images/connectors/streamnative.png"
 dockerfile: 
-id: "io-activemq-sink"
+owner_name: ""
+owner_img: ""
+id: "io-S3-sink"
 ---
 
-The ActiveMQ sink connector pulls messages from Pulsar topics and persist messages to ActiveMQ.
+The S3 sink connector pulls messages from Pulsar topics and persist messages to S3.
 
 # Installation
 
 ```
-git clone https://github.com/streamnative/pulsar-io-activemq.git
-cd pulsar-io-activemq/
+git clone https://github.com/streamnative/pulsar-io-s3.git
+cd pulsar-io-s3/
 mvn clean install -DskipTests
-cp target/pulsar-io-activemq-0.0.1.nar $PULSAR_HOME/pulsar-io-activemq-0.0.1.nar
+cp target/pulsar-io-s3-0.0.1.nar $PULSAR_HOME/pulsar-io-s3-0.0.1.nar
 ```
 
 # Configuration 
 
-The configuration of the ActiveMQ sink connector has the following properties.
+The configuration of the S3 sink connector has the following properties.
 
-## ActiveMQ sink connector configuration
+## S3 sink connector configuration
 
-| Name | Type|Required | Default | Description 
+| Name | Type|Required | Default | Description |
 |------|----------|----------|---------|-------------|
-| `protocol` |String| true | "tcp" | The ActiveMQ protocol. |
-| `host` | String| true | " " (empty string) | The ActiveMQ host. |
-| `port` | int |true | 5672 | The ActiveMQ port. |
-| `username` | String|false | " " (empty string) | The username used to authenticate to ActiveMQ. |
-| `password` | String|false | " " (empty string) | The password used to authenticate to ActiveMQ. |
-| `queueName` | String|false | " " (empty string) | The ActiveMQ queue name that messages should be read from or written to. |
-| `topicName` | String|false | " " (empty string) | The ActiveMQ topic name that messages should be read from or written to. |
-| `activeMessageType` | String|false |0 | The ActiveMQ message simple class name. |
+| `accessKeyId` |String| true | " " (empty string) | The s3 accessKeyId. |
+| `secretAccessKey` | String| true | " " (empty string) | Thes3 secretAccessKey. |
+| `role` | String |false | " " (empty string) | Thes3 role. |
+| `roleSessionName` | String|false | " " (empty string) | Thes3 role. |
+| `bucket` | String|true | " " (empty string) | Thes3 bucket. |
+| `endpoint` | String|false | " " (empty string) | Thes3 endpoint. |
+| `formatType` | String|false | "json" | Save format type, json, avro, parquet, default json |
+| `partitionerType` | String|false |"partition" | Partition type, by partition, by time, partition is used by default. |
+| `timePartitionPattern` | String|false |"yyyy-MM-dd" | Format pattern by time partition, refer to java DateTimeFormat. |
+| `timePartitionDuration` | String|false |"1d" | Time interval divided by time, such as 1d, 1h. |
+| `batchSize` | int |false |10 | Number of records submitted in batch. |
+| `batchTimeMs` | long |false |1000 | Interval for batch submission. |
 
-## Configure ActiveMQ sink connector
+## Configure S3 sink connector
 
-Before using the ActiveMQ sink connector, you need to create a configuration file through one of the following methods.
+Before using the S3 sink connector, you need to create a configuration file through one of the following methods.
 
 * JSON 
 
     ```json
     {
-        "tenant": "public",
-        "namespace": "default",
-        "name": "activemq-sink",
-        "inputs": ["user-op-queue-topic"],
-        "archive": "connectors/pulsar-io-activemq-2.5.1.nar",
-        "parallelism": 1,
-        "configs":
-        {
-            "protocol": "tcp",
-            "host": "localhost",
-            "port": "61616",
-            "username": "admin",
-            "password": "admin",
-            "queueName": "user-op-queue-pulsar"
-        }
+       "tenant": "public",
+       "namespace": "default",
+       "name": "s3-sink",
+       "inputs": [
+          "user-json-topic",
+          "user-avro-topic"
+       ],
+       "archive": "connectors/pulsar-io-s3-0.0.1.nar",
+       "parallelism": 1,
+       "configs": {
+          "accessKeyId": "accessKeyId",
+          "secretAccessKey": "secretAccessKey",
+          "role": "none",
+          "roleSessionName": "none",
+          "bucket": "testBucket",
+          "region": "local",
+          "endpoint": "us-standard",
+          "formatType": "parquet",
+          "partitionerType": "time",
+          "timePartitionPattern": "yyyy-MM-dd",
+          "timePartitionDuration": "1d",
+          "batchSize": 10,
+          "batchTimeMs": 1000
+       }
     }
     ```
 
@@ -78,34 +93,44 @@ Before using the ActiveMQ sink connector, you need to create a configuration fil
     ```yaml
     tenant: "public"
     namespace: "default"
-    name: "activemq-sink"
+    name: "s3-sink"
     inputs: 
-      - "user-op-queue-topic"
-    archive: "connectors/pulsar-io-activemq-2.5.1.nar"
+      - "user-json-topic"
+      - "user-avro-topic"
+    archive: "connectors/pulsar-io-s3-0.0.1.nar"
     parallelism: 1
     
     configs:
-        protocol: "tcp"
-        host: "localhost"
-        port: "61616"
-        username: "admin"
-        password: "admin"
-        queueName: "user-op-queue-pulsar"
+      accessKeyId: "accessKeyId"
+      secretAccessKey: "secretAccessKey"
+      role: "none"
+      roleSessionName: "none"
+      bucket: "testBucket"
+      region: "local"
+      endpoint: "us-standard"
+      formatType: "parquet"
+      partitionerType: "time"
+      timePartitionPattern: "yyyy-MM-dd"
+      timePartitionDuration: "1d"
+      batchSize: 10
+      batchTimeMs: 1000
     ```
 
 # Usage
 
-1. Prepare ActiveMQ service.
+1. Prepare S3 service.
+
+    Please prepare the aws-s3 service you use.Test can use s3mock
 
     ```
-    docker pull rmohr/activemq
-    docker run -p 61616:61616 -p 8161:8161 rmohr/activemq
+    docker pull apachepulsar/s3mock:latest
+    docker run -p 9090:9090 -e initialBuckets=pulsar-integtest apachepulsar/s3mock:latest
     ```
 
-2. Put the `pulsar-io-activemq-2.5.1.nar` in the pulsar connectors catalog.
+2. Put the `pulsar-io-s3-2.5.1.nar` in the pulsar connectors catalog.
 
     ```
-    cp pulsar-io-activemq-2.5.1.nar $PULSAR_HOME/connectors/pulsar-io-activemq-2.5.1.nar
+    cp pulsar-io-s3-2.5.1.nar $PULSAR_HOME/connectors/pulsar-io-s3-2.5.1.nar
     ```
 
 3. Start Pulsar in standalone mode.
@@ -114,53 +139,45 @@ Before using the ActiveMQ sink connector, you need to create a configuration fil
     $PULSAR_HOME/bin/pulsar standalone
     ```
 
-4. Run ActiveMQ sink locally.
+4. Run S3 sink locally.
 
     ```
-    $PULSAR_HOME/bin/pulsar-admin sink localrun --sink-config-file activemq-sink-config.yaml
+    $PULSAR_HOME/bin/pulsar-admin sink localrun --sink-config-file s3-sink-config.yaml
     ```
 
 5. Send Pulsar messages.
 
-    ```
-    $PULSAR_HOME/bin/pulsar-client produce public/default/user-op-queue-topic --messages hello -n 10
-    ```
-
-6. Consume ActiveMQ messages.
-
-    Use the test method `receiveMessage` of the class `org.apache.pulsar.ecosystem.io.activemq.ActiveMQDemo` 
-to consume ActiveMQ messages.
-
-    ```
-    @Test
-    private void receiveMessage() throws JMSException, InterruptedException {
-    
-        ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory("tcp://localhost:61616");
-    
-        @Cleanup
-        Connection connection = connectionFactory.createConnection();
-        connection.start();
-    
-        @Cleanup
-        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-    
-        Destination destination = session.createQueue("user-op-queue-pulsar");
-    
-        @Cleanup
-        MessageConsumer consumer = session.createConsumer(destination);
-    
-        consumer.setMessageListener(new MessageListener() {
-            @Override
-            public void onMessage(Message message) {
-                if (message instanceof ActiveMQTextMessage) {
-                    try {
-                        System.out.println("get message ----------------- ");
-                        System.out.println("receive: " + ((ActiveMQTextMessage) message).getText());
-                    } catch (JMSException e) {
-                        e.printStackTrace();
-                    }
+    *The topic schema can only use `avro` or `json`.*
+    Java example:
+    ```java
+     try (
+                PulsarClient pulsarClient = PulsarClient.builder()
+                        .serviceUrl("pulsar://localhost:6650")
+                        .build();
+                Producer<TestRecord> producer = pulsarClient.newProducer(Schema.AVRO(TestRecord.class))
+                        .topic("public/default/test-parquet-avro")
+                        .create();
+                ) {
+                List<TestRecord> testRecords = Arrays.asList(
+                        new TestRecord("key1", 1, null),
+                        new TestRecord("key2", 1, new TestRecord.TestSubRecord("aaa"))
+                );
+                for (TestRecord record : testRecords) {
+                    producer.send(record);
                 }
             }
-        });
-    }
     ```
+
+6. Valid S3 data.
+
+    example: 
+    use topic:  persistent://public/default/s3-topic
+
+    The saved path consists of `basepath` and `partition`，
+    
+    - basepath: `public/default/s3-topic`
+    - path by time Partition: `${basepath}/${timePartitionPattern}/${messageRecordSequenceId}.${formatType}`
+        example: `public/default/s3-topic/2020-09-14/123456.parquet`
+       
+    - path by partition Partition: `${basepath}/partition-${partitionId}/${messageRecordSequenceId}.${formatType}`
+        example: `public/default/s3-topic/partition-0/123456.parquet`
