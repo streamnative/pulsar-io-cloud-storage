@@ -1,4 +1,4 @@
-name: amqpop Release
+name: s3 Release
 
 on:
   release:
@@ -19,8 +19,8 @@ jobs:
           version=`./scripts/dev/get-project-version.py`
           mvn clean install -DskipTests
           rm -rf pulsar-*
-          cp ./target/pulsar-io-activemq-${version}.nar ./
-          cp README.md ./pulsar-io-activemq-readme.md
+          cp ./target/pulsar-io-s3-${version}.nar ./
+          cp README.md ./pulsar-io-s3-readme.md
           echo "ls pulsar-*"
           ls pulsar-*
 
