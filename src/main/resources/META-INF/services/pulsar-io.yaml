@@ -17,7 +17,7 @@
 # under the License.
 #
 
-name: s3
-description: Writes data into s3
-sinkClass: org.apache.pulsar.io.s3.sink.S3GenericRecordSink
-sinkConfigClass: org.apache.pulsar.io.s3.sink.S3SinkConfig
+name: cloud-storage
+description: Writes data into cloud storage
+sinkClass: org.apache.pulsar.io.jcloud.sink.CloudStorageGenericRecordSink
+sinkConfigClass: org.apache.pulsar.io.jcloud.sink.CloudStorageSinkConfig

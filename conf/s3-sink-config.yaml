@@ -19,14 +19,15 @@
 
 tenant: "public"
 namespace: "default"
-name: "s3-sink"
+name: "cloud-storage-sink"
 inputs: 
   - "user-json-topic"
   - "user-avro-topic"
-archive: "connectors/pulsar-io-s3-0.0.1.nar"
+archive: "connectors/pulsar-io-cloud-storage-0.0.1.nar"
 parallelism: 1
 
 configs:
+  provider: "aws-s3"
   accessKeyId: "accessKeyId"
   secretAccessKey: "secretAccessKey"
   role: ""

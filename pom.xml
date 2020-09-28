@@ -29,10 +29,10 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.apache.pulsar.ecosystem</groupId>
-  <artifactId>pulsar-io-s3</artifactId>
+  <artifactId>pulsar-io-cloud-storage</artifactId>
   <version>2.5.1</version>
-  <name>Pulsar Ecosystem :: IO Connector :: S3 Project</name>
-  <description>S3 Connector integrates Apache Pulsar with S3.</description>
+  <name>Pulsar Ecosystem :: IO Connector :: Cloud Storage Project</name>
+  <description>S3 Connector integrates Apache Pulsar with Cloud Storage.</description>
 
   <properties>
     <java.version>1.8</java.version>
@@ -116,6 +116,16 @@
       <dependency>
         <groupId>org.apache.jclouds.provider</groupId>
         <artifactId>aws-s3</artifactId>
+        <version>${jclouds.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.jclouds.provider</groupId>
+        <artifactId>google-cloud-storage</artifactId>
+        <version>${jclouds.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.jclouds.provider</groupId>
+        <artifactId>azureblob</artifactId>
         <version>${jclouds.version}</version>
       </dependency>
       <dependency>
@@ -203,6 +213,14 @@
     <dependency>
       <groupId>org.apache.jclouds.provider</groupId>
       <artifactId>aws-s3</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.jclouds.provider</groupId>
+      <artifactId>google-cloud-storage</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.jclouds.provider</groupId>
+      <artifactId>azureblob</artifactId>
     </dependency>
     <dependency>
       <groupId>com.amazonaws</groupId>

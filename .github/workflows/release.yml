@@ -1,4 +1,4 @@
-name: s3 Release
+name: jcloud Release
 
 on:
   release:
@@ -19,8 +19,8 @@ jobs:
           version=`./scripts/dev/get-project-version.py`
           mvn clean install -DskipTests
           rm -rf pulsar-*
-          cp ./target/pulsar-io-s3-${version}.nar ./
-          cp README.md ./pulsar-io-s3-readme.md
+          cp ./target/pulsar-io-cloud-storage-${version}.nar ./
+          cp README.md ./pulsar-io-cloud-storage-readme.md
           echo "ls pulsar-*"
           ls pulsar-*
 

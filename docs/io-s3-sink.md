@@ -1,14 +1,14 @@
 ---
-description: The S3 sink connector pulls messages from Pulsar topics and persists messages to S3.
+description: The cloud storage sink connector pulls messages from Pulsar topics and persists messages to cloud storage.
 author: ["ASF"]
 contributors: ["ASF"]
 language: Java
 document: 
 source: "https://github.com/streamnative/pulsar-io-S3/tree/v2.5.1/src/main/java/org/apache/pulsar/io/s3"
 license: Apache License 2.0
-tags: ["Pulsar IO", "S3", "Sink"]
+tags: ["Pulsar IO", "cloud storage", "s3", "Sink"]
 alias: S3 Sink
-features: ["Use the S3 sink connector to sync data from Pulsar"]
+features: ["Use the cloud storage sink connector to sync data from Pulsar"]
 license_link: "https://www.apache.org/licenses/LICENSE-2.0"
 icon: "https://a0.awsstatic.com/libra-css/images/logos/aws_logo_smile_179x109.png"
 download: "https://github.com/streamnative/pulsar-io-s3/releases/download/v2.5.1/pulsar-io-S3-2.5.1.nar"
@@ -67,7 +67,7 @@ Before using the S3 sink connector, you need to create a configuration file thro
        "inputs": [
           "user-avro-topic"
        ],
-       "archive": "connectors/pulsar-io-s3-0.0.1.nar",
+       "archive": "connectors/pulsar-io-cloud-storage-0.0.1.nar",
        "parallelism": 1,
        "configs": {
           "accessKeyId": "accessKeyId",
@@ -95,7 +95,7 @@ Before using the S3 sink connector, you need to create a configuration file thro
     name: "s3-sink"
     inputs: 
       - "user-avro-topic"
-    archive: "connectors/pulsar-io-s3-0.0.1.nar"
+    archive: "connectors/pulsar-io-cloud-storage-0.0.1.nar"
     parallelism: 1
     
     configs:
