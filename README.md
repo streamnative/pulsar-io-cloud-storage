@@ -1,153 +1,194 @@
-## Pulsar IO :: S3
+## Pulsar IO :: Cloud Storage
 
-This is a template project for developing an enterprise-grade
-pulsar IO connector.
+Cloud Storage Sink connector for Pulsar
 
-This template already sets up a project structure, including
-necessary dependencies and plugins. The IO connector developers
-can clone this project to develop their own connector.
+The Cloud Storage Sink connector supports exporting data from Pulsar Topic to cloud storage in Avro, json, parquet and other formats, such as aws-s3, google-GCS, etc. According to your environment, the Cloud Storage sink connector can guarantee exactly-once support for exporting to cloud storage.
 
-### Project Layout
+The Cloud Storage Sink connector periodically polls data from Pulsar, and then uploads the data to the cloud storage. The partition program is used to split the data of each pulsar partition into multiple blocks. Each data block is represented as an object. The virtual path corresponds to the topic, using the pulsar partition and the starting offset of this data block for encoding. If the partition program is not specified in the configuration, the default partition program that retains the pulsar partition is used. The size of each data block depends on the number of records written to the cloud storage and the architecture compatibility.
 
-Before starting developing your own connector, please take a look at
-how this template project organize the files for a connector.
+## Features
+The Pulsar IO Cloud Storage Sink connector provides the following features:
 
-```bash
+- Exactly Once Delivery: Records that are exported using a deterministic partitioner are delivered with exactly-once semantics regardless of the eventual consistency of Cloud Storage.
+- Data Format with or without a Schema: Plug and play, the connector supports writing data to cloud storage in Avro, JSON and parquet formats. Generally, the connector can accept any format that provides an implementation of the Format interface.
+- Partitioner: The connector supports the TimeBasedPartitioner class based on the Pulsar message publishTime TimeStamp. Time-based partitioning options are daily or hourly.
+- More object storage support: The connector uses jclouds as an implementation of cloud storage. You can use the jclouds object storage jar to connect to more types of object storage. If you need to customize credentials, you can register ʻorg.apache.pulsar.io.jcloud.credential.JcloudsCredential` via SPI.
 
-├── conf
-├── docs
-├── src
-│   ├── checkstyle
-│   ├── license
-│   │   └── ALv2
-│   ├── main
-│   │   └── java
-│   ├── spotbugs
-│   └── test
-│       └── java
 
+The Cloud Storage sink connector pulls messages from Pulsar topics and persists messages to Cloud Storage.
+
+# Installation
+
+```shell
+git clone https://github.com/streamnative/pulsar-io-cloud-storage.git
+cd pulsar-io-cloud-storage/
+mvn clean install -DskipTests
+cp target/pulsar-io-cloud-storage-0.0.1.nar $PULSAR_HOME/pulsar-io-cloud-storage-0.0.1.nar
 ```
 
-- `conf` directory is used for storing examples of config files of this connector.
-- `docs` directory is used for keeping the documentation of this connector.
-- `src` directory is used for storing the source code of this connector.
-  - `src/checkstyle`: store the checkstyle configuration files
-  - `src/license`: store the license header for this project. `mvn license:format` can
-    be used for formatting the project with the stored license header in this directory.
-  - `src/spotbugs`: store the spotbugs configuration files
-  - `src/main`: for keeping all the main source files
-  - `src/test`: for keeping all the related tests
+# Configuration 
 
-### Develop a Connector
-
-Here are the instructions for developing a Pulsar connector `pulsar-io-foo`
-use this project template.
-
-#### Clone the Template
-
-You can clone the template project with `--bare`.
-
-```bash
-$ git clone --bare https://github.com/streamnative/pulsar-io-template.git pulsar-io-foo
-```
-
-#### Push to Github
-
-You can create a `pulsar-io-foo` project at your Github account and push the project to your
-Github account.
-
-```
-$ cd pulsar-io-foo
-$ git push https://github.com/<Your-Github-Account>/pulsar-io-foo
-```
-
-Once the project is pushed to your Github account, you can then develop the connector as
-a normal Github project.
-
-```bash
-$ cd ..
-$ rm -rf pulsar-io-foo
-$ git clone https://github.com/<Your-Github-Account>/pulsar-io-foo
-```
-
-#### Update Pom File
-
-The first thing to do is to update the [pom file](pom.xml) to customize your connector.
-
-1. Change `artifactId` to `pulsar-io-foo`.
-2. Update `version` to a version you like. A good practice is to pick the pulsar version
-   as the same version for your connector so that it is easy to figure out what version of
-   this connector works for what version of Pulsar.
-3. Update `name` to `Pulsar Ecosystem :: IO Connector :: <Your Connector Name>`.
-4. Update `description` to the description of your connector.
-
-Once the above steps are done, you will have a real `pulsar-io-foo` project to develop
-your own connector.
-
-#### Implement Your Connector
-
-Before you start implementing your own connector, it would be good to remove the example
-connector included in the project template.
-
-```bash
-$ rm -rf src/main/java/org/apache/pulsar/ecosystem/io/random
-```
-
-Then you can create a package `org.apache.pulsar.ecosystem.io.foo` to develop your connector
-logic under it.
-
-#### Test Your Connector
-
-It is strongly recommended to write tests for your connector.
-
-There are a few test examples under
-[src/test/java/org/apache/pulsar/ecosystem/io/random](src/test/java/org/apache/pulsar/ecosystem/io/random)
-showing how to test a connector.
-
-Before you start writing tests for your connector, you can remove those examples
-
-```bash
-$ rm -rf src/test/java/org/apache/pulsar/ecosystem/io/random
-```
-
-Then you can create a package `org.apache.pulsar.ecosystem.io.foo` under `src/test` directory
-to develop the tests for your connector.
-
-#### Checkstyle and Spotbugs
-
-The template project already sets up checkstyle plugin and spotbugs plugin for ensuring you
-write a connector that has a consistent coding convention with other connectors and high code
-quality.
-
-To run checkstyle:
-
-```bash
-$ mvn checkstyle:check
-```
-
-To run spotbugs:
-
-```bash
-$ mvn spotbugs:check
-```
-
-#### License
-
-Before you publish your connector for others to use, you might consider pick up a license
-you like to use for your connector.
-
-Once you choose the license, you should do followings:
-
-- Replace the `LICENSE` file with your chosen license.
-- Add your license header to `src/license/<your-license-header>.txt`.
-- Update the license-maven-plugin configuration in pom.xml to point to your license header
-  `src/license/<your-license-header>.txt`.
-- Run `license:format` to format the project with your license
+The Cloud Storage sink connector supports the following properties.
 
 
+## Cloud Storage sink connector configuration
+
+| Name | Type|Required | Default | Description |
+|------|----------|----------|---------|-------------|
+| `provider` |String| True | " " (empty string) | The Cloud Storage type. for example, `aws-s3`,`gcs`|
+| `accessKeyId` |String| True | " " (empty string) | The Cloud Storage access key ID. requires permission to write objects |
+| `secretAccessKey` | String| True | " " (empty string) | The Cloud Storage secret access key. |
+| `role` | String |False | " " (empty string) | The Cloud Storage role. |
+| `roleSessionName` | String| False | " " (empty string) | The Cloud Storage role session name. |
+| `bucket` | String| True | " " (empty string) | The Cloud Storage bucket. |
+| `endpoint` | String| False | " " (empty string) | The Cloud Storage endpoint. |
+| `formatType` | String| False | "json" | The data format type: JSON, Avro, or Parquet. By default, it is set to JSON. |
+| `partitionerType` | String| False |"partition" | The partition type. It can be configured by partition or time. By default, the partition type is configured by partition. |
+| `timePartitionPattern` | String| False |"yyyy-MM-dd" | The format pattern of the time partition. For details, refer to the Java date and time format. |
+| `timePartitionDuration` | String| False |"1d" | The time interval divided by time, such as 1d, or 1h. |
+| `batchSize` | int | False |10 | The number of records submitted in batch. |
+| `batchTimeMs` | long | False |1000 | The interval for batch submission. |
+
+## Configure Cloud Storage sink connector
+
+Before using the Cloud Storage sink connector, you need to create a configuration file through one of the following methods.
+
+* JSON 
+
+    ```json
+    {
+       "tenant": "public",
+       "namespace": "default",
+       "name": "cloud-storage-sink",
+       "inputs": [
+          "user-avro-topic"
+       ],
+       "archive": "connectors/pulsar-io-cloud-storage-0.0.1.nar",
+       "parallelism": 1,
+       "configs": {
+          "provider": "aws-s3",
+          "accessKeyId": "accessKeyId",
+          "secretAccessKey": "secretAccessKey",
+          "role": "none",
+          "roleSessionName": "none",
+          "bucket": "testBucket",
+          "region": "local",
+          "endpoint": "us-standard",
+          "formatType": "parquet",
+          "partitionerType": "time",
+          "timePartitionPattern": "yyyy-MM-dd",
+          "timePartitionDuration": "1d",
+          "batchSize": 10,
+          "batchTimeMs": 1000
+       }
+    }
+    ```
+    
+* YAML
+
+    ```yaml
+    tenant: "public"
+    namespace: "default"
+    name: "Cloud Storage-sink"
+    inputs: 
+      - "user-avro-topic"
+    archive: "connectors/pulsar-io-cloud-storage-0.0.1.nar"
+    parallelism: 1
+    
+    configs:
+      provider: "aws-s3",
+      accessKeyId: "accessKeyId"
+      secretAccessKey: "secretAccessKey"
+      role: "none"
+      roleSessionName: "none"
+      bucket: "testBucket"
+      region: "local"
+      endpoint: "us-standard"
+      formatType: "parquet"
+      partitionerType: "time"
+      timePartitionPattern: "yyyy-MM-dd"
+      timePartitionDuration: "1d"
+      batchSize: 10
+      batchTimeMs: 1000
+    ```
+
+# Usage
+
+1. Prepare the AWS Cloud Storage service. In this example, we use `Cloud Storagemock` as an example.
 
 
+    ```
+    docker pull apachepulsar/s3mock:latest
+    docker run -p 9090:9090 -e initialBuckets=pulsar-integtest apachepulsar/s3mock:latest
+    ```
 
+2. Put the `pulsar-io-cloud-storage-2.5.1.nar` in the Pulsar connector catalog.
+
+    ```
+    cp pulsar-io-cloud-storage-2.5.1.nar $PULSAR_HOME/connectors/pulsar-io-cloud-storage-2.5.1.nar
+    ```
+
+3. Start Pulsar in the standalone mode.
+
+    ```
+    $PULSAR_HOME/bin/pulsar standalone
+    ```
+
+4. Run the Cloud Storage sink connector locally.
+
+    ```
+    $PULSAR_HOME/bin/pulsar-admin sink localrun --sink-config-file Cloud Storage-sink-config.yaml
+    ```
+
+5. Send Pulsar messages. In this example, the schema of the topic only supports `avro` or `json`.
+
+   ```java
+     try (
+                PulsarClient pulsarClient = PulsarClient.builder()
+                        .serviceUrl("pulsar://localhost:6650")
+                        .build();
+                Producer<TestRecord> producer = pulsarClient.newProducer(Schema.AVRO(TestRecord.class))
+                        .topic("public/default/test-parquet-avro")
+                        .create();
+                ) {
+                List<TestRecord> testRecords = Arrays.asList(
+                        new TestRecord("key1", 1, null),
+                        new TestRecord("key2", 1, new TestRecord.TestSubRecord("aaa"))
+                );
+                for (TestRecord record : testRecords) {
+                    producer.send(record);
+                }
+            }
+   ```
+
+6. Validate Cloud Storage data.
+    To get the path, you can use the [jclould](https://jclouds.apache.org/start/install/) to verify the file, as shown below.
+    ```java
+    Properties overrides = new Properties();
+    overrides.put(“jclouds.s3.virtual-host-buckets”, “false”);
+    BlobStoreContext blobStoreContext = ContextBuilder.newBuilder(“aws-s3”)
+            .credentials(
+                    “accessKeyId”,
+                    “secretAccessKey”
+            )
+            .endpoint(“http://localhost:9090”) // replace to s3mock url
+            .overrides(overrides)
+            .buildView(BlobStoreContext.class);
+    BlobStore blobStore = blobStoreContext.getBlobStore();
+    final long sequenceId = FunctionCommon.getSequenceId(message.getMessageId());
+    final String path = “public/default/test-parquet-avro” + File.separator + “2020-09-14" + File.separator + sequenceId + “.parquet”;
+    final boolean blobExists = blobStore.blobExists(“testBucket”, path);
+    Assert.assertTrue(“the sink record does not exist”, blobExists);
+    ```
+    You can find the sink data in your `testBucket` Bucket. The path is something like `public/default/test-parquet-avro/2020-09-14/1234.parquet`.
+    The path consists of three parts, the basic part of the topic, partition information, and format suffix.
+    
+    - Basic part of topic: `public/default/test-parquet-avro/`
+        This part consists of the tenant, namespace, and topic name of the input topic.
+    - Partition information: `2020-09-14/${messageSequenceId}`
+        The date is generated based on the `partitionerType` parameter in the configuration. And the `${messageSequenceId}` is generated by `FunctionCommon.getSequenceId(message.getMessageId())`.
+    - Format suffix: `.parquet`
+        This part is generated based on the `formatType` parameter in the configuration.
 
 
 
