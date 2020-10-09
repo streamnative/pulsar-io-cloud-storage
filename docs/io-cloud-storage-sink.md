@@ -21,6 +21,20 @@ owner_img: ""
 id: "io-cloud-storage-sink"
 ---
 
+Cloud Storage Sink connector for Pulsar
+
+The Cloud Storage Sink connector supports exporting data from Pulsar Topic to cloud storage in Avro, json, parquet and other formats, such as aws-s3, google-GCS, etc. According to your environment, the Cloud Storage sink connector can guarantee exactly-once support for exporting to cloud storage.
+
+The Cloud Storage Sink connector receives data from Pulsar, and then uploads the data to the cloud storage. The partition program is used to split the data of each pulsar partition into multiple blocks. Each data block is represented as an object. The virtual path corresponds to the topic, using the pulsar partition and the starting offset of this data block for encoding. If the partition program is not specified in the configuration, the default partition program that retains the pulsar partition is used. The size of each data block depends on the number of records written to the cloud storage and the architecture compatibility.
+
+## Features
+The Pulsar IO Cloud Storage Sink connector provides the following features:
+
+- Exactly Once Delivery: Records that are exported using a deterministic partitioner are delivered with exactly-once semantics regardless of the eventual consistency of Cloud Storage.
+- Data Format with or without a Schema: Plug and play, the connector supports writing data to cloud storage in Avro, JSON and parquet formats. Generally, the connector can accept any format that provides an implementation of the Format interface.
+- Partitioner: The connector supports the TimeBasedPartitioner class based on the Pulsar message publishTime TimeStamp. Time-based partitioning options are daily or hourly.
+- More object storage support: The connector uses jclouds as an implementation of cloud storage. You can use the jclouds object storage jar to connect to more types of object storage. If you need to customize credentials, you can register ʻorg.apache.pulsar.io.jcloud.credential.JcloudsCredential` via SPI.
+
 The Cloud Storage sink connector pulls messages from Pulsar topics and persists messages to Cloud Storage.
 
 # Installation
@@ -40,6 +54,7 @@ The Cloud Storage sink connector supports the following properties.
 
 | Name | Type|Required | Default | Description |
 |------|----------|----------|---------|-------------|
+| `provider` |String| True | " " (empty string) | The Cloud Storage type. for example, `aws-s3`,`gcs`|
 | `accessKeyId` |String| True | " " (empty string) | The Cloud Storage access key ID. |
 | `secretAccessKey` | String| True | " " (empty string) | The Cloud Storage secret access key. |
 | `role` | String |False | " " (empty string) | The Cloud Storage role. |
@@ -70,6 +85,7 @@ Before using the Cloud Storage sink connector, you need to create a configuratio
        "archive": "connectors/pulsar-io-cloud-storage-0.0.1.nar",
        "parallelism": 1,
        "configs": {
+          "provider": "aws-s3",
           "accessKeyId": "accessKeyId",
           "secretAccessKey": "secretAccessKey",
           "role": "none",
@@ -99,6 +115,7 @@ Before using the Cloud Storage sink connector, you need to create a configuratio
     parallelism: 1
     
     configs:
+      provider: "aws-s3",
       accessKeyId: "accessKeyId"
       secretAccessKey: "secretAccessKey"
       role: "none"
@@ -117,7 +134,6 @@ Before using the Cloud Storage sink connector, you need to create a configuratio
 # Usage
 
 1. Prepare the Cloud Storage service. In this example, we use `s3mock` as an example.
-
 
     ```
     docker pull apachepulsar/s3mock:latest
@@ -139,7 +155,7 @@ Before using the Cloud Storage sink connector, you need to create a configuratio
 4. Run the Cloud Storage sink connector locally.
 
     ```
-    $PULSAR_HOME/bin/pulsar-admin sink localrun --sink-config-file Cloud Storage-sink-config.yaml
+    $PULSAR_HOME/bin/pulsar-admin sink localrun --sink-config-file cloud-storage-sink-config.yaml
     ```
 
 5. Send Pulsar messages. In this example, the schema of the topic only supports `avro` or `json`.
