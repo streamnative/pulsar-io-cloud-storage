@@ -1,6 +1,6 @@
 
 
-## Cloud Storage sink connector for Pulsar
+## Cloud Storage Sink Connector for Pulsar
 
 The Cloud Storage sink connector supports exporting data from Pulsar topics to cloud storage (such as AWS S3 and Google GCS) either in Avro, JSON, Parquet or other formats. According to your environment, the Cloud Storage sink connector can guarantee exactly-once support for exporting to cloud storage.
 
