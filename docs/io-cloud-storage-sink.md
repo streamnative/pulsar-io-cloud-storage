@@ -1,53 +1,70 @@
+---
+description: The Cloud Storage sink connector pulls messages from Pulsar topics and persists messages to Cloud Storage.
+author: ["ASF"]
+contributors: ["ASF"]
+language: Java
+document: 
+source: "https://github.com/streamnative/pulsar-io-cloud-storage/tree/v2.5.1/src/main/java/org/apache/pulsar/io/jcloud"
+license: Apache License 2.0
+tags: ["Pulsar IO", "Cloud Storage", "Sink"]
+alias: Cloud Storage Sink
+features: ["Use the Cloud Storage sink connector to sync data from Pulsar"]
+license_link: "https://www.apache.org/licenses/LICENSE-2.0"
+icon: "https://a0.awsstatic.com/libra-css/images/logos/aws_logo_smile_179x109.png"
+download: "https://github.com/streamnative/pulsar-io-cloud-storage/releases/download/v2.5.1/pulsar-io-cloud-storage-2.5.1.nar"
+support: StreamNative
+support_link: https://streamnative.io
+support_img: "/images/connectors/streamnative.png"
+dockerfile: 
+owner_name: ""
+owner_img: ""
+id: "io-cloud-storage-sink"
+---
 
+Cloud Storage Sink connector for Pulsar
 
-## Cloud Storage Sink Connector for Pulsar
+The Cloud Storage Sink connector supports exporting data from Pulsar Topic to cloud storage in Avro, json, parquet and other formats, such as aws-s3, google-GCS, etc. According to your environment, the Cloud Storage sink connector can guarantee exactly-once support for exporting to cloud storage.
 
-The Cloud Storage sink connector supports exporting data from Pulsar topics to cloud storage (such as AWS S3 and Google GCS) either in Avro, JSON, Parquet or other formats. According to your environment, the Cloud Storage sink connector can guarantee exactly-once support for exporting to cloud storage.
+The Cloud Storage Sink connector receives data from Pulsar, and then uploads the data to the cloud storage. The partition program is used to split the data of each pulsar partition into multiple blocks. Each data block is represented as an object. The virtual path corresponds to the topic, using the pulsar partition and the starting offset of this data block for encoding. If the partition program is not specified in the configuration, the default partition program that retains the pulsar partition is used. The size of each data block depends on the number of records written to the cloud storage and the architecture compatibility.
+
+## Features
+The Pulsar IO Cloud Storage Sink connector provides the following features:
+
+- Exactly Once Delivery: Records that are exported using a deterministic partitioner are delivered with exactly-once semantics regardless of the eventual consistency of Cloud Storage.
+- Data Format with or without a Schema: Plug and play, the connector supports writing data to cloud storage in Avro, JSON and parquet formats. Generally, the connector can accept any format that provides an implementation of the Format interface.
+- Partitioner: The connector supports the TimeBasedPartitioner class based on the Pulsar message publishTime TimeStamp. Time-based partitioning options are daily or hourly.
+- More object storage support: The connector uses jclouds as an implementation of cloud storage. You can use the jclouds object storage jar to connect to more types of object storage. If you need to customize credentials, you can register ʻorg.apache.pulsar.io.jcloud.credential.JcloudsCredential` via SPI.
+
+The Cloud Storage sink connector pulls messages from Pulsar topics and persists messages to Cloud Storage.
 
 # Installation
 
-There are ways to install the Cloud Storage sink connector.
-- Install the the Cloud Storage sink connector through the [NAR file](https://github.com/streamnative/pulsar-io-cloud-storage/releases). 
-- Install the the Cloud Storage sink connector from the source code.
-
-To build the the Cloud Storage sink connector from code, follow these steps.
-
-1. Clone the project from GitHub to your local.
-
-    ```bash
-    git clone https://github.com/streamnative/pulsar-io-cloud-storage.git
-    cd pulsar-io-cloud-storage
-    ```
-2. Build the project.
-    
-    ```bash
-    mvn clean install -DskipTests
-    ```
-    You can find the NAR file in the following directory.
-    ```bash
-    ./pulsar-io-cloud-storage/target/pulsar-io-cloud-storage-${version}.nar
-    ```
+```
+git clone https://github.com/streamnative/pulsar-io-cloud-storage.git
+cd pulsar-io-cloud-storage/
+mvn clean install -DskipTests
+cp target/pulsar-io-cloud-storage-0.0.1.nar $PULSAR_HOME/pulsar-io-cloud-storage-0.0.1.nar
+```
 
 # Configuration 
 
 The Cloud Storage sink connector supports the following properties.
 
-
 ## Cloud Storage sink connector configuration
 
 | Name | Type|Required | Default | Description |
 |------|----------|----------|---------|-------------|
-| `provider` |String| True | " " (empty string) | The Cloud Storage type, such as `aws-s3`,`gcs`.|
-| `accessKeyId` |String| True | " " (empty string) | The Cloud Storage access key ID. It requires permission to write objects. |
+| `provider` |String| True | " " (empty string) | The Cloud Storage type. for example, `aws-s3`,`gcs`|
+| `accessKeyId` |String| True | " " (empty string) | The Cloud Storage access key ID. |
 | `secretAccessKey` | String| True | " " (empty string) | The Cloud Storage secret access key. |
 | `role` | String |False | " " (empty string) | The Cloud Storage role. |
 | `roleSessionName` | String| False | " " (empty string) | The Cloud Storage role session name. |
 | `bucket` | String| True | " " (empty string) | The Cloud Storage bucket. |
 | `endpoint` | String| False | " " (empty string) | The Cloud Storage endpoint. |
-| `formatType` | String| False | "json" | The data format type. Available options are JSON, Avro, or Parquet. By default, it is set to JSON. |
-| `partitionerType` | String| False |"partition" | The partitioning type. It can be configured by topic partitions or by time. By default, the partition type is configured by topic partitions. |
-| `timePartitionPattern` | String| False |"yyyy-MM-dd" | The format pattern of the time-based partitioning. For details, refer to the Java date and time format. |
-| `timePartitionDuration` | String| False |"1d" | The time interval for time-based partitioning, such as 1d, or 1h. |
+| `formatType` | String| False | "json" | The data format type: JSON, Avro, or Parquet. By default, it is set to JSON. |
+| `partitionerType` | String| False |"partition" | The partition type. It can be configured by partition or time. By default, the partition type is configured by partition. |
+| `timePartitionPattern` | String| False |"yyyy-MM-dd" | The format pattern of the time partition. For details, refer to the Java date and time format. |
+| `timePartitionDuration` | String| False |"1d" | The time interval divided by time, such as 1d, or 1h. |
 | `batchSize` | int | False |10 | The number of records submitted in batch. |
 | `batchTimeMs` | long | False |1000 | The interval for batch submission. |
 
@@ -91,7 +108,7 @@ Before using the Cloud Storage sink connector, you need to create a configuratio
     ```yaml
     tenant: "public"
     namespace: "default"
-    name: "Cloud Storage-sink"
+    name: "cloud-storage-sink"
     inputs: 
       - "user-avro-topic"
     archive: "connectors/pulsar-io-cloud-storage-0.0.1.nar"
@@ -116,8 +133,7 @@ Before using the Cloud Storage sink connector, you need to create a configuratio
 
 # Usage
 
-1. Prepare the AWS Cloud Storage service. In this example, we use `Cloud Storagemock` as an example.
-
+1. Prepare the Cloud Storage service. In this example, we use `s3mock` as an example.
 
     ```
     docker pull apachepulsar/s3mock:latest
@@ -142,7 +158,7 @@ Before using the Cloud Storage sink connector, you need to create a configuratio
     $PULSAR_HOME/bin/pulsar-admin sink localrun --sink-config-file cloud-storage-sink-config.yaml
     ```
 
-5. Send Pulsar messages. Currently, only Avro or JSON schema is supported.
+5. Send Pulsar messages. In this example, the schema of the topic only supports `avro` or `json`.
 
    ```java
      try (
@@ -164,9 +180,7 @@ Before using the Cloud Storage sink connector, you need to create a configuratio
    ```
 
 6. Validate Cloud Storage data.
-
     To get the path, you can use the [jclould](https://jclouds.apache.org/start/install/) to verify the file, as shown below.
-    
     ```java
     Properties overrides = new Properties();
     overrides.put(“jclouds.s3.virtual-host-buckets”, “false”);
@@ -184,18 +198,11 @@ Before using the Cloud Storage sink connector, you need to create a configuratio
     final boolean blobExists = blobStore.blobExists(“testBucket”, path);
     Assert.assertTrue(“the sink record does not exist”, blobExists);
     ```
-    You can find the data in your `testBucket` Bucket. The path is something like `public/default/test-parquet-avro/2020-09-14/1234.parquet`.
+    You can find the sink data in your `testBucket` Bucket. The path is something like `public/default/test-parquet-avro/2020-09-14/1234.parquet`.
     The path consists of three parts, the basic part of the topic, partition information, and format suffix.
-    
     - Basic part of topic: `public/default/test-parquet-avro/`
         This part consists of the tenant, namespace, and topic name of the input topic.
     - Partition information: `2020-09-14/${messageSequenceId}`
         The date is generated based on the `partitionerType` parameter in the configuration. And the `${messageSequenceId}` is generated by `FunctionCommon.getSequenceId(message.getMessageId())`.
     - Format suffix: `.parquet`
         This part is generated based on the `formatType` parameter in the configuration.
-
-
-
-
-
-

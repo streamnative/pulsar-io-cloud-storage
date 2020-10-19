@@ -17,7 +17,27 @@
 # under the License.
 #
 
-name: cloud-storage
-description: Writes data into cloud storage
-sinkClass: org.apache.pulsar.io.jcloud.sink.CloudStorageGenericRecordSink
-sinkConfigClass: org.apache.pulsar.io.jcloud.sink.CloudStorageSinkConfig
+tenant: "public"
+namespace: "default"
+name: "cloud-storage-sink"
+inputs: 
+  - "user-json-topic"
+  - "user-avro-topic"
+archive: "connectors/pulsar-io-cloud-storage-0.0.1.nar"
+parallelism: 1
+
+configs:
+  provider: "aws-s3"
+  accessKeyId: "accessKeyId"
+  secretAccessKey: "secretAccessKey"
+  role: ""
+  roleSessionName: "none"
+  bucket: "s3-sink-test"
+  region: "local"
+  endpoint: "https://s3-ap-northeast-1.amazonaws.com"
+  formatType: "parquet"
+  partitionerType: "time"
+  timePartitionPattern: "yyyy-MM-dd"
+  timePartitionDuration: "1d"
+  batchSize: 10
+  batchTimeMs: 1000
