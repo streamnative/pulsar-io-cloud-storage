@@ -38,13 +38,13 @@ The Cloud Storage sink connector supports the following properties.
 
 | Name | Type|Required | Default | Description |
 |------|----------|----------|---------|-------------|
-| `provider` |String| True | " " (empty string) | The Cloud Storage type, such as `aws-s3`,`gcs`.|
-| `accessKeyId` |String| True | " " (empty string) | The Cloud Storage access key ID. It requires permission to write objects. |
-| `secretAccessKey` | String| True | " " (empty string) | The Cloud Storage secret access key. |
-| `role` | String |False | " " (empty string) | The Cloud Storage role. |
-| `roleSessionName` | String| False | " " (empty string) | The Cloud Storage role session name. |
-| `bucket` | String| True | " " (empty string) | The Cloud Storage bucket. |
-| `endpoint` | String| False | " " (empty string) | The Cloud Storage endpoint. |
+| `provider` |String| True | NULL | The Cloud Storage type, such as `aws-s3`,`gcs`.|
+| `accessKeyId` |String| True | NULL | The Cloud Storage access key ID. It requires permission to write objects. |
+| `secretAccessKey` | String| True | NULL | The Cloud Storage secret access key. |
+| `role` | String |False | NULL | The Cloud Storage role. |
+| `roleSessionName` | String| False | NULL | The Cloud Storage role session name. |
+| `bucket` | String| True | NULL | The Cloud Storage bucket. |
+| `endpoint` | String| False | NULL | The Cloud Storage endpoint. |
 | `formatType` | String| False | "json" | The data format type. Available options are JSON, Avro, or Parquet. By default, it is set to JSON. |
 | `partitionerType` | String| False |"partition" | The partitioning type. It can be configured by topic partitions or by time. By default, the partition type is configured by topic partitions. |
 | `timePartitionPattern` | String| False |"yyyy-MM-dd" | The format pattern of the time-based partitioning. For details, refer to the Java date and time format. |
