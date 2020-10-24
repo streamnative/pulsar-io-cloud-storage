@@ -39,7 +39,7 @@ public class AwsCredential implements JcloudsCredential {
 
     @Override
     public String provider() {
-        return "jcloud";
+        return "aws-s3";
     }
 
     @Override

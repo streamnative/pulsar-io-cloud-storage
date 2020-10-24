@@ -22,11 +22,16 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.base.Strings;
 import com.google.common.base.Supplier;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import java.util.ServiceLoader;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.io.core.SinkContext;
 import org.apache.pulsar.io.core.annotations.Connector;
 import org.apache.pulsar.io.core.annotations.IOType;
@@ -51,13 +56,28 @@ public class CloudStorageGenericRecordSink extends BlobStoreAbstractSink<CloudSt
 
     protected Map<String, JcloudsCredential> jcloudsCredentialMap = loadsCredentials();
 
-    public static Map<String, JcloudsCredential> loadsCredentials(){
-        final ServiceLoader<JcloudsCredential> load = ServiceLoader.load(JcloudsCredential.class);
-        Map<String, JcloudsCredential> credentialMap = new HashMap<>();
-        load.forEach(service -> {
-            credentialMap.put(service.provider(), service);
-        });
-        return credentialMap;
+    public static Map<String, JcloudsCredential> loadsCredentials() {
+        final String path = "META-INF/services/" + JcloudsCredential.class.getName();
+        final ClassLoader classLoader = JcloudsCredential.class.getClassLoader();
+        InputStream resource = null;
+        try {
+            resource = classLoader.getResourceAsStream(path);
+            final Set<String> classPaths = IOUtils.readLines(resource, Charset.defaultCharset()).stream()
+                    .filter(StringUtils::isNotBlank)
+                    .collect(Collectors.toSet());
+            Map<String, JcloudsCredential> credentialMap = new HashMap<>();
+            for (String classPath : classPaths) {
+                final JcloudsCredential instance = (JcloudsCredential) classLoader.loadClass(classPath)
+                        .getDeclaredConstructor().newInstance();
+                credentialMap.put(instance.provider(), instance);
+            }
+            return credentialMap;
+        } catch (Exception e) {
+            log.error("load JcloudsCredential implements fail", e);
+            throw new RuntimeException(e);
+        } finally {
+            IOUtils.closeQuietly(resource);
+        }
     }
 
     @Override
