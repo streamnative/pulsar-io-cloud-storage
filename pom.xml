@@ -51,7 +51,7 @@
     <awsjavasdk.version>1.11.774</awsjavasdk.version>
 
     <!-- test dependencies -->
-    <junit.version>4.12</junit.version>
+    <junit.version>4.13.1</junit.version>
     <mockito.version>2.22.0</mockito.version>
     <powermock.version>2.0.0-beta.5</powermock.version>
     <testcontainers.version>1.8.3</testcontainers.version>
