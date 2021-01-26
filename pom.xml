@@ -43,7 +43,7 @@
     <testRetryCount>2</testRetryCount>
 
     <!-- connector dependencies -->
-    <jackson.version>2.9.7</jackson.version>
+    <jackson.version>2.11.3</jackson.version>
     <lombok.version>1.16.22</lombok.version>
     <pulsar.version>2.6.1</pulsar.version>
     <jclouds.version>2.2.1</jclouds.version>
