@@ -19,13 +19,11 @@
 package org.apache.pulsar.io.jcloud.format;
 
 import com.google.common.io.ByteSource;
-
 import java.io.ByteArrayOutputStream;
 import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
-
 import org.apache.avro.util.Utf8;
 import org.apache.parquet.avro.AvroParquetReader;
 import org.apache.parquet.hadoop.ParquetReader;
@@ -43,11 +41,10 @@ import org.apache.pulsar.io.jcloud.bo.TestRecord;
 import org.apache.pulsar.io.jcloud.sink.CloudStorageSinkConfig;
 import org.apache.pulsar.io.jcloud.support.ParquetInputFile;
 import org.junit.Assert;
-import org.junit.Ignore;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.shaded.com.google.common.collect.Sets;
 
 /**
  * parquet format test.
@@ -60,23 +57,22 @@ public class ParquetFormatTest extends PulsarTestBase {
 
     private TopicName avroTopicName = TopicName.get("test-parquet-avro");
     private TopicName jsonTopicName = TopicName.get("test-parquet-json");
-//    @Before
+
+    @Before
     public void setUp() throws Exception {
         PulsarAdmin pulsarAdmin = PulsarAdmin.builder()
                 .serviceHttpUrl(getAdminUrl())
                 .build();
-        pulsarAdmin.namespaces().createNamespace("public/default", Sets.newHashSet("standalone"));
         pulsarAdmin.topics().createPartitionedTopic(avroTopicName.toString(), 1);
         pulsarAdmin.topics().createSubscription(avroTopicName.toString(), "test", MessageId.earliest);
     }
 
     @Test
     public void testGetExtension() {
-       Assert.assertEquals(".parquet", parquetFormat.getExtension());
+        Assert.assertEquals(".parquet", parquetFormat.getExtension());
     }
 
     @Test
-    @Ignore("unable to start admin client")
     public void testRecordWriter() throws Exception {
 
         serviceUrl = "pulsar://localhost:6650";
@@ -95,7 +91,7 @@ public class ParquetFormatTest extends PulsarTestBase {
         consumerMessages(jsonTopicName.toString(), Schema.AUTO_CONSUME(), handle, testRecords.size());
     }
 
-    private void handleMessage(TopicName topicName, Message<GenericRecord> msg)  {
+    private void handleMessage(TopicName topicName, Message<GenericRecord> msg) {
         @SuppressWarnings("unchecked")
         PulsarRecord<GenericRecord> test = PulsarRecord.<GenericRecord>builder()
                 .topicName(topicName.toString())
@@ -128,10 +124,10 @@ public class ParquetFormatTest extends PulsarTestBase {
         for (Field field : msgValue.getFields()) {
             Object sourceValue = getField(msgValue, field);
             Object newValue = record.get(field.getName());
-            if (newValue instanceof Utf8){
+            if (newValue instanceof Utf8) {
                 newValue = ((Utf8) newValue).toString();
             }
-            if (sourceValue instanceof GenericRecord && newValue instanceof org.apache.avro.generic.GenericRecord){
+            if (sourceValue instanceof GenericRecord && newValue instanceof org.apache.avro.generic.GenericRecord) {
                 assertEquals((GenericRecord) sourceValue, (org.apache.avro.generic.GenericRecord) newValue);
             } else {
                 Assert.assertEquals(

@@ -18,18 +18,13 @@
  */
 package org.apache.pulsar.io.jcloud;
 
-import io.streamnative.tests.pulsar.service.PulsarService;
-import io.streamnative.tests.pulsar.service.PulsarServiceFactory;
-import io.streamnative.tests.pulsar.service.PulsarServiceSpec;
-
-import java.net.URI;
+import static java.time.temporal.ChronoUnit.SECONDS;
+import static org.testcontainers.containers.PulsarContainer.BROKER_HTTP_PORT;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
-
 import lombok.extern.slf4j.Slf4j;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.pulsar.client.api.Consumer;
@@ -42,6 +37,11 @@ import org.apache.pulsar.client.api.Schema;
 import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.common.schema.SchemaType;
 import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.testcontainers.containers.PulsarContainer;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
+import org.testcontainers.utility.DockerImageName;
 
 /**
  * Start / stop a Pulsar cluster.
@@ -49,7 +49,7 @@ import org.junit.AfterClass;
 @Slf4j
 public abstract class PulsarTestBase {
 
-    protected static PulsarService pulsarService;
+    protected static PulsarContainer pulsarService;
 
     protected static String serviceUrl;
 
@@ -63,6 +63,7 @@ public abstract class PulsarTestBase {
         return adminUrl;
     }
 
+    @BeforeClass
     public static void prepare() throws Exception {
 
         log.info("-------------------------------------------------------------------------");
@@ -70,31 +71,20 @@ public abstract class PulsarTestBase {
         log.info("-------------------------------------------------------------------------");
 
 
-        System.setProperty("pulsar.systemtest.image", "apachepulsar/pulsar-all:2.6.0");
-        PulsarServiceSpec spec = PulsarServiceSpec.builder()
-                .clusterName("standalone-" + UUID.randomUUID())
-                .enableContainerLogging(false)
-                .build();
-
-        pulsarService = PulsarServiceFactory.createPulsarService(spec);
+        final String pulsarImage = System.getProperty("pulsar.systemtest.image", "apachepulsar/pulsar:2.7.0");
+        pulsarService = new PulsarContainer(DockerImageName.parse(pulsarImage));
+        pulsarService.waitingFor(new HttpWaitStrategy()
+                .forPort(BROKER_HTTP_PORT)
+                .forStatusCode(200)
+                .forPath("/admin/v2/namespaces/public/default")
+                .withStartupTimeout(Duration.of(40, SECONDS)));
         pulsarService.start();
-
-        log.info("Pulsar Service Uris: {}", pulsarService.getServiceUris());
-
-        for (URI uri : pulsarService.getServiceUris()) {
-            if (uri != null && uri.getScheme().equals("pulsar")) {
-                serviceUrl = uri.toString();
-            } else if (uri != null && uri.getScheme().equals("http")) {
-                adminUrl = uri.toString();
-            }
-        }
-
-//        try (PulsarAdmin admin = PulsarAdmin.builder().serviceHttpUrl(adminUrl).build()) {
-//            admin.namespaces().createNamespace("public/default", Sets.newHashSet("standalone"));
-//        }
+        pulsarService.followOutput(new Slf4jLogConsumer(log));
+        serviceUrl = pulsarService.getPulsarBrokerUrl();
+        adminUrl = pulsarService.getHttpServiceUrl();
 
         log.info("-------------------------------------------------------------------------");
-        log.info("Successfully started pulsar service at cluster " + spec.clusterName());
+        log.info("Successfully started pulsar service at cluster " + pulsarService.getContainerName());
         log.info("-------------------------------------------------------------------------");
 
     }
