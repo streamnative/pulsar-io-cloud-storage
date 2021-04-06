@@ -45,6 +45,7 @@ import org.apache.pulsar.io.jcloud.bo.TestRecord;
 import org.apache.pulsar.io.jcloud.sink.CloudStorageSinkConfig;
 import org.apache.pulsar.io.jcloud.support.ParquetInputFile;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,9 +59,10 @@ public class ParquetFormatTest extends PulsarTestBase {
 
     private ParquetFormat<CloudStorageSinkConfig> parquetFormat = new ParquetFormat<>();
 
-    private TopicName avroTopicName = TopicName.get("test-parquet-avro" + RandomStringUtils.random(5));
-    private TopicName jsonTopicName = TopicName.get("test-parquet-json" + RandomStringUtils.random(5));
+    private TopicName avroTopicName = TopicName.get("test-parquet-avro");
+    private TopicName jsonTopicName = TopicName.get("test-parquet-json");
 
+    @Before
     public void setUp() throws Exception {
         PulsarAdmin pulsarAdmin = PulsarAdmin.builder()
                 .serviceHttpUrl(getAdminUrl())
