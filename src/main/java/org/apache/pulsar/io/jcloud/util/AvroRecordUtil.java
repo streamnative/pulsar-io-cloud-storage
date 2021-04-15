@@ -60,7 +60,7 @@ public class AvroRecordUtil {
             // You can replace this method when the schema is available in the Record.
             final ClassLoader pulsarFunctionClassLoader = message.getClass().getClassLoader();
             Message<GenericRecord> rawMessage = message;
-            if (message.getClass().getCanonicalName().equals("TopicMessageImpl")){
+            if (message.getClass().getCanonicalName().endsWith("TopicMessageImpl")){
                 final Class<?> classTopicMessageImpl =
                         pulsarFunctionClassLoader.loadClass("org.apache.pulsar.client.impl.TopicMessageImpl");
                 final Method getMessage = classTopicMessageImpl.getDeclaredMethod("getMessage");

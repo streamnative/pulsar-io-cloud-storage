@@ -370,7 +370,7 @@
       <groupId>org.apache.pulsar</groupId>
       <artifactId>pulsar-common</artifactId>
       <version>${pulsar.version}</version>
-      <scope>test</scope>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
 
@@ -385,7 +385,7 @@
             <source>${java.version}</source>
             <target>${java.version}</target>
             <compilerArgs>
-              <compilerArg>-Werror</compilerArg>
+<!--              <compilerArg>-Werror</compilerArg>-->
               <compilerArg>-Xlint:deprecation</compilerArg>
               <compilerArg>-Xlint:unchecked</compilerArg>
               <!-- https://issues.apache.org/jira/browse/MCOMPILER-205 -->
@@ -399,7 +399,7 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${maven-surefire-plugin.version}</version>
           <configuration>
-            <redirectTestOutputToFile>${redirectTestOutputToFile}</redirectTestOutputToFile>
+<!--            <redirectTestOutputToFile>${redirectTestOutputToFile}</redirectTestOutputToFile>-->
             <reuseForks>false</reuseForks>
             <forkedProcessTimeoutInSeconds>1800</forkedProcessTimeoutInSeconds>
             <rerunFailingTestsCount>${testRetryCount}</rerunFailingTestsCount>

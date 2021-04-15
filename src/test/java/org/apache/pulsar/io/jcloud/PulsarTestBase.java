@@ -24,6 +24,8 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.NotImplementedException;
@@ -199,7 +201,8 @@ public abstract class PulsarTestBase {
     public static <T> void consumerMessages(String topic,
                                             Schema<T> schema,
                                             java.util.function.Consumer<Message<T>> handler,
-                                            int count) throws Exception {
+                                            int count,
+                                            long timeout) throws Exception {
         PulsarClient client = null;
         Consumer<T> consumer = null;
         try {
@@ -211,7 +214,8 @@ public abstract class PulsarTestBase {
                     .subscribe();
             int receiveCount = 0;
             while (receiveCount < count) {
-                Message<T> message = consumer.receive();
+                final CompletableFuture<Message<T>> receiveAsync = consumer.receiveAsync();
+                final Message<T> message = receiveAsync.get(timeout, TimeUnit.MILLISECONDS);
                 handler.accept(message);
                 consumer.acknowledge(message);
                 receiveCount += 1;

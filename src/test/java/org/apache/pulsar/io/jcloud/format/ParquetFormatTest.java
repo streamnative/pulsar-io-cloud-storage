@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -19,14 +19,15 @@
 package org.apache.pulsar.io.jcloud.format;
 
 import com.google.common.io.ByteSource;
-import java.io.ByteArrayOutputStream;
-import java.text.MessageFormat;
-import java.util.Arrays;
-import java.util.List;
-import java.util.function.Consumer;
+import org.apache.avro.generic.GenericData;
+import org.apache.avro.specific.SpecificData;
 import org.apache.avro.util.Utf8;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.parquet.ParquetReadOptions;
 import org.apache.parquet.avro.AvroParquetReader;
+import org.apache.parquet.avro.AvroReadSupport;
 import org.apache.parquet.hadoop.ParquetReader;
+import org.apache.parquet.hadoop.ParquetRecordReader;
 import org.apache.pulsar.client.admin.PulsarAdmin;
 import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.client.api.MessageId;
@@ -35,16 +36,22 @@ import org.apache.pulsar.client.api.schema.Field;
 import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.client.impl.schema.generic.GenericJsonRecord;
 import org.apache.pulsar.common.naming.TopicName;
+import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.functions.source.PulsarRecord;
 import org.apache.pulsar.io.jcloud.PulsarTestBase;
 import org.apache.pulsar.io.jcloud.bo.TestRecord;
 import org.apache.pulsar.io.jcloud.sink.CloudStorageSinkConfig;
 import org.apache.pulsar.io.jcloud.support.ParquetInputFile;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.io.ByteArrayOutputStream;
+import java.text.MessageFormat;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Consumer;
 
 /**
  * parquet format test.
@@ -55,14 +62,15 @@ public class ParquetFormatTest extends PulsarTestBase {
 
     private ParquetFormat<CloudStorageSinkConfig> parquetFormat = new ParquetFormat<>();
 
-    private TopicName avroTopicName = TopicName.get("test-parquet-avro");
-    private TopicName jsonTopicName = TopicName.get("test-parquet-json");
+    private TopicName avroTopicName = TopicName.get("test-parquet-avro" + RandomStringUtils.random(5));
+    private TopicName jsonTopicName = TopicName.get("test-parquet-json" + RandomStringUtils.random(5));
 
-    @Before
     public void setUp() throws Exception {
         PulsarAdmin pulsarAdmin = PulsarAdmin.builder()
                 .serviceHttpUrl(getAdminUrl())
                 .build();
+        pulsarAdmin.topics().createPartitionedTopic(jsonTopicName.toString(), 1);
+        pulsarAdmin.topics().createSubscription(jsonTopicName.toString(), "test", MessageId.earliest);
         pulsarAdmin.topics().createPartitionedTopic(avroTopicName.toString(), 1);
         pulsarAdmin.topics().createSubscription(avroTopicName.toString(), "test", MessageId.earliest);
     }
@@ -73,22 +81,35 @@ public class ParquetFormatTest extends PulsarTestBase {
     }
 
     @Test
-    public void testRecordWriter() throws Exception {
-
-        serviceUrl = "pulsar://localhost:6650";
-
+    public void testAvroRecordWriter() throws Exception {
+        setUp();
         List<TestRecord> testRecords = Arrays.asList(
                 new TestRecord("key1", 1, null),
                 new TestRecord("key1", 1, new TestRecord.TestSubRecord("aaa"))
         );
 
-//        sendTypedMessages(topicName.toString(), SchemaType.AVRO, testRecords, Optional.empty(), TestRecord.class);
+        sendTypedMessages(avroTopicName.toString(), SchemaType.AVRO, testRecords, Optional.empty(), TestRecord.class);
 
+        Consumer<Message<GenericRecord>> handle = msg -> {
+            handleMessage(avroTopicName, msg);
+        };
+        consumerMessages(avroTopicName.toString(), Schema.AUTO_CONSUME(), handle, testRecords.size(), 2000);
+    }
+
+    @Test
+    public void testJsonRecordWriter() throws Exception {
+        setUp();
+        List<TestRecord> testRecords = Arrays.asList(
+                new TestRecord("key1", 1, null),
+                new TestRecord("key1", 1, new TestRecord.TestSubRecord("aaa"))
+        );
+
+        sendTypedMessages(jsonTopicName.toString(), SchemaType.AVRO, testRecords, Optional.empty(), TestRecord.class);
 
         Consumer<Message<GenericRecord>> handle = msg -> {
             handleMessage(jsonTopicName, msg);
         };
-        consumerMessages(jsonTopicName.toString(), Schema.AUTO_CONSUME(), handle, testRecords.size());
+        consumerMessages(jsonTopicName.toString(), Schema.AUTO_CONSUME(), handle, testRecords.size(), 2000);
     }
 
     private void handleMessage(TopicName topicName, Message<GenericRecord> msg) {
@@ -107,8 +128,8 @@ public class ParquetFormatTest extends PulsarTestBase {
 
             ParquetReader<org.apache.avro.generic.GenericRecord> reader = AvroParquetReader
                     .<org.apache.avro.generic.GenericRecord>builder(file)
+                    .withDataModel(GenericData.get())
                     .build();
-
             org.apache.avro.generic.GenericRecord record = reader.read();
 
             assertEquals(msg.getValue(), record);
