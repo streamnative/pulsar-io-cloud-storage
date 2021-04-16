@@ -45,17 +45,16 @@
     <!-- connector dependencies -->
     <jackson.version>2.11.3</jackson.version>
     <lombok.version>1.16.22</lombok.version>
-    <pulsar.version>2.6.1</pulsar.version>
+    <pulsar.version>2.7.1</pulsar.version>
     <jclouds.version>2.2.1</jclouds.version>
     <parquet.version>1.11.1</parquet.version>
     <awsjavasdk.version>1.11.774</awsjavasdk.version>
 
     <!-- test dependencies -->
     <junit.version>4.13.1</junit.version>
-    <mockito.version>2.22.0</mockito.version>
-    <powermock.version>2.0.0-beta.5</powermock.version>
-    <testcontainers.version>1.8.3</testcontainers.version>
-    <streamnative-tests.version>2.4.2</streamnative-tests.version>
+    <mockito.version>3.7.7</mockito.version>
+    <powermock.version>2.0.2</powermock.version>
+    <testcontainers.version>1.15.2</testcontainers.version>
 
     <!-- build plugin dependencies -->
     <license.plugin.version>3.0</license.plugin.version>
@@ -172,6 +171,11 @@
       <dependency>
         <groupId>org.testcontainers</groupId>
         <artifactId>testcontainers</artifactId>
+        <version>${testcontainers.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>pulsar</artifactId>
         <version>${testcontainers.version}</version>
       </dependency>
     </dependencies>
@@ -329,29 +333,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.streamnative.tests</groupId>
-      <artifactId>framework-common</artifactId>
-      <version>${streamnative-tests.version}</version>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>pulsar</artifactId>
       <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>*</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
-    <dependency>
-      <groupId>io.streamnative.tests</groupId>
-      <artifactId>framework-pulsar</artifactId>
-      <version>${streamnative-tests.version}</version>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>*</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
+
 
     <dependency>
       <groupId>org.apache.commons</groupId>
@@ -384,12 +370,7 @@
       <groupId>org.apache.pulsar</groupId>
       <artifactId>pulsar-common</artifactId>
       <version>${pulsar.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>*</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
 
@@ -404,7 +385,7 @@
             <source>${java.version}</source>
             <target>${java.version}</target>
             <compilerArgs>
-              <compilerArg>-Werror</compilerArg>
+<!--              <compilerArg>-Werror</compilerArg>-->
               <compilerArg>-Xlint:deprecation</compilerArg>
               <compilerArg>-Xlint:unchecked</compilerArg>
               <!-- https://issues.apache.org/jira/browse/MCOMPILER-205 -->
@@ -418,7 +399,7 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${maven-surefire-plugin.version}</version>
           <configuration>
-            <redirectTestOutputToFile>${redirectTestOutputToFile}</redirectTestOutputToFile>
+<!--            <redirectTestOutputToFile>${redirectTestOutputToFile}</redirectTestOutputToFile>-->
             <reuseForks>false</reuseForks>
             <forkedProcessTimeoutInSeconds>1800</forkedProcessTimeoutInSeconds>
             <rerunFailingTestsCount>${testRetryCount}</rerunFailingTestsCount>
@@ -460,6 +441,7 @@
               <exclude>**/ahc.properties</exclude>
               <exclude>**/.idea/**</exclude>
               <exclude>**/.github/**</exclude>
+              <exclude>docs/README.md.template</exclude>
             </excludes>
             <mapping>
               <proto>JAVADOC_STYLE</proto>
