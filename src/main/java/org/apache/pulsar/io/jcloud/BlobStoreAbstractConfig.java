@@ -20,19 +20,15 @@ package org.apache.pulsar.io.jcloud;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.google.common.collect.ImmutableMap;
-
 import java.io.Serializable;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.regex.Pattern;
-
 import lombok.Data;
 import lombok.experimental.Accessors;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.io.jcloud.format.AvroFormat;
 import org.apache.pulsar.io.jcloud.format.Format;
@@ -43,6 +39,7 @@ import org.apache.pulsar.io.jcloud.partitioner.SimplePartitioner;
 import org.apache.pulsar.io.jcloud.partitioner.TimePartitioner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 /**
  * Configuration object for all Hbase Sink components.
@@ -55,10 +52,10 @@ public class BlobStoreAbstractConfig implements Serializable {
 
     private static final long serialVersionUID = -8945930873383593712L;
 
-    private static final Map<String, Format<?, ?>> formatMap = new ImmutableMap.Builder<String, Format<?, ?>>()
-            .put("avro", new AvroFormat<>())
-            .put("json", new JsonFormat<>())
-            .put("parquet", new ParquetFormat<>())
+    private static final Map<String, Format<?>> formatMap = new ImmutableMap.Builder<String, Format<?>>()
+            .put("avro", new AvroFormat())
+            .put("json", new JsonFormat())
+            .put("parquet", new ParquetFormat())
             .build();
     private static final Map<String, Partitioner<?>> partitionerMap = new ImmutableMap.Builder<String, Partitioner<?>>()
             .put("default", new SimplePartitioner<>())
@@ -97,14 +94,14 @@ public class BlobStoreAbstractConfig implements Serializable {
         if (!partitionerMap.containsKey(StringUtils.lowerCase(partitionerType))) {
             throw new IllegalArgumentException("partitionerType property not set.");
         }
-        if ("time".equalsIgnoreCase(partitionerType)){
-            if (StringUtils.isNoneBlank(timePartitionPattern)){
+        if ("time".equalsIgnoreCase(partitionerType)) {
+            if (StringUtils.isNoneBlank(timePartitionPattern)) {
                 LOGGER.info("test timePartitionPattern is ok {} {}",
                         timePartitionPattern,
                         DateTimeFormatter.ofPattern(timePartitionPattern).format(Instant.now().atOffset(ZoneOffset.UTC))
                 );
             }
-            if (StringUtils.isNoneBlank(timePartitionDuration)){
+            if (StringUtils.isNoneBlank(timePartitionDuration)) {
                 checkArgument(Pattern.matches("^\\d+[dhDH]$", timePartitionDuration), "timePartitionDuration invalid.");
             }
         }

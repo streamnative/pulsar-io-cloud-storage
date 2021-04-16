@@ -19,15 +19,18 @@
 package org.apache.pulsar.io.jcloud.format;
 
 import com.google.common.io.ByteSource;
+import java.io.ByteArrayOutputStream;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Consumer;
 import org.apache.avro.generic.GenericData;
-import org.apache.avro.specific.SpecificData;
 import org.apache.avro.util.Utf8;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.parquet.ParquetReadOptions;
 import org.apache.parquet.avro.AvroParquetReader;
-import org.apache.parquet.avro.AvroReadSupport;
 import org.apache.parquet.hadoop.ParquetReader;
-import org.apache.parquet.hadoop.ParquetRecordReader;
 import org.apache.pulsar.client.admin.PulsarAdmin;
 import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.client.api.MessageId;
@@ -37,21 +40,18 @@ import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.client.impl.schema.generic.GenericJsonRecord;
 import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.common.schema.SchemaType;
+import org.apache.pulsar.functions.api.Record;
+import org.apache.pulsar.functions.instance.SinkRecord;
 import org.apache.pulsar.functions.source.PulsarRecord;
 import org.apache.pulsar.io.jcloud.PulsarTestBase;
 import org.apache.pulsar.io.jcloud.bo.TestRecord;
-import org.apache.pulsar.io.jcloud.sink.CloudStorageSinkConfig;
 import org.apache.pulsar.io.jcloud.support.ParquetInputFile;
+import org.apache.pulsar.io.jcloud.util.AvroRecordUtil;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.io.ByteArrayOutputStream;
-import java.text.MessageFormat;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Consumer;
 
 /**
  * parquet format test.
@@ -60,12 +60,13 @@ public class ParquetFormatTest extends PulsarTestBase {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ParquetFormatTest.class);
 
-    private ParquetFormat<CloudStorageSinkConfig> parquetFormat = new ParquetFormat<>();
+    private ParquetFormat parquetFormat = new ParquetFormat();
 
-    private TopicName avroTopicName = TopicName.get("test-parquet-avro" + RandomStringUtils.random(5));
-    private TopicName jsonTopicName = TopicName.get("test-parquet-json" + RandomStringUtils.random(5));
+    private static TopicName avroTopicName = TopicName.get("test-parquet-avro" + RandomStringUtils.random(5));
+    private static TopicName jsonTopicName = TopicName.get("test-parquet-json" + RandomStringUtils.random(5));
 
-    public void setUp() throws Exception {
+    @BeforeClass
+    public static void setUp() throws Exception {
         PulsarAdmin pulsarAdmin = PulsarAdmin.builder()
                 .serviceHttpUrl(getAdminUrl())
                 .build();
@@ -82,7 +83,6 @@ public class ParquetFormatTest extends PulsarTestBase {
 
     @Test
     public void testAvroRecordWriter() throws Exception {
-        setUp();
         List<TestRecord> testRecords = Arrays.asList(
                 new TestRecord("key1", 1, null),
                 new TestRecord("key1", 1, new TestRecord.TestSubRecord("aaa"))
@@ -98,7 +98,6 @@ public class ParquetFormatTest extends PulsarTestBase {
 
     @Test
     public void testJsonRecordWriter() throws Exception {
-        setUp();
         List<TestRecord> testRecords = Arrays.asList(
                 new TestRecord("key1", 1, null),
                 new TestRecord("key1", 1, new TestRecord.TestSubRecord("aaa"))
@@ -119,12 +118,14 @@ public class ParquetFormatTest extends PulsarTestBase {
                 .partition(0)
                 .message(msg)
                 .build();
+        List<Record<GenericRecord>> records = new ArrayList<>();
+        records.add(new SinkRecord<>(test, test.getValue()));
         try {
-            ByteSource byteSource = parquetFormat.recordWriter(null, test);
+            parquetFormat.initSchema(AvroRecordUtil.extractPulsarSchema(msg));
+            ByteSource byteSource = parquetFormat.recordWriter(records.listIterator());
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
             stream.write(byteSource.read());
             ParquetInputFile file = new ParquetInputFile("a.parquet", stream);
-
 
             ParquetReader<org.apache.avro.generic.GenericRecord> reader = AvroParquetReader
                     .<org.apache.avro.generic.GenericRecord>builder(file)

@@ -46,10 +46,10 @@ import org.jclouds.s3.reference.S3Constants;
  * A Simple jcloud sink, which interprets input Record in generic record.
  */
 @Connector(
-    name = "cloud-storage",
-    type = IOType.SINK,
-    help = "The CloudStorageGenericRecordSink is used for moving messages from Pulsar to cloud storage.",
-    configClass = CloudStorageSinkConfig.class
+        name = "cloud-storage",
+        type = IOType.SINK,
+        help = "The CloudStorageGenericRecordSink is used for moving messages from Pulsar to cloud storage.",
+        configClass = CloudStorageSinkConfig.class
 )
 @Slf4j
 public class CloudStorageGenericRecordSink extends BlobStoreAbstractSink<CloudStorageSinkConfig> {

@@ -19,7 +19,6 @@
 package org.apache.pulsar.io.jcloud.sink;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import java.io.File;

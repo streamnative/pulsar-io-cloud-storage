@@ -16,7 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.apache.pulsar.io.jcloud.credential;
 
 import java.util.function.Supplier;
@@ -30,7 +29,7 @@ public interface JcloudsCredential {
 
     String provider();
 
-    default Supplier<Credentials> getCredentials(CloudStorageSinkConfig sinkConfig){
+    default Supplier<Credentials> getCredentials(CloudStorageSinkConfig sinkConfig) {
         return () -> new Credentials(sinkConfig.getAccessKeyId(), sinkConfig.getSecretAccessKey());
     }
 }

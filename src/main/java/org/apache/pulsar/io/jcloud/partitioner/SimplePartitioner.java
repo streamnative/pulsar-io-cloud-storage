@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * use topic partition strategy.
+ *
  * @param <T> config
  */
 public class SimplePartitioner<T> implements Partitioner<T> {
@@ -44,8 +45,8 @@ public class SimplePartitioner<T> implements Partitioner<T> {
         String partitionId = sinkRecord.getPartitionId()
                 .orElseThrow(() -> new RuntimeException("partitionId not null"));
         String number = StringUtils.removeStart(partitionId, topicName).replace("-", "").trim();
-        if (!StringUtils.isNumeric(number)){
-           throw new RuntimeException("partitionId is fail " + partitionId);
+        if (!StringUtils.isNumeric(number)) {
+            throw new RuntimeException("partitionId is fail " + partitionId);
         }
         Long recordSequence = sinkRecord.getRecordSequence()
                 .orElseThrow(() -> new RuntimeException("recordSequence not null"));

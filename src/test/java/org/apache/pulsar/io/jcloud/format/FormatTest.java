@@ -19,7 +19,6 @@
 package org.apache.pulsar.io.jcloud.format;
 
 import junit.framework.TestCase;
-import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -30,12 +29,12 @@ public class FormatTest extends TestCase {
 
     @Test
     public void testGetExtension() {
-        AvroFormat<BlobStoreAbstractConfig> avroFormat = new AvroFormat<>();
+        AvroFormat avroFormat = new AvroFormat();
         Assert.assertEquals(avroFormat.getExtension(), ".avro");
     }
 
     public void testRecordWriter() {
-        AvroFormat<BlobStoreAbstractConfig> avroFormat = new AvroFormat<>();
+        AvroFormat avroFormat = new AvroFormat();
 //        avroFormat.recordWriter(null,)
     }
 }

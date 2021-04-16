@@ -52,7 +52,20 @@ public class AvroRecordUtil {
         });
     }
 
-    private static org.apache.pulsar.client.api.Schema<GenericRecord> extractPulsarSchema(
+    public static org.apache.pulsar.client.api.Schema<GenericRecord> getPulsarSchema(
+            Record<GenericRecord> record) {
+
+        if (record.getSchema() != null) {
+            return record.getSchema();
+        }
+        // Pulsar version < 2.7.0
+        final Message<GenericRecord> message = record.getMessage()
+                .orElseThrow(() -> new RuntimeException("Message not exist in record, Please check if Source is "
+                        + "PulsarSource."));
+        return extractPulsarSchema(message);
+    }
+
+    public static org.apache.pulsar.client.api.Schema<GenericRecord> extractPulsarSchema(
             Message<GenericRecord> message) {
         try {
             //There is no good way to handle `PulsarRecord#getSchema` in the pulsar function,
@@ -64,8 +77,8 @@ public class AvroRecordUtil {
                 final Class<?> classTopicMessageImpl =
                         pulsarFunctionClassLoader.loadClass("org.apache.pulsar.client.impl.TopicMessageImpl");
                 final Method getMessage = classTopicMessageImpl.getDeclaredMethod("getMessage");
-                @SuppressWarnings("unchecked")
-                final Message<GenericRecord> invoke = (Message<GenericRecord>) getMessage.invoke(message);
+                @SuppressWarnings("unchecked") final Message<GenericRecord> invoke =
+                        (Message<GenericRecord>) getMessage.invoke(message);
                 rawMessage = invoke;
             }
             final Class<?> classMessageImpl =
@@ -110,7 +123,7 @@ public class AvroRecordUtil {
     }
 
     private static Object readValue(GenericRecord recordValue, org.apache.pulsar.client.api.schema.Field field) {
-        if (recordValue == null || field == null){
+        if (recordValue == null || field == null) {
             return null;
         }
         //  If the field has no value, NullPointerException will be thrown, for GenericJsonRecord

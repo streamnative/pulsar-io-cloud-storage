@@ -19,7 +19,6 @@
 package org.apache.pulsar.io.jcloud;
 
 import java.io.IOException;
-
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.parquet.io.PositionOutputStream;
 import org.slf4j.Logger;

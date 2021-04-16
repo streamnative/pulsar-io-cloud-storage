@@ -21,6 +21,7 @@ package org.apache.pulsar.io.jcloud.format;
 
 import com.google.common.io.ByteSource;
 import java.io.IOException;
+import java.util.Iterator;
 import org.apache.avro.Schema;
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.parquet.avro.AvroParquetWriter;
@@ -38,20 +39,22 @@ import org.apache.pulsar.io.jcloud.util.AvroRecordUtil;
 /**
  * parquet format.
  */
-public class ParquetFormat<V> implements Format<V, Record<GenericRecord>>{
+public class ParquetFormat implements Format<GenericRecord> {
     @Override
     public String getExtension() {
         return ".parquet";
     }
 
+    private Schema rootAvroSchema;
+
     @Override
-    public ByteSource recordWriter(V config, Record<GenericRecord> record) throws Exception {
-        Schema rootAvroSchema = AvroRecordUtil.getAvroSchema(record);
-        org.apache.avro.generic.GenericRecord writeRecord = AvroRecordUtil
-                .convertGenericRecord(record.getValue(), rootAvroSchema);
+    public void initSchema(org.apache.pulsar.client.api.Schema<GenericRecord> schema) {
+        rootAvroSchema = AvroRecordUtil.convertToAvroSchema(schema);
+    }
 
+    @Override
+    public ByteSource recordWriter(Iterator<Record<GenericRecord>> records) throws Exception {
         int pageSize = 64 * 1024;
-
         ParquetWriter<Object> parquetWriter = null;
         S3ParquetOutputFile file = new S3ParquetOutputFile();
         try {
@@ -59,10 +62,15 @@ public class ParquetFormat<V> implements Format<V, Record<GenericRecord>>{
                     .builder(file)
                     .withPageSize(pageSize)
                     .withWriteMode(ParquetFileWriter.Mode.OVERWRITE)
-                    .withCompressionCodec(CompressionCodecName.SNAPPY)
+                    .withCompressionCodec(CompressionCodecName.GZIP)
                     .withSchema(rootAvroSchema)
                     .build();
-            parquetWriter.write(writeRecord);
+
+            while (records.hasNext()) {
+                org.apache.avro.generic.GenericRecord writeRecord = AvroRecordUtil
+                        .convertGenericRecord(records.next().getValue(), rootAvroSchema);
+                parquetWriter.write(writeRecord);
+            }
         } finally {
             IOUtils.closeQuietly(parquetWriter);
         }
@@ -75,7 +83,6 @@ public class ParquetFormat<V> implements Format<V, Record<GenericRecord>>{
         private BytesOutputStream s3out;
 
         S3ParquetOutputFile() {
-
         }
 
         @Override
@@ -100,8 +107,8 @@ public class ParquetFormat<V> implements Format<V, Record<GenericRecord>>{
             return DEFAULT_BLOCK_SIZE;
         }
 
-        private byte[] toByteArray(){
-            if (s3out == null){
+        private byte[] toByteArray() {
+            if (s3out == null) {
                 return null;
             }
             return s3out.getByteArrayOutputStream().toByteArray();

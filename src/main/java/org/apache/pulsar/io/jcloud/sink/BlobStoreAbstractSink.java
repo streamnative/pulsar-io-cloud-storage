@@ -16,10 +16,10 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.apache.pulsar.io.jcloud.sink;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static org.apache.pulsar.io.jcloud.util.AvroRecordUtil.getPulsarSchema;
 import com.google.common.collect.Lists;
 import com.google.common.io.ByteSource;
 import java.io.IOException;
@@ -31,10 +31,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
+import org.apache.pulsar.client.api.Schema;
 import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.core.Sink;
@@ -45,6 +44,7 @@ import org.apache.pulsar.io.jcloud.format.Format;
 import org.apache.pulsar.io.jcloud.format.JsonFormat;
 import org.apache.pulsar.io.jcloud.format.ParquetFormat;
 import org.apache.pulsar.io.jcloud.partitioner.Partitioner;
+import org.apache.pulsar.io.jcloud.partitioner.SimplePartitioner;
 import org.apache.pulsar.io.jcloud.partitioner.TimePartitioner;
 import org.jclouds.blobstore.BlobStore;
 import org.jclouds.blobstore.BlobStoreContext;
@@ -70,9 +70,9 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
     protected Partitioner<GenericRecord> partitioner;
 
-    protected Format<V, Record<GenericRecord>> format;
+    protected Format<GenericRecord> format;
 
-    private List<Pair<Record<GenericRecord>, Blob>> incomingList;
+    private List<Record<GenericRecord>> incomingList;
 
     private ReadWriteLock rwlock = new ReentrantReadWriteLock();
 
@@ -96,8 +96,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         long batchTimeMs = sinkConfig.getBatchTimeMs();
         incomingList = Lists.newArrayList();
         flushExecutor = Executors.newScheduledThreadPool(1);
-        flushExecutor.scheduleAtFixedRate(() -> flush(),
-                batchTimeMs, batchTimeMs, TimeUnit.MILLISECONDS);
+        flushExecutor.scheduleAtFixedRate(this::flush, batchTimeMs, batchTimeMs, TimeUnit.MILLISECONDS);
     }
 
     private Partitioner<GenericRecord> buildPartitioner(V sinkConfig) {
@@ -108,6 +107,8 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                 partitioner = new TimePartitioner<>();
                 break;
             case "partition":
+                partitioner = new SimplePartitioner<>();
+                break;
             default:
                 throw new RuntimeException("not support partitioner type " + partitionerType);
         }
@@ -115,15 +116,15 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         return partitioner;
     }
 
-    private Format<V, Record<GenericRecord>> buildFormat(V sinkConfig) {
+    private Format<GenericRecord> buildFormat(V sinkConfig) {
         String formatType = StringUtils.defaultIfBlank(sinkConfig.getFormatType(), "json");
         switch (formatType) {
             case "avro":
-                return new AvroFormat<>();
+                return new AvroFormat();
             case "parquet":
-                return new ParquetFormat<>();
+                return new ParquetFormat();
             case "json":
-                return new JsonFormat<>();
+                return new JsonFormat();
             default:
                 throw new RuntimeException("not support formatType " + formatType);
         }
@@ -144,31 +145,27 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
     public void write(Record<GenericRecord> record) throws Exception {
         final Long sequenceId = record.getRecordSequence().get();
         LOGGER.info("write message[recordSequence={}]", sequenceId);
-
-        String filepath = buildPartitionPath(record, partitioner, format);
-        ByteSource payload = bindValue(record, format);
-        Blob blob = blobStore.blobBuilder(filepath)
-                .payload(payload)
-                .contentLength(payload.size())
-                .build();
         int currentSize;
-
         rwlock.writeLock().lock();
         try {
-            incomingList.add(Pair.of(record, blob));
+            incomingList.add(record);
             currentSize = incomingList.size();
         } finally {
             rwlock.writeLock().unlock();
         }
         LOGGER.info("build blob success[recordSequence={}]", sequenceId);
         if (currentSize == sinkConfig.getBatchSize()) {
-            flushExecutor.submit(() -> flush());
+            flushExecutor.submit(this::flush);
         }
     }
 
     private void flush() {
-        final List<Pair<Record<GenericRecord>, Blob>> recordsToInsert;
+        final List<Record<GenericRecord>> recordsToInsert;
 
+        if (incomingList.isEmpty()) {
+            log.info("no pending data...");
+            return;
+        }
         rwlock.writeLock().lock();
         try {
             if (incomingList.isEmpty()) {
@@ -179,32 +176,42 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         } finally {
             rwlock.writeLock().unlock();
         }
-        final Iterator<Pair<Record<GenericRecord>, Blob>> iter = recordsToInsert.iterator();
+        Record<GenericRecord> firstRecord = recordsToInsert.get(0);
+        Schema<GenericRecord> schema = getPulsarSchema(firstRecord);
+        format.initSchema(schema);
 
-        while (iter.hasNext()) {
-            final Pair<Record<GenericRecord>, Blob> blobPair = iter.next();
-            try {
-                log.info("upload blob {}", blobPair.getLeft().getRecordSequence().get());
-                blobStore.putBlob(sinkConfig.getBucket(), blobPair.getRight(), PutOptions.NONE);
-                blobPair.getLeft().ack();
-                log.info("write success {}", blobPair.getLeft().getRecordSequence().get());
-            } catch (ContainerNotFoundException e) {
-                log.error("Bad message", e);
-                blobPair.getLeft().fail();
-                iter.remove();
-            }
+        final Iterator<Record<GenericRecord>> iter = recordsToInsert.iterator();
+        try {
+            String filepath = buildPartitionPath(firstRecord, partitioner, format);
+            ByteSource payload = bindValue(iter, format);
+            Blob blob = blobStore.blobBuilder(filepath)
+                    .payload(payload)
+                    .contentLength(payload.size())
+                    .build();
+            log.info("upload blob {}", filepath);
+            blobStore.putBlob(sinkConfig.getBucket(), blob, PutOptions.NONE);
+            iter.forEachRemaining(Record::ack);
+            log.info("write success {}", filepath);
+        } catch (ContainerNotFoundException e) {
+            log.error("Bad message", e);
+            iter.forEachRemaining(Record::fail);
+            iter.remove();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
 
-    public ByteSource bindValue(Record<GenericRecord> message,
-                                Format<V, Record<GenericRecord>> format) throws Exception {
-        return format.recordWriter(sinkConfig, message);
+    public ByteSource bindValue(Iterator<Record<GenericRecord>> message,
+                                Format<GenericRecord> format) throws Exception {
+        return format.recordWriter(message);
     }
 
     public String buildPartitionPath(Record<GenericRecord> message,
                                      Partitioner<GenericRecord> partitioner,
-                                     Format<?, Record<GenericRecord>> format) throws Exception {
+                                     Format<?> format) throws Exception {
         String encodePartition = partitioner.encodePartition(message, System.currentTimeMillis());
         String partitionedPath = partitioner.generatePartitionedPath(message.getTopicName().get(), encodePartition);
         String path = partitionedPath + format.getExtension();

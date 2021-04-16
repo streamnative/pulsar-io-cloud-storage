@@ -21,18 +21,19 @@ package org.apache.pulsar.io.jcloud.format;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.ByteSource;
 import java.nio.charset.StandardCharsets;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.pulsar.client.api.Schema;
 import org.apache.pulsar.client.api.schema.Field;
 import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.functions.api.Record;
 
 /**
  * json format.
- * @param <V> config
  */
-public class JsonFormat<V> implements Format<V, Record<GenericRecord>> {
+public class JsonFormat implements Format<GenericRecord> {
 
     @Override
     public String getExtension() {
@@ -40,10 +41,20 @@ public class JsonFormat<V> implements Format<V, Record<GenericRecord>> {
     }
 
     @Override
-    public ByteSource recordWriter(V config, Record<GenericRecord> record) throws Exception {
-        Object writeValue = convertRecordToObject(record.getValue());
+    public void initSchema(Schema<GenericRecord> schema) {
+    }
+
+    @Override
+    public ByteSource recordWriter(Iterator<Record<GenericRecord>> record) throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
-        return ByteSource.wrap(objectMapper.writeValueAsString(writeValue).getBytes(StandardCharsets.UTF_8));
+        StringBuilder stringBuilder = new StringBuilder();
+        if (record.hasNext()) {
+            Record<GenericRecord> next = record.next();
+            Object writeValue = convertRecordToObject(next.getValue());
+            String recordAsString = objectMapper.writeValueAsString(writeValue);
+            stringBuilder.append(recordAsString).append("\n");
+        }
+        return ByteSource.wrap(stringBuilder.toString().getBytes(StandardCharsets.UTF_8));
     }
 
     private Map<String, Object> convertRecordToObject(GenericRecord record) {

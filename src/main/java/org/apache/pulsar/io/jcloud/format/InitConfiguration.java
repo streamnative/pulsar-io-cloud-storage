@@ -16,30 +16,21 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.pulsar.io.jcloud.bo;
+package org.apache.pulsar.io.jcloud.format;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 
 /**
- * test use class.
+ * init config.
+ *
+ * @param <V> config
  */
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class TestRecord {
-    private String name;
-    private int number;
-    private TestSubRecord subRecord;
+public interface InitConfiguration<V extends BlobStoreAbstractConfig> {
 
     /**
-     * test use class.
+     * processing configuration.
+     *
+     * @param configuration config
      */
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class TestSubRecord {
-        private String name;
-    }
+    void configure(V configuration);
 }

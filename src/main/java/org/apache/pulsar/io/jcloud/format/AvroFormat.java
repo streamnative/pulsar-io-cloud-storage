@@ -20,26 +20,27 @@ package org.apache.pulsar.io.jcloud.format;
 
 import com.google.common.io.ByteSource;
 import java.io.ByteArrayOutputStream;
+import java.util.Iterator;
 import org.apache.avro.Schema;
 import org.apache.avro.file.CodecFactory;
 import org.apache.avro.file.DataFileWriter;
 import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.functions.api.Record;
-import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 import org.apache.pulsar.io.jcloud.util.AvroRecordUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * avro format.
- * @param <V> config
  */
-public class AvroFormat<V extends BlobStoreAbstractConfig> implements Format<V, Record<GenericRecord>> {
+public class AvroFormat implements Format<GenericRecord> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AvroFormat.class);
 
-    final DataFileWriter<Object> writer = new DataFileWriter<>(new GenericDatumWriter<>());
+    private final DataFileWriter<Object> writer = new DataFileWriter<>(new GenericDatumWriter<>());
+
+    private Schema rootAvroSchema;
 
     @Override
     public String getExtension() {
@@ -47,19 +48,22 @@ public class AvroFormat<V extends BlobStoreAbstractConfig> implements Format<V, 
     }
 
     @Override
-    public ByteSource recordWriter(V config, Record<GenericRecord> record) throws Exception {
-        Schema rootAvroSchema = AvroRecordUtil.getAvroSchema(record);
-        org.apache.avro.generic.GenericRecord writeRecord = AvroRecordUtil
-                .convertGenericRecord(record.getValue(), rootAvroSchema);
+    public void initSchema(org.apache.pulsar.client.api.Schema<GenericRecord> schema) {
+        rootAvroSchema = AvroRecordUtil.convertToAvroSchema(schema);
+    }
 
+    @Override
+    public ByteSource recordWriter(Iterator<Record<GenericRecord>> records) throws Exception {
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         writer.setCodec(CodecFactory.snappyCodec());
-        try (DataFileWriter<Object> fileWriter = writer.create(rootAvroSchema, byteArrayOutputStream)){
-            fileWriter.append(writeRecord);
+        try (DataFileWriter<Object> fileWriter = writer.create(rootAvroSchema, byteArrayOutputStream)) {
+            while (records.hasNext()) {
+                org.apache.avro.generic.GenericRecord writeRecord = AvroRecordUtil
+                        .convertGenericRecord(records.next().getValue(), rootAvroSchema);
+                fileWriter.append(writeRecord);
+            }
             fileWriter.flush();
         }
         return ByteSource.wrap(byteArrayOutputStream.toByteArray());
     }
-
-
 }

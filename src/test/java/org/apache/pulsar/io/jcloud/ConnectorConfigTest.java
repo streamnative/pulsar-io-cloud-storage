@@ -21,7 +21,6 @@ package org.apache.pulsar.io.jcloud;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.pulsar.io.jcloud.sink.CloudStorageSinkConfig;
 import org.junit.Assert;
 import org.junit.Test;

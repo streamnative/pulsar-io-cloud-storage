@@ -19,11 +19,14 @@
 package org.apache.pulsar.io.jcloud.format;
 
 import com.google.common.io.ByteSource;
+import java.util.Iterator;
+import org.apache.pulsar.client.api.Schema;
+import org.apache.pulsar.functions.api.Record;
 
 /**
  * record format.
  */
-public interface Format<V, T> {
+public interface Format<T> {
     /**
      * get format extension.
      *
@@ -31,13 +34,14 @@ public interface Format<V, T> {
      */
     String getExtension();
 
+    void initSchema(Schema<T> schema);
+
     /**
      * format record to bytes.
      *
-     * @param config configuration
      * @param record record
-     * @return      bytes warp
+     * @return bytes warp
      * @throws Exception exception
      */
-    ByteSource recordWriter(V config, T record) throws Exception;
+    ByteSource recordWriter(Iterator<Record<T>> record) throws Exception;
 }
