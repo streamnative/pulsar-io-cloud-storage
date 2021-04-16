@@ -19,15 +19,17 @@
 package org.apache.pulsar.io.jcloud.format;
 
 import com.google.common.io.ByteSource;
+import java.io.ByteArrayOutputStream;
+import java.text.MessageFormat;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Consumer;
 import org.apache.avro.generic.GenericData;
-import org.apache.avro.specific.SpecificData;
 import org.apache.avro.util.Utf8;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.parquet.ParquetReadOptions;
 import org.apache.parquet.avro.AvroParquetReader;
-import org.apache.parquet.avro.AvroReadSupport;
 import org.apache.parquet.hadoop.ParquetReader;
-import org.apache.parquet.hadoop.ParquetRecordReader;
 import org.apache.pulsar.client.admin.PulsarAdmin;
 import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.client.api.MessageId;
@@ -46,12 +48,6 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.io.ByteArrayOutputStream;
-import java.text.MessageFormat;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Consumer;
 
 /**
  * parquet format test.
