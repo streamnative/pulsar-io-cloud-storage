@@ -35,6 +35,8 @@ import org.apache.pulsar.functions.api.Record;
  */
 public class JsonFormat implements Format<GenericRecord> {
 
+    private ObjectMapper objectMapper;
+
     @Override
     public String getExtension() {
         return ".json";
@@ -42,11 +44,11 @@ public class JsonFormat implements Format<GenericRecord> {
 
     @Override
     public void initSchema(Schema<GenericRecord> schema) {
+        objectMapper = new ObjectMapper();
     }
 
     @Override
     public ByteSource recordWriter(Iterator<Record<GenericRecord>> record) throws Exception {
-        ObjectMapper objectMapper = new ObjectMapper();
         StringBuilder stringBuilder = new StringBuilder();
         if (record.hasNext()) {
             Record<GenericRecord> next = record.next();
