@@ -40,6 +40,7 @@ import org.apache.pulsar.io.core.Sink;
 import org.apache.pulsar.io.core.SinkContext;
 import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 import org.apache.pulsar.io.jcloud.format.AvroFormat;
+import org.apache.pulsar.io.jcloud.format.BytesFormat;
 import org.apache.pulsar.io.jcloud.format.Format;
 import org.apache.pulsar.io.jcloud.format.JsonFormat;
 import org.apache.pulsar.io.jcloud.format.ParquetFormat;
@@ -125,6 +126,8 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                 return new ParquetFormat();
             case "json":
                 return new JsonFormat();
+            case "bytes":
+                return new BytesFormat();
             default:
                 throw new RuntimeException("not support formatType " + formatType);
         }

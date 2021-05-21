@@ -31,6 +31,7 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.io.jcloud.format.AvroFormat;
+import org.apache.pulsar.io.jcloud.format.BytesFormat;
 import org.apache.pulsar.io.jcloud.format.Format;
 import org.apache.pulsar.io.jcloud.format.JsonFormat;
 import org.apache.pulsar.io.jcloud.format.ParquetFormat;
@@ -56,6 +57,7 @@ public class BlobStoreAbstractConfig implements Serializable {
             .put("avro", new AvroFormat())
             .put("json", new JsonFormat())
             .put("parquet", new ParquetFormat())
+            .put("bytes", new BytesFormat())
             .build();
     private static final Map<String, Partitioner<?>> partitionerMap = new ImmutableMap.Builder<String, Partitioner<?>>()
             .put("default", new SimplePartitioner<>())
