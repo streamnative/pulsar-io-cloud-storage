@@ -45,7 +45,7 @@ The Cloud Storage sink connector supports the following properties.
 | `roleSessionName` | String| False | null | The Cloud Storage role session name. |
 | `bucket` | String| True | null | The Cloud Storage bucket. |
 | `endpoint` | String| False | null | The Cloud Storage endpoint. |
-| `formatType` | String| False | "json" | The data format type. Available options are JSON, Avro, or Parquet. By default, it is set to JSON. |
+| `formatType` | String| False | "json" | The data format type. Available options are JSON, Avro, Bytes, or Parquet. By default, it is set to JSON. |
 | `partitionerType` | String| False |"partition" | The partitioning type. It can be configured by topic partitions or by time. By default, the partition type is configured by topic partitions. |
 | `timePartitionPattern` | String| False |"yyyy-MM-dd" | The format pattern of the time-based partitioning. For details, refer to the Java date and time format. |
 | `timePartitionDuration` | String| False |"1d" | The time interval for time-based partitioning, such as 1d, or 1h. |
@@ -143,7 +143,7 @@ Before using the Cloud Storage sink connector, you need to create a configuratio
     $PULSAR_HOME/bin/pulsar-admin sink localrun --sink-config-file cloud-storage-sink-config.yaml
     ```
 
-5. Send Pulsar messages. Currently, only Avro or JSON schema is supported.
+5. Send Pulsar messages. Currently, Avro or JSON mode supports formatType json, avro, parquet. No schema mode can only use bytes formatType.
 
    ```java
      try (
