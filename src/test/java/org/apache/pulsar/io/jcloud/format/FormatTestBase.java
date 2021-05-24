@@ -76,7 +76,8 @@ public abstract class FormatTestBase extends PulsarTestBase {
     public void testAvroRecordWriter() throws Exception {
         List<TestRecord> testRecords = Arrays.asList(
                 new TestRecord("key1", 1, null),
-                new TestRecord("key1", 1, new TestRecord.TestSubRecord("aaa"))
+                new TestRecord("key1", 1, new TestRecord.TestSubRecord("aaa")),
+                new TestRecord("key2", 2, new TestRecord.TestSubRecord("aaa"))
         );
 
         sendTypedMessages(avroTopicName.toString(), SchemaType.AVRO, testRecords, Optional.empty(), TestRecord.class);
