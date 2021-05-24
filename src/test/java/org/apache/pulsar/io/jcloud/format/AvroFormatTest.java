@@ -19,42 +19,38 @@
 package org.apache.pulsar.io.jcloud.format;
 
 import com.google.common.io.ByteSource;
-import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.avro.generic.GenericData;
-import org.apache.parquet.avro.AvroParquetReader;
-import org.apache.parquet.hadoop.ParquetReader;
+import org.apache.avro.file.DataFileReader;
+import org.apache.avro.file.SeekableByteArrayInput;
+import org.apache.avro.generic.GenericDatumReader;
 import org.apache.pulsar.client.api.Message;
+import org.apache.pulsar.client.api.Schema;
 import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.functions.instance.SinkRecord;
 import org.apache.pulsar.functions.source.PulsarRecord;
-import org.apache.pulsar.io.jcloud.support.ParquetInputFile;
 import org.apache.pulsar.io.jcloud.util.AvroRecordUtil;
 import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * parquet format test.
+ * avro format test.
  */
-public class ParquetFormatTest extends FormatTestBase {
-
-    private static final Logger log = LoggerFactory.getLogger(ParquetFormatTest.class);
-
-    private ParquetFormat parquetFormat = new ParquetFormat();
-
+public class AvroFormatTest extends FormatTestBase {
+    private static final Logger log = LoggerFactory.getLogger(AvroFormatTest.class);
+    private AvroFormat format = new AvroFormat();
 
     @Override
     public Format<GenericRecord> getFormat() {
-        return parquetFormat;
+        return format;
     }
 
     @Override
     public String expectedFormatExtension() {
-        return ".parquet";
+        return ".avro";
     }
 
     public void handleMessage(TopicName topicName, Message<GenericRecord> msg) {
@@ -67,21 +63,21 @@ public class ParquetFormatTest extends FormatTestBase {
         List<Record<GenericRecord>> records = new ArrayList<>();
         records.add(new SinkRecord<>(test, test.getValue()));
         try {
-            getFormat().initSchema(AvroRecordUtil.extractPulsarSchema(msg));
+            final Schema<GenericRecord> schema = AvroRecordUtil.extractPulsarSchema(msg);
+            getFormat().initSchema(schema);
             ByteSource byteSource = getFormat().recordWriter(records.listIterator());
-            ByteArrayOutputStream stream = new ByteArrayOutputStream();
-            stream.write(byteSource.read());
-            ParquetInputFile file = new ParquetInputFile("a.parquet", stream);
 
-            ParquetReader<org.apache.avro.generic.GenericRecord> reader = AvroParquetReader
-                    .<org.apache.avro.generic.GenericRecord>builder(file)
-                    .withDataModel(GenericData.get())
-                    .build();
-            org.apache.avro.generic.GenericRecord record = reader.read();
 
-            assertEquals(msg.getValue(), record);
-            System.out.println("build.record() = " + record);
-            System.out.println("record.getClass() = " + record.getClass());
+            final GenericDatumReader<Object> datumReader =
+                    new GenericDatumReader<>(AvroRecordUtil.convertToAvroSchema(schema));
+            final SeekableByteArrayInput input = new SeekableByteArrayInput(byteSource.read());
+            final DataFileReader<Object> objects = new DataFileReader<>(input, datumReader);
+
+            final org.apache.avro.generic.GenericRecord genericRecord =
+                    (org.apache.avro.generic.GenericRecord) objects.next();
+            assertEquals(msg.getValue(), genericRecord);
+            System.out.println("build.record() = " + genericRecord);
+            System.out.println("record.getClass() = " + genericRecord.getClass());
         } catch (Exception e) {
             log.error("", e);
             Assert.fail();

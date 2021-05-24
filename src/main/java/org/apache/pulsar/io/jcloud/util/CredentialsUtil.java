@@ -31,6 +31,7 @@ public class CredentialsUtil {
 
     /**
      * Builds an AWS credential provider based on the offload options.
+     *
      * @return aws credential provider
      */
     public static AWSCredentialsProvider getAWSCredentialProvider(CloudStorageSinkConfig config) {

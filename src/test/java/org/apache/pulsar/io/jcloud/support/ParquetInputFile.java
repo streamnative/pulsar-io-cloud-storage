@@ -21,7 +21,6 @@ package org.apache.pulsar.io.jcloud.support;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-
 import org.apache.parquet.io.DelegatingSeekableInputStream;
 import org.apache.parquet.io.InputFile;
 import org.apache.parquet.io.SeekableInputStream;
@@ -34,7 +33,7 @@ public class ParquetInputFile implements InputFile {
     private final byte[] data;
 
     /**
-     *  seekable input stream for byte array.
+     * seekable input stream for byte array.
      */
     public static class SeekableByteArrayInputStream extends ByteArrayInputStream {
         public SeekableByteArrayInputStream(byte[] buf) {

@@ -20,7 +20,6 @@ package org.apache.pulsar.io.jcloud.partitioner;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import com.google.common.base.Supplier;
 import java.text.MessageFormat;
 import junit.framework.TestCase;
@@ -90,7 +89,7 @@ public class PartitionerTest extends TestCase {
     }
 
     @BeforeClass
-    public static void startup(){
+    public static void startup() {
         @SuppressWarnings("unchecked")
         Message<Object> mock = mock(Message.class);
         when(mock.getPublishTime()).thenReturn(1599578218610L);

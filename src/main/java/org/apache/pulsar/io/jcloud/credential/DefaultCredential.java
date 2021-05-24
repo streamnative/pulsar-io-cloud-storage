@@ -16,7 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.apache.pulsar.io.jcloud.credential;
 
 import org.slf4j.Logger;
@@ -30,7 +29,7 @@ public class DefaultCredential implements JcloudsCredential {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultCredential.class);
 
     @Override
-    public String provider(){
+    public String provider() {
         return "default";
     }
 }

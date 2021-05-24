@@ -18,24 +18,19 @@
  */
 package org.apache.pulsar.io.jcloud.format;
 
-import junit.framework.TestCase;
 import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
-import org.junit.Assert;
-import org.junit.Test;
 
 /**
- * format test.
+ * init config.
+ *
+ * @param <V> config
  */
-public class FormatTest extends TestCase {
+public interface InitConfiguration<V extends BlobStoreAbstractConfig> {
 
-    @Test
-    public void testGetExtension() {
-        AvroFormat<BlobStoreAbstractConfig> avroFormat = new AvroFormat<>();
-        Assert.assertEquals(avroFormat.getExtension(), ".avro");
-    }
-
-    public void testRecordWriter() {
-        AvroFormat<BlobStoreAbstractConfig> avroFormat = new AvroFormat<>();
-//        avroFormat.recordWriter(null,)
-    }
+    /**
+     * processing configuration.
+     *
+     * @param configuration config
+     */
+    void configure(V configuration);
 }

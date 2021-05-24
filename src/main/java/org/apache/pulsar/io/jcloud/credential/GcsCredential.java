@@ -16,7 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.apache.pulsar.io.jcloud.credential;
 
 import java.io.IOException;
@@ -39,12 +38,12 @@ public class GcsCredential implements JcloudsCredential {
     private static final Logger LOGGER = LoggerFactory.getLogger(GcsCredential.class);
 
     @Override
-    public String provider(){
+    public String provider() {
         return "gcs";
     }
 
     @Override
-    public Supplier<Credentials> getCredentials(CloudStorageSinkConfig sinkConfig){
+    public Supplier<Credentials> getCredentials(CloudStorageSinkConfig sinkConfig) {
         //   for gcs, use downloaded file 'google_creds.json', which contains service account key by
         //     following instructions in page https://support.google.com/googleapi/answer/6158849
 //        String gcsKeyPath = sinkConfig.getGcsManagedLedgerOffloadServiceAccountKeyFile();

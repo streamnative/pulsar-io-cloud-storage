@@ -23,7 +23,6 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.util.function.Supplier;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.functions.api.Record;
@@ -33,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * partition by day, hour.
+ *
  * @param <T>
  */
 public class TimePartitioner<T> implements Partitioner<T> {
@@ -55,7 +55,7 @@ public class TimePartitioner<T> implements Partitioner<T> {
     }
 
     private long parseDurationString(String timePartitionDuration) {
-        if (StringUtils.isBlank(timePartitionDuration)){
+        if (StringUtils.isBlank(timePartitionDuration)) {
             return DEFAULT_PARTITION_DURATION;
         }
         String number = timePartitionDuration.substring(0, timePartitionDuration.length() - 1);

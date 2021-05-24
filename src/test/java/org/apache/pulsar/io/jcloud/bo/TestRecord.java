@@ -29,17 +29,17 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class TestRecord {
-   private String name;
-   private int number;
-   private TestSubRecord subRecord;
+    private String name;
+    private int number;
+    private TestSubRecord subRecord;
 
-   /**
-    * test use class.
-    */
-   @Data
-   @AllArgsConstructor
-   @NoArgsConstructor
-   public static class TestSubRecord{
-       private String name;
-   }
+    /**
+     * test use class.
+     */
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class TestSubRecord {
+        private String name;
+    }
 }
