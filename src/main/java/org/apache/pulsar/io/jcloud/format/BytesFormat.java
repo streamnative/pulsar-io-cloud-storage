@@ -18,19 +18,13 @@
  */
 package org.apache.pulsar.io.jcloud.format;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteSource;
 import com.google.common.io.ByteStreams;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.client.api.Schema;
-import org.apache.pulsar.client.api.schema.Field;
 import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
@@ -38,7 +32,7 @@ import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 /**
  * bytes format.
  */
-public class BytesFormat implements Format<GenericRecord>,InitConfiguration {
+public class BytesFormat implements Format<GenericRecord>, InitConfiguration {
 
     private byte[] lineSeparatorBytes;
 
@@ -46,6 +40,7 @@ public class BytesFormat implements Format<GenericRecord>,InitConfiguration {
     public void configure(BlobStoreAbstractConfig configuration) {
         lineSeparatorBytes = System.lineSeparator().getBytes(StandardCharsets.UTF_8);
     }
+
     @Override
     public String getExtension() {
         return ".raw";
