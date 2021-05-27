@@ -376,7 +376,6 @@
       <groupId>org.apache.pulsar</groupId>
       <artifactId>pulsar-common</artifactId>
       <version>${pulsar.version}</version>
-      <scope>provided</scope>
     </dependency>
   </dependencies>
 

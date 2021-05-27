@@ -52,8 +52,6 @@ import org.jclouds.blobstore.BlobStoreContext;
 import org.jclouds.blobstore.ContainerNotFoundException;
 import org.jclouds.blobstore.domain.Blob;
 import org.jclouds.blobstore.options.PutOptions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A Simple abstract class for BlobStore sink.
@@ -61,8 +59,6 @@ import org.slf4j.LoggerFactory;
  */
 @Slf4j
 public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> implements Sink<GenericRecord> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(BlobStoreAbstractSink.class);
 
     private V sinkConfig;
 
@@ -147,8 +143,8 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
     @Override
     public void write(Record<GenericRecord> record) throws Exception {
         final Long sequenceId = record.getRecordSequence().orElse(null);
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("write message[recordSequence={}]", sequenceId);
+        if (log.isDebugEnabled()) {
+            log.debug("write message[recordSequence={}]", sequenceId);
         }
         int currentSize;
         rwlock.writeLock().lock();
@@ -158,8 +154,8 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         } finally {
             rwlock.writeLock().unlock();
         }
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.info("build blob success[recordSequence={}]", sequenceId);
+        if (log.isDebugEnabled()) {
+            log.debug("build blob success[recordSequence={}]", sequenceId);
         }
         if (currentSize == sinkConfig.getBatchSize()) {
             flushExecutor.submit(this::flush);
@@ -167,6 +163,15 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
     }
 
     private void flush() {
+        try {
+            unsafeFlush();
+        } catch (Throwable cause) {
+            log.error("Encountered exception on flushing data to cloud storage", cause);
+            throw cause;
+        }
+    }
+
+    private void unsafeFlush() {
         final List<Record<GenericRecord>> recordsToInsert;
 
         rwlock.writeLock().lock();
@@ -180,6 +185,9 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         } finally {
             rwlock.writeLock().unlock();
         }
+
+        log.info("Flushing the buffered records to blob store");
+
         Record<GenericRecord> firstRecord = recordsToInsert.get(0);
         Schema<GenericRecord> schema = getPulsarSchema(firstRecord);
         format.initSchema(schema);
@@ -192,19 +200,19 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                     .payload(payload)
                     .contentLength(payload.size())
                     .build();
-            log.info("upload blob {}", filepath);
+            log.info("Uploading blob {}", filepath);
             blobStore.putBlob(sinkConfig.getBucket(), blob, PutOptions.NONE);
-            iter.forEachRemaining(Record::ack);
-            log.info("write success {}", filepath);
+            recordsToInsert.forEach(Record::ack);
+            log.info("Successfully uploaded blob {}", filepath);
         } catch (ContainerNotFoundException e) {
             log.error("Blob {} is not found", filepath, e);
-            iter.forEachRemaining(Record::fail);
+            recordsToInsert.forEach(Record::fail);
         } catch (IOException e) {
             log.error("Failed to write to blob {}", filepath, e);
-            iter.forEachRemaining(Record::fail);
+            recordsToInsert.forEach(Record::fail);
         } catch (Exception e) {
             log.error("Encountered unknown error writing to blob {}", filepath, e);
-            iter.forEachRemaining(Record::fail);
+            recordsToInsert.forEach(Record::fail);
         }
     }
 
@@ -220,7 +228,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         String encodePartition = partitioner.encodePartition(message, System.currentTimeMillis());
         String partitionedPath = partitioner.generatePartitionedPath(message.getTopicName().get(), encodePartition);
         String path = partitionedPath + format.getExtension();
-        LOGGER.info("generate message[recordSequence={}] savePath: {}", message.getRecordSequence().get(), path);
+        log.info("generate message[recordSequence={}] savePath: {}", message.getRecordSequence().get(), path);
         return path;
     }
 
