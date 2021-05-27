@@ -29,7 +29,7 @@ import org.junit.Test;
 /**
  * connector config test.
  */
-public class ConnectorConfigTest extends PulsarTestBase {
+public class ConnectorConfigTest {
 
     @Test
     public void loadBasicConfigTest() throws IOException {
@@ -40,6 +40,7 @@ public class ConnectorConfigTest extends PulsarTestBase {
         config.put("bucket", "testbucket");
         config.put("region", "localhost");
         config.put("endpoint", "us-standard");
+        config.put("pathPrefix", "pulsar/");
         config.put("formatType", "avro");
         config.put("partitionerType", "default");
         config.put("timePartitionPattern", "yyyy-MM-dd");

@@ -75,6 +75,8 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
     private ScheduledExecutorService flushExecutor;
 
+    private String pathPrefix;
+
     @Override
     public void open(Map<String, Object> config, SinkContext sinkContext) throws Exception {
         sinkConfig = loadConfig(config, sinkContext);
@@ -89,7 +91,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         checkArgument(blobStore.containerExists(sinkConfig.getBucket()), "%s bucket not exist", sinkConfig.getBucket());
         format = buildFormat(sinkConfig);
         partitioner = buildPartitioner(sinkConfig);
-
+        pathPrefix = StringUtils.trimToEmpty(sinkConfig.getPathPrefix());
         long batchTimeMs = sinkConfig.getBatchTimeMs();
         incomingList = Lists.newArrayList();
         flushExecutor = Executors.newScheduledThreadPool(1);
@@ -225,9 +227,10 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
     public String buildPartitionPath(Record<GenericRecord> message,
                                      Partitioner<GenericRecord> partitioner,
                                      Format<?> format) {
+
         String encodePartition = partitioner.encodePartition(message, System.currentTimeMillis());
         String partitionedPath = partitioner.generatePartitionedPath(message.getTopicName().get(), encodePartition);
-        String path = partitionedPath + format.getExtension();
+        String path = pathPrefix + partitionedPath + format.getExtension();
         log.info("generate message[recordSequence={}] savePath: {}", message.getRecordSequence().get(), path);
         return path;
     }
