@@ -16,7 +16,7 @@ jobs:
 
       - name: build
         run: |
-          version=`./scripts/dev/get-project-version.py`
+          version=`./scripts/get-version.sh`
           mvn clean install -DskipTests
           rm -rf pulsar-*
           cp ./target/pulsar-io-cloud-storage-${version}.nar ./
