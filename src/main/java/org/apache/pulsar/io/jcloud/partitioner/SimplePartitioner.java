@@ -35,7 +35,6 @@ public class SimplePartitioner<T> implements Partitioner<T> {
 
     @Override
     public void configure(BlobStoreAbstractConfig config) {
-
     }
 
     @Override

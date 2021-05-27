@@ -29,7 +29,7 @@ import org.junit.Test;
 /**
  * connector config test.
  */
-public class ConnectorConfigTest extends PulsarTestBase {
+public class ConnectorConfigTest {
 
     @Test
     public void loadBasicConfigTest() throws IOException {
@@ -40,6 +40,7 @@ public class ConnectorConfigTest extends PulsarTestBase {
         config.put("bucket", "testbucket");
         config.put("region", "localhost");
         config.put("endpoint", "us-standard");
+        config.put("pathPrefix", "pulsar/");
         config.put("formatType", "avro");
         config.put("partitionerType", "default");
         config.put("timePartitionPattern", "yyyy-MM-dd");
@@ -100,6 +101,57 @@ public class ConnectorConfigTest extends PulsarTestBase {
 
         try {
             config.put("timePartitionDuration", "1000y");
+            CloudStorageSinkConfig.load(config).validate();
+            Assert.fail();
+        } catch (Exception e) {
+        }
+    }
+
+    @Test
+    public void pathPrefixTest() throws IOException {
+        Map<String, Object> config = new HashMap<>();
+        config.put("provider", "aws-s3");
+        config.put("accessKeyId", "aws-s3");
+        config.put("secretAccessKey", "aws-s3");
+        config.put("bucket", "testbucket");
+        config.put("region", "localhost");
+        config.put("endpoint", "us-standard");
+        config.put("formatType", "avro");
+        config.put("partitionerType", "default");
+        config.put("timePartitionPattern", "yyyy-MM-dd");
+        config.put("timePartitionDuration", "2d");
+        config.put("batchSize", 10);
+
+        try {
+            config.put("pathPrefix", "pulsar/");
+            CloudStorageSinkConfig.load(config).validate();
+        } catch (Exception e) {
+            Assert.fail();
+        }
+
+        try {
+            config.put("pathPrefix", "/pulsar/");
+            CloudStorageSinkConfig.load(config).validate();
+            Assert.fail();
+        } catch (Exception e) {
+        }
+
+        try {
+            config.put("pathPrefix", "/pulsar");
+            CloudStorageSinkConfig.load(config).validate();
+            Assert.fail();
+        } catch (Exception e) {
+        }
+
+        try {
+            config.put("pathPrefix", "pulsar/test/");
+            CloudStorageSinkConfig.load(config).validate();
+        } catch (Exception e) {
+            Assert.fail();
+        }
+
+        try {
+            config.put("pathPrefix", "pulsar/test");
             CloudStorageSinkConfig.load(config).validate();
             Assert.fail();
         } catch (Exception e) {

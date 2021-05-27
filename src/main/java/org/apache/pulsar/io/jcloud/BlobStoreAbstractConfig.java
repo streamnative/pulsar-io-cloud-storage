@@ -72,6 +72,8 @@ public class BlobStoreAbstractConfig implements Serializable {
 
     private String endpoint;
 
+    private String pathPrefix;
+
     private String formatType;
 
     private String partitionerType;
@@ -109,6 +111,12 @@ public class BlobStoreAbstractConfig implements Serializable {
         }
         checkArgument(batchSize > 0, "batchSize property not set.");
         checkArgument(batchTimeMs > 0, "batchTimeMs property not set.");
+        if (StringUtils.isNoneBlank(pathPrefix)) {
+        checkArgument(!StringUtils.startsWith(pathPrefix, "/"),
+                "pathPrefix cannot start with '/',the style is 'xx/xxx/'.");
+        checkArgument(StringUtils.endsWith(pathPrefix, "/"),
+                "pathPrefix must end with '/',the style is 'xx/xxx/'.");
+        }
     }
 
 }
