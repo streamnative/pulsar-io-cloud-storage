@@ -146,8 +146,10 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
     @Override
     public void write(Record<GenericRecord> record) throws Exception {
-        final Long sequenceId = record.getRecordSequence().get();
-        LOGGER.info("write message[recordSequence={}]", sequenceId);
+        final Long sequenceId = record.getRecordSequence().orElse(null);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("write message[recordSequence={}]", sequenceId);
+        }
         int currentSize;
         rwlock.writeLock().lock();
         try {
@@ -156,7 +158,9 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         } finally {
             rwlock.writeLock().unlock();
         }
-        LOGGER.info("build blob success[recordSequence={}]", sequenceId);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.info("build blob success[recordSequence={}]", sequenceId);
+        }
         if (currentSize == sinkConfig.getBatchSize()) {
             flushExecutor.submit(this::flush);
         }
@@ -165,13 +169,10 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
     private void flush() {
         final List<Record<GenericRecord>> recordsToInsert;
 
-        if (incomingList.isEmpty()) {
-            log.info("no pending data...");
-            return;
-        }
         rwlock.writeLock().lock();
         try {
             if (incomingList.isEmpty()) {
+                log.info("no records to flush ...");
                 return;
             }
             recordsToInsert = incomingList;
@@ -184,8 +185,8 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         format.initSchema(schema);
 
         final Iterator<Record<GenericRecord>> iter = recordsToInsert.iterator();
+        String filepath = buildPartitionPath(firstRecord, partitioner, format);
         try {
-            String filepath = buildPartitionPath(firstRecord, partitioner, format);
             ByteSource payload = bindValue(iter, format);
             Blob blob = blobStore.blobBuilder(filepath)
                     .payload(payload)
@@ -196,13 +197,14 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
             iter.forEachRemaining(Record::ack);
             log.info("write success {}", filepath);
         } catch (ContainerNotFoundException e) {
-            log.error("Bad message", e);
+            log.error("Blob {} is not found", filepath, e);
             iter.forEachRemaining(Record::fail);
-            iter.remove();
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Failed to write to blob {}", filepath, e);
+            iter.forEachRemaining(Record::fail);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Encountered unknown error writing to blob {}", filepath, e);
+            iter.forEachRemaining(Record::fail);
         }
     }
 
@@ -214,7 +216,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
     public String buildPartitionPath(Record<GenericRecord> message,
                                      Partitioner<GenericRecord> partitioner,
-                                     Format<?> format) throws Exception {
+                                     Format<?> format) {
         String encodePartition = partitioner.encodePartition(message, System.currentTimeMillis());
         String partitionedPath = partitioner.generatePartitionedPath(message.getTopicName().get(), encodePartition);
         String path = partitionedPath + format.getExtension();
