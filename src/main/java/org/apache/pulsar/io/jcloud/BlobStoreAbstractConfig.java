@@ -113,6 +113,8 @@ public class BlobStoreAbstractConfig implements Serializable {
         checkArgument(batchTimeMs > 0, "batchTimeMs property not set.");
         checkArgument(!StringUtils.startsWith(pathPrefix, "/"),
                 "pathPrefix cannot start with '/',the style is 'xx/xxx/'.");
+        checkArgument(StringUtils.endsWith(pathPrefix, "/"),
+                "pathPrefix must end with '/',the style is 'xx/xxx/'.");
     }
 
 }
