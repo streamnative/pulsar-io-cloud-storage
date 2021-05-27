@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env bash
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,12 +13,10 @@
 # limitations under the License.
 #
 
-import xml.etree.ElementTree as ET
-from os.path import dirname, realpath, join
+version=${1#v}
+if [[ "x$version" == "x" ]]; then
+  echo "You need to provide the version of the Pulsar"
+  exit 1
+fi
 
-# Derive the POM path from the current script location
-TOP_LEVEL_PATH = dirname(dirname(dirname(realpath(__file__))))
-POM_PATH = join(TOP_LEVEL_PATH, 'pom.xml')
-
-root = ET.XML(open(POM_PATH).read())
-print(root.find('{http://maven.apache.org/POM/4.0.0}version').text)
+mvn versions:set-property -Dproperty=pulsar.version -DnewVersion=${version}
