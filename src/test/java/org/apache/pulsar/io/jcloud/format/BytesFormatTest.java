@@ -21,16 +21,26 @@ package org.apache.pulsar.io.jcloud.format;
 import com.google.common.io.ByteSource;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Consumer;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.pulsar.client.admin.PulsarAdmin;
 import org.apache.pulsar.client.api.Message;
+import org.apache.pulsar.client.api.MessageId;
+import org.apache.pulsar.client.api.Schema;
 import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.common.naming.TopicName;
+import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.functions.instance.SinkRecord;
 import org.apache.pulsar.functions.source.PulsarRecord;
+import org.apache.pulsar.io.jcloud.bo.TestRecord;
 import org.apache.pulsar.io.jcloud.util.AvroRecordUtil;
 import org.junit.Assert;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,5 +84,25 @@ public class BytesFormatTest extends FormatTestBase {
         return AvroRecordUtil.convertGenericRecord(
                 test.getValue(),
                 AvroRecordUtil.convertToAvroSchema(msg.getReaderSchema().get()));
+    }
+
+    @Test
+    public void testStringWriter() throws Exception {
+
+        TopicName topic = TopicName.get("test-string" + RandomStringUtils.random(5));
+
+        PulsarAdmin pulsarAdmin = PulsarAdmin.builder()
+                .serviceHttpUrl(getAdminUrl())
+                .build();
+        pulsarAdmin.topics().createPartitionedTopic(topic.toString(), 1);
+        pulsarAdmin.topics().createSubscription(topic.toString(), "test", MessageId.earliest);
+        pulsarAdmin.close();
+        List<String> testRecords = Arrays.asList("key1", "key2");
+
+        sendTypedMessages(topic.toString(), SchemaType.STRING, testRecords, Optional.empty(), String.class);
+
+        Consumer<Message<GenericRecord>>
+                handle = getMessageConsumer(topic);
+        consumerMessages(topic.toString(), Schema.AUTO_CONSUME(), handle, testRecords.size(), 2000);
     }
 }
