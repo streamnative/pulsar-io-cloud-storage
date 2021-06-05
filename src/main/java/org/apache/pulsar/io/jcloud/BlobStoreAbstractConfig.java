@@ -82,6 +82,8 @@ public class BlobStoreAbstractConfig implements Serializable {
 
     private String timePartitionDuration;
 
+    private boolean sliceTopicPartitionPath;
+
     private int batchSize = 10;
 
     private long batchTimeMs = 1000;

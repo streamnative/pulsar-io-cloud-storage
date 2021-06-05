@@ -41,3 +41,4 @@ configs:
   timePartitionDuration: "1d"
   batchSize: 10
   batchTimeMs: 1000
+  sliceTopicPartitionPath: false
