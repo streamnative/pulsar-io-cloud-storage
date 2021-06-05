@@ -21,7 +21,9 @@ package org.apache.pulsar.io.jcloud.format;
 
 import com.google.common.io.ByteSource;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Iterator;
+import java.util.Map;
 import org.apache.avro.Schema;
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.parquet.avro.AvroParquetWriter;
@@ -32,14 +34,16 @@ import org.apache.parquet.io.OutputFile;
 import org.apache.parquet.io.PositionOutputStream;
 import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.functions.api.Record;
+import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 import org.apache.pulsar.io.jcloud.BytesOutputStream;
 import org.apache.pulsar.io.jcloud.util.AvroRecordUtil;
+import org.apache.pulsar.io.jcloud.util.MetadataUtil;
 
 
 /**
  * parquet format.
  */
-public class ParquetFormat implements Format<GenericRecord> {
+public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<BlobStoreAbstractConfig> {
     @Override
     public String getExtension() {
         return ".parquet";
@@ -47,9 +51,19 @@ public class ParquetFormat implements Format<GenericRecord> {
 
     private Schema rootAvroSchema;
 
+    private boolean useMetadata;
+
+    @Override
+    public void configure(BlobStoreAbstractConfig configuration) {
+        this.useMetadata = configuration.isUseMetadata();
+    }
+
     @Override
     public void initSchema(org.apache.pulsar.client.api.Schema<GenericRecord> schema) {
         rootAvroSchema = AvroRecordUtil.convertToAvroSchema(schema);
+        if (useMetadata){
+            rootAvroSchema = MetadataUtil.setMetadataSchema(rootAvroSchema);
+        }
     }
 
     @Override
@@ -67,8 +81,19 @@ public class ParquetFormat implements Format<GenericRecord> {
                     .build();
 
             while (records.hasNext()) {
+                final Record<GenericRecord> next = records.next();
                 org.apache.avro.generic.GenericRecord writeRecord = AvroRecordUtil
-                        .convertGenericRecord(records.next().getValue(), rootAvroSchema);
+                        .convertGenericRecord(next.getValue(), rootAvroSchema);
+                if (useMetadata) {
+                    final Map<String, Object> metadata = MetadataUtil.extractedMetadata(next);
+                    metadata.forEach((key, v) -> {
+                        if (v instanceof byte[]){
+                            writeRecord.put(key, ByteBuffer.wrap((byte[]) v));
+                        } else {
+                            writeRecord.put(key, v);
+                        }
+                    });
+                }
                 parquetWriter.write(writeRecord);
             }
         } finally {

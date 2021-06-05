@@ -31,7 +31,9 @@ import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.functions.instance.SinkRecord;
 import org.apache.pulsar.functions.source.PulsarRecord;
+import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 import org.apache.pulsar.io.jcloud.util.AvroRecordUtil;
+import org.apache.pulsar.io.jcloud.util.MetadataUtil;
 import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,13 +65,17 @@ public class AvroFormatTest extends FormatTestBase {
         List<Record<GenericRecord>> records = new ArrayList<>();
         records.add(new SinkRecord<>(test, test.getValue()));
         try {
-            final Schema<GenericRecord> schema = AvroRecordUtil.extractPulsarSchema(msg);
+            final Schema<GenericRecord> schema = (Schema<GenericRecord>) msg.getReaderSchema().get();
+            final BlobStoreAbstractConfig config = new BlobStoreAbstractConfig();
+            config.setUseMetadata(true);
+            ((InitConfiguration<BlobStoreAbstractConfig>) getFormat()).configure(config);
             getFormat().initSchema(schema);
             ByteSource byteSource = getFormat().recordWriter(records.listIterator());
 
 
+            final org.apache.avro.Schema avroSchema = AvroRecordUtil.convertToAvroSchema(schema);
             final GenericDatumReader<Object> datumReader =
-                    new GenericDatumReader<>(AvroRecordUtil.convertToAvroSchema(schema));
+                    new GenericDatumReader<>(MetadataUtil.setMetadataSchema(avroSchema));
             final SeekableByteArrayInput input = new SeekableByteArrayInput(byteSource.read());
             final DataFileReader<Object> objects = new DataFileReader<>(input, datumReader);
 

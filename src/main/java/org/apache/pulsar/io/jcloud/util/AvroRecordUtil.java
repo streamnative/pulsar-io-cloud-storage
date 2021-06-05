@@ -68,6 +68,9 @@ public class AvroRecordUtil {
     public static org.apache.pulsar.client.api.Schema<GenericRecord> extractPulsarSchema(
             Message<GenericRecord> message) {
         try {
+            if (message.getReaderSchema().isPresent()) {
+                return (org.apache.pulsar.client.api.Schema<GenericRecord>) message.getReaderSchema().get();
+            }
             //There is no good way to handle `PulsarRecord#getSchema` in the pulsar function,
             // first read the schema information in the Message through reflection.
             // You can replace this method when the schema is available in the Record.
@@ -102,6 +105,11 @@ public class AvroRecordUtil {
 
     public static org.apache.avro.generic.GenericRecord convertGenericRecord(GenericRecord recordValue,
                                                                              Schema rootAvroSchema) {
+        return convertGenericRecord(recordValue, rootAvroSchema, false);
+    }
+    public static org.apache.avro.generic.GenericRecord convertGenericRecord(GenericRecord recordValue,
+                                                                             Schema rootAvroSchema,
+                                                                             boolean useMetadata) {
         org.apache.avro.generic.GenericRecord recordHolder = new GenericData.Record(rootAvroSchema);
         for (org.apache.pulsar.client.api.schema.Field field : recordValue.getFields()) {
             Schema.Field field1 = rootAvroSchema.getField(field.getName());

@@ -51,6 +51,7 @@ The Cloud Storage sink connector supports the following properties.
 | `timePartitionDuration` | String| False |"1d" | The time interval for time-based partitioning, such as 1d, or 1h. |
 | `batchSize` | int | False |10 | The number of records submitted in batch. |
 | `batchTimeMs` | long | False |1000 | The interval for batch submission. |
+| `useMetadata` | Boolean | False |false | Save message attributes to metadata. |
 
 ## Configure Cloud Storage sink connector
 
