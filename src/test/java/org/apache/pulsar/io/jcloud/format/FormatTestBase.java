@@ -107,7 +107,7 @@ public abstract class FormatTestBase extends PulsarTestBase {
 
     protected abstract boolean supportMetadata();
 
-    private Consumer<Message<GenericRecord>> getMessageConsumer(TopicName topic) {
+    protected Consumer<Message<GenericRecord>> getMessageConsumer(TopicName topic) {
         return msg -> {
             try {
                 initSchema((Schema<GenericRecord>) msg.getReaderSchema().get());
@@ -161,7 +161,7 @@ public abstract class FormatTestBase extends PulsarTestBase {
         return recordValue.getField(field);
     }
 
-    private void initSchema(Schema<GenericRecord> schema) {
+    protected void initSchema(Schema<GenericRecord> schema) {
         final BlobStoreAbstractConfig config = new BlobStoreAbstractConfig();
         if (supportMetadata()) {
             config.setWithMetadata(true);

@@ -37,7 +37,6 @@ import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.functions.instance.SinkRecord;
 import org.apache.pulsar.functions.source.PulsarRecord;
-import org.apache.pulsar.io.jcloud.bo.TestRecord;
 import org.apache.pulsar.io.jcloud.util.AvroRecordUtil;
 import org.junit.Assert;
 import org.junit.Test;
@@ -48,7 +47,8 @@ import org.slf4j.LoggerFactory;
  * avro format test.
  */
 public class BytesFormatTest extends FormatTestBase {
-    private static final Logger log = LoggerFactory.getLogger(BytesFormatTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BytesFormatTest.class);
+
     private BytesFormat format = new BytesFormat();
 
     @Override
@@ -81,6 +81,9 @@ public class BytesFormatTest extends FormatTestBase {
         final byte[] expecteds =
                 ArrayUtils.addAll(msg.getData(), System.lineSeparator().getBytes(StandardCharsets.UTF_8));
         Assert.assertArrayEquals(expecteds, byteSource.read());
+        if (msg.getValue().getSchemaType().isPrimitive()){
+            return null;
+        }
         return AvroRecordUtil.convertGenericRecord(
                 test.getValue(),
                 AvroRecordUtil.convertToAvroSchema(msg.getReaderSchema().get()));
@@ -102,7 +105,15 @@ public class BytesFormatTest extends FormatTestBase {
         sendTypedMessages(topic.toString(), SchemaType.STRING, testRecords, Optional.empty(), String.class);
 
         Consumer<Message<GenericRecord>>
-                handle = getMessageConsumer(topic);
+                handle = msg -> {
+            try {
+                initSchema((Schema<GenericRecord>) msg.getReaderSchema().get());
+                getFormatGeneratedRecord(topic, msg);
+            } catch (Exception e) {
+                LOGGER.error("formatter handle message is fail", e);
+                Assert.fail();
+            }
+        };
         consumerMessages(topic.toString(), Schema.AUTO_CONSUME(), handle, testRecords.size(), 2000);
     }
 }
