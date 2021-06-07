@@ -91,19 +91,19 @@ public class SliceTopicPartitionPartitionerTest extends TestCase {
                 new Object[]{
                         simplePartitioner,
                         "partition-1" + Partitioner.PATH_SEPARATOR + "3221225506",
-                        "public/default/test/test-partition-1/partition-1" + Partitioner.PATH_SEPARATOR + "3221225506",
+                        "public/default/test/1/partition-1" + Partitioner.PATH_SEPARATOR + "3221225506",
                         getPartitionedTopic()
                 },
                 new Object[]{
                         dayPartitioner,
                         "2020-09-08" + Partitioner.PATH_SEPARATOR + "3221225506",
-                        "public/default/test/test-partition-1/2020-09-08" + Partitioner.PATH_SEPARATOR + "3221225506",
+                        "public/default/test/1/2020-09-08" + Partitioner.PATH_SEPARATOR + "3221225506",
                         getPartitionedTopic()
                 },
                 new Object[]{
                         hourPartitioner,
                         "2020-09-08-12" + Partitioner.PATH_SEPARATOR + "3221225506",
-                        "public/default/test/test-partition-1/2020-09-08-12" + Partitioner.PATH_SEPARATOR + "3221225506"
+                        "public/default/test/1/2020-09-08-12" + Partitioner.PATH_SEPARATOR + "3221225506"
                         , getPartitionedTopic()
                 }
         };

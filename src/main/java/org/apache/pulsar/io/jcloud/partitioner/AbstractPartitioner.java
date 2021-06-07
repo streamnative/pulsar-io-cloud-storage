@@ -49,7 +49,7 @@ public abstract class AbstractPartitioner<T> implements Partitioner<T> {
         if (topicName.isPartitioned() && sliceTopicPartitionPath) {
                 TopicName newTopicName = TopicName.get(topicName.getPartitionedTopicName());
                 joinList.add(newTopicName.getLocalName());
-                joinList.add(topicName.getLocalName());
+                joinList.add(Integer.toString(topicName.getPartitionIndex()));
         } else {
             joinList.add(topicName.getLocalName());
         }
