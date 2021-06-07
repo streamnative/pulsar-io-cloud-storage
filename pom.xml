@@ -366,13 +366,6 @@
       <version>${pulsar.version}</version>
       <scope>provided</scope>
     </dependency>
-    <!-- for apple Apple Silicon (M1, Mac-aarch64)-->
-    <dependency>
-      <groupId>org.xerial.snappy</groupId>
-      <artifactId>snappy-java</artifactId>
-      <version>1.1.8.4</version>
-      <scope>test</scope>
-    </dependency>
     <dependency>
       <groupId>net.java.dev.jna</groupId>
       <artifactId>jna</artifactId>

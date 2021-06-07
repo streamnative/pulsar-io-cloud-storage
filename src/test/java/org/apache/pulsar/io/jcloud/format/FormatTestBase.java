@@ -117,7 +117,7 @@ public abstract class FormatTestBase extends PulsarTestBase {
                     validMetadata(formatGeneratedRecord, msg);
                 }
             } catch (Exception e) {
-                LOGGER.error("", e);
+                LOGGER.error("formatter handle message is fail", e);
                 Assert.fail();
             }
         };
