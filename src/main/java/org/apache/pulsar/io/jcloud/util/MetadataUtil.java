@@ -35,9 +35,9 @@ import org.apache.pulsar.functions.api.Record;
  */
 public class MetadataUtil {
 
-    public static final String METADATA_ORIGIN_PROPERTIES_KEY = "__originProperties";
-    public static final String METADATA_ORIGIN_SCHEMA_VERSION_KEY = "__originSchemaVersion";
-    public static final String METADATA_MESSAGE_ID_KEY = "__messageId";
+    public static final String METADATA_ORIGIN_PROPERTIES_KEY = "originProperties";
+    public static final String METADATA_ORIGIN_SCHEMA_VERSION_KEY = "originSchemaVersion";
+    public static final String METADATA_MESSAGE_ID_KEY = "messageId";
     public static final String MESSAGE_METADATA_KEY = "__message_metadata__";
     public static final String MESSAGE_METADATA_NAME = "MessageMetadata";
     public static final Schema MESSAGE_METADATA = buildMetadataSchema();
