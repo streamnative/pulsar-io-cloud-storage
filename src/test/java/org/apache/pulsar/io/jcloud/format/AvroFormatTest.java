@@ -31,10 +31,8 @@ import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.functions.instance.SinkRecord;
 import org.apache.pulsar.functions.source.PulsarRecord;
-import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 import org.apache.pulsar.io.jcloud.util.AvroRecordUtil;
 import org.apache.pulsar.io.jcloud.util.MetadataUtil;
-import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +53,13 @@ public class AvroFormatTest extends FormatTestBase {
         return ".avro";
     }
 
-    public void handleMessage(TopicName topicName, Message<GenericRecord> msg) {
+    @Override
+    protected boolean supportMetadata() {
+        return true;
+    }
+
+    public org.apache.avro.generic.GenericRecord getFormatGeneratedRecord(TopicName topicName,
+                                                                          Message<GenericRecord> msg) throws Exception {
         @SuppressWarnings("unchecked")
         PulsarRecord<GenericRecord> test = PulsarRecord.<GenericRecord>builder()
                 .topicName(topicName.toString())
@@ -64,27 +68,16 @@ public class AvroFormatTest extends FormatTestBase {
                 .build();
         List<Record<GenericRecord>> records = new ArrayList<>();
         records.add(new SinkRecord<>(test, test.getValue()));
-        try {
-            final Schema<GenericRecord> schema = (Schema<GenericRecord>) msg.getReaderSchema().get();
-            final BlobStoreAbstractConfig config = new BlobStoreAbstractConfig();
-            config.setWithMetadata(true);
-            ((InitConfiguration<BlobStoreAbstractConfig>) getFormat()).configure(config);
-            getFormat().initSchema(schema);
-            ByteSource byteSource = getFormat().recordWriter(records.listIterator());
 
+        final Schema<GenericRecord> schema = (Schema<GenericRecord>) msg.getReaderSchema().get();
+        org.apache.avro.Schema avroSchema = AvroRecordUtil.convertToAvroSchema(schema);
+        avroSchema = MetadataUtil.setMetadataSchema(avroSchema);
 
-            final org.apache.avro.Schema avroSchema = AvroRecordUtil.convertToAvroSchema(schema);
-            final GenericDatumReader<Object> datumReader =
-                    new GenericDatumReader<>(MetadataUtil.setMetadataSchema(avroSchema));
-            final SeekableByteArrayInput input = new SeekableByteArrayInput(byteSource.read());
-            final DataFileReader<Object> objects = new DataFileReader<>(input, datumReader);
-
-            final org.apache.avro.generic.GenericRecord genericRecord =
-                    (org.apache.avro.generic.GenericRecord) objects.next();
-            assertEquals(msg.getValue(), genericRecord);
-        } catch (Exception e) {
-            log.error("", e);
-            Assert.fail();
-        }
+        final GenericDatumReader<Object> datumReader =
+                new GenericDatumReader<>(avroSchema);
+        ByteSource byteSource = getFormat().recordWriter(records.listIterator());
+        final SeekableByteArrayInput input = new SeekableByteArrayInput(byteSource.read());
+        final DataFileReader<Object> objects = new DataFileReader<>(input, datumReader);
+        return (org.apache.avro.generic.GenericRecord) objects.next();
     }
 }

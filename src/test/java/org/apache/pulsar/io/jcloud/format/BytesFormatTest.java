@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.pulsar.client.api.Message;
-import org.apache.pulsar.client.api.Schema;
 import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.functions.api.Record;
@@ -52,7 +51,13 @@ public class BytesFormatTest extends FormatTestBase {
         return ".raw";
     }
 
-    public void handleMessage(TopicName topicName, Message<GenericRecord> msg) {
+    @Override
+    protected boolean supportMetadata() {
+        return false;
+    }
+
+    public org.apache.avro.generic.GenericRecord getFormatGeneratedRecord(TopicName topicName,
+                                                                          Message<GenericRecord> msg) throws Exception {
         @SuppressWarnings("unchecked")
         PulsarRecord<GenericRecord> test = PulsarRecord.<GenericRecord>builder()
                 .topicName(topicName.toString())
@@ -61,19 +66,13 @@ public class BytesFormatTest extends FormatTestBase {
                 .build();
         List<Record<GenericRecord>> records = new ArrayList<>();
         records.add(new SinkRecord<>(test, test.getValue()));
-        try {
-            final Schema<GenericRecord> schema = AvroRecordUtil.extractPulsarSchema(msg);
-            format.initSchema(schema);
-            format.configure(null);
-            ByteSource byteSource = getFormat().recordWriter(records.listIterator());
 
-
-            final byte[] expecteds =
-                    ArrayUtils.addAll(msg.getData(), System.lineSeparator().getBytes(StandardCharsets.UTF_8));
-            Assert.assertArrayEquals(expecteds, byteSource.read());
-        } catch (Exception e) {
-            log.error("", e);
-            Assert.fail();
-        }
+        ByteSource byteSource = getFormat().recordWriter(records.listIterator());
+        final byte[] expecteds =
+                ArrayUtils.addAll(msg.getData(), System.lineSeparator().getBytes(StandardCharsets.UTF_8));
+        Assert.assertArrayEquals(expecteds, byteSource.read());
+        return AvroRecordUtil.convertGenericRecord(
+                test.getValue(),
+                AvroRecordUtil.convertToAvroSchema(msg.getReaderSchema().get()));
     }
 }
