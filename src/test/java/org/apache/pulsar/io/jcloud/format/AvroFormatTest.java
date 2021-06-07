@@ -67,7 +67,7 @@ public class AvroFormatTest extends FormatTestBase {
         try {
             final Schema<GenericRecord> schema = (Schema<GenericRecord>) msg.getReaderSchema().get();
             final BlobStoreAbstractConfig config = new BlobStoreAbstractConfig();
-            config.setUseMetadata(true);
+            config.setWithMetadata(true);
             ((InitConfiguration<BlobStoreAbstractConfig>) getFormat()).configure(config);
             getFormat().initSchema(schema);
             ByteSource byteSource = getFormat().recordWriter(records.listIterator());

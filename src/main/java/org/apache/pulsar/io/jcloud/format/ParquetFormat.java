@@ -53,7 +53,7 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
 
     @Override
     public void configure(BlobStoreAbstractConfig configuration) {
-        this.useMetadata = configuration.isUseMetadata();
+        this.useMetadata = configuration.isWithMetadata();
     }
 
     @Override

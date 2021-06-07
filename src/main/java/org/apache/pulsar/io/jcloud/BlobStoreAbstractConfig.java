@@ -86,7 +86,7 @@ public class BlobStoreAbstractConfig implements Serializable {
 
     private long batchTimeMs = 1000;
 
-    private boolean useMetadata;
+    private boolean withMetadata;
 
     public void validate() {
         checkNotNull(bucket, "bucket property not set.");

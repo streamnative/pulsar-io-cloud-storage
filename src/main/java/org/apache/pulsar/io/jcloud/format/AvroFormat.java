@@ -54,7 +54,7 @@ public class AvroFormat implements Format<GenericRecord> , InitConfiguration<Blo
 
     @Override
     public void configure(BlobStoreAbstractConfig configuration) {
-        this.useMetadata = configuration.isUseMetadata();
+        this.useMetadata = configuration.isWithMetadata();
     }
 
     @Override
