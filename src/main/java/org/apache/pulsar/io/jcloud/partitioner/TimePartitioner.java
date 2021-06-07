@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
  *
  * @param <T>
  */
-public class TimePartitioner<T> implements Partitioner<T> {
+public class TimePartitioner<T> extends AbstractPartitioner<T> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TimePartitioner.class);
 
@@ -47,6 +47,7 @@ public class TimePartitioner<T> implements Partitioner<T> {
 
     @Override
     public void configure(BlobStoreAbstractConfig config) {
+        super.configure(config);
         this.formatString = StringUtils.defaultIfBlank(config.getTimePartitionPattern(), DEFAULT_PARTITION_PATTERN);
         this.partitionDuration = parseDurationString(config.getTimePartitionDuration());
         this.dateTimeFormatter = new DateTimeFormatterBuilder()

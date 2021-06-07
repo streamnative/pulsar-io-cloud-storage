@@ -19,8 +19,6 @@
 package org.apache.pulsar.io.jcloud.partitioner;
 
 import java.io.File;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 
@@ -57,13 +55,12 @@ public interface Partitioner<T> {
         return encodePartition(sinkRecord);
     }
 
-    default String generatePartitionedPath(String topic, String encodedPartition) {
-        TopicName topicName = TopicName.get(topic);
-        return StringUtils.joinWith(PATH_SEPARATOR,
-                topicName.getTenant(),
-                topicName.getNamespacePortion(),
-                topicName.getLocalName(),
-                encodedPartition
-        );
-    }
+    /**
+     * Generate saved path.
+     *
+     * @param topic            topic name
+     * @param encodedPartition Path encoded by the implementation class
+     * @return saved path
+     */
+    String generatePartitionedPath(String topic, String encodedPartition);
 }

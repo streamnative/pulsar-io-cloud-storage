@@ -38,7 +38,7 @@ import org.junit.runners.Parameterized;
  * partitioner unit test.
  */
 @RunWith(Parameterized.class)
-public class PartitionerTest extends TestCase {
+public class SliceTopicPartitionPartitionerTest extends TestCase {
 
     @Parameterized.Parameter(0)
     public Partitioner<Object> partitioner;
@@ -55,6 +55,7 @@ public class PartitionerTest extends TestCase {
     @Parameterized.Parameters
     public static Object[][] data() {
         BlobStoreAbstractConfig blobStoreAbstractConfig = new BlobStoreAbstractConfig();
+        blobStoreAbstractConfig.setSliceTopicPartitionPath(true);
         blobStoreAbstractConfig.setTimePartitionDuration("1d");
         blobStoreAbstractConfig.setTimePartitionPattern("yyyy-MM-dd");
         SimplePartitioner<Object> simplePartitioner = new SimplePartitioner<>();
@@ -65,6 +66,7 @@ public class PartitionerTest extends TestCase {
         BlobStoreAbstractConfig hourConfig = new BlobStoreAbstractConfig();
         hourConfig.setTimePartitionDuration("4h");
         hourConfig.setTimePartitionPattern("yyyy-MM-dd-HH");
+        hourConfig.setSliceTopicPartitionPath(true);
         TimePartitioner<Object> hourPartitioner = new TimePartitioner<>();
         hourPartitioner.configure(hourConfig);
         return new Object[][]{
@@ -89,19 +91,19 @@ public class PartitionerTest extends TestCase {
                 new Object[]{
                         simplePartitioner,
                         "partition-1" + Partitioner.PATH_SEPARATOR + "3221225506",
-                        "public/default/test-partition-1/partition-1" + Partitioner.PATH_SEPARATOR + "3221225506",
+                        "public/default/test/1/partition-1" + Partitioner.PATH_SEPARATOR + "3221225506",
                         getPartitionedTopic()
                 },
                 new Object[]{
                         dayPartitioner,
                         "2020-09-08" + Partitioner.PATH_SEPARATOR + "3221225506",
-                        "public/default/test-partition-1/2020-09-08" + Partitioner.PATH_SEPARATOR + "3221225506",
+                        "public/default/test/1/2020-09-08" + Partitioner.PATH_SEPARATOR + "3221225506",
                         getPartitionedTopic()
                 },
                 new Object[]{
                         hourPartitioner,
                         "2020-09-08-12" + Partitioner.PATH_SEPARATOR + "3221225506",
-                        "public/default/test-partition-1/2020-09-08-12" + Partitioner.PATH_SEPARATOR + "3221225506"
+                        "public/default/test/1/2020-09-08-12" + Partitioner.PATH_SEPARATOR + "3221225506"
                         , getPartitionedTopic()
                 }
         };
