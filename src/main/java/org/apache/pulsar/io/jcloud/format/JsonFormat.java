@@ -63,7 +63,7 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
             Record<GenericRecord> next = record.next();
             Map<String, Object> writeValue = convertRecordToObject(next.getValue());
             if (useMetadata) {
-                writeValue.putAll(MetadataUtil.extractedMetadata(next));
+                writeValue.put(MetadataUtil.MESSAGE_METADATA_KEY, MetadataUtil.extractedMetadata(next));
             }
             String recordAsString = objectMapper.writeValueAsString(writeValue);
             stringBuilder.append(recordAsString).append("\n");

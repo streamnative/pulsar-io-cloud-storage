@@ -70,7 +70,6 @@ public class BytesFormatTest extends FormatTestBase {
 
             final byte[] expecteds =
                     ArrayUtils.addAll(msg.getData(), System.lineSeparator().getBytes(StandardCharsets.UTF_8));
-
             Assert.assertArrayEquals(expecteds, byteSource.read());
         } catch (Exception e) {
             log.error("", e);

@@ -82,8 +82,6 @@ public class AvroFormatTest extends FormatTestBase {
             final org.apache.avro.generic.GenericRecord genericRecord =
                     (org.apache.avro.generic.GenericRecord) objects.next();
             assertEquals(msg.getValue(), genericRecord);
-            System.out.println("build.record() = " + genericRecord);
-            System.out.println("record.getClass() = " + genericRecord.getClass());
         } catch (Exception e) {
             log.error("", e);
             Assert.fail();

@@ -71,7 +71,7 @@ public class ParquetFormatTest extends FormatTestBase {
             ByteSource byteSource = getFormat().recordWriter(records.listIterator());
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
             stream.write(byteSource.read());
-            ParquetInputFile file = new ParquetInputFile("a.parquet", stream);
+            ParquetInputFile file = new ParquetInputFile("tmp.parquet", stream);
 
             ParquetReader<org.apache.avro.generic.GenericRecord> reader = AvroParquetReader
                     .<org.apache.avro.generic.GenericRecord>builder(file)
@@ -80,8 +80,6 @@ public class ParquetFormatTest extends FormatTestBase {
             org.apache.avro.generic.GenericRecord record = reader.read();
 
             assertEquals(msg.getValue(), record);
-            System.out.println("build.record() = " + record);
-            System.out.println("record.getClass() = " + record.getClass());
         } catch (Exception e) {
             log.error("", e);
             Assert.fail();

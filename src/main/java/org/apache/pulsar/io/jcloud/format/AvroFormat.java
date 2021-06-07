@@ -21,9 +21,7 @@ package org.apache.pulsar.io.jcloud.format;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.io.ByteSource;
 import java.io.ByteArrayOutputStream;
-import java.nio.ByteBuffer;
 import java.util.Iterator;
-import java.util.Map;
 import org.apache.avro.Schema;
 import org.apache.avro.file.CodecFactory;
 import org.apache.avro.file.DataFileWriter;
@@ -78,14 +76,8 @@ public class AvroFormat implements Format<GenericRecord> , InitConfiguration<Blo
                         .convertGenericRecord(next.getValue(), rootAvroSchema);
 
                 if (useMetadata) {
-                    Map<String, Object> metadata = MetadataUtil.extractedMetadata(next);
-                    metadata.forEach((key, v) -> {
-                        if (v instanceof byte[]){
-                            writeRecord.put(key, ByteBuffer.wrap((byte[]) v));
-                        } else {
-                            writeRecord.put(key, v);
-                        }
-                    });
+                    org.apache.avro.generic.GenericRecord metadataRecord = MetadataUtil.extractedMetadataRecord(next);
+                    writeRecord.put(MetadataUtil.MESSAGE_METADATA_KEY, metadataRecord);
                 }
                 fileWriter.append(writeRecord);
             }
