@@ -180,8 +180,8 @@ public abstract class FormatTestBase extends PulsarTestBase {
 
         Assert.assertEquals(ByteBuffer.wrap(message.getMessageId().toByteArray()),
                 genericRecord.get(MetadataUtil.METADATA_MESSAGE_ID_KEY));
-        Assert.assertNotNull(genericRecord.get(MetadataUtil.METADATA_ORIGIN_PROPERTIES_KEY));
-        Map<Utf8, Utf8> utf8Utf8Map = (Map<Utf8, Utf8>) genericRecord.get(MetadataUtil.METADATA_ORIGIN_PROPERTIES_KEY);
+        Assert.assertNotNull(genericRecord.get(MetadataUtil.METADATA_PROPERTIES_KEY));
+        Map<Utf8, Utf8> utf8Utf8Map = (Map<Utf8, Utf8>) genericRecord.get(MetadataUtil.METADATA_PROPERTIES_KEY);
         Map<String, String> resultMap = utf8Utf8Map.entrySet().stream().collect(
                 Collectors.toMap(
                         e -> e.getKey().toString(),
@@ -193,9 +193,9 @@ public abstract class FormatTestBase extends PulsarTestBase {
                         message.getReaderSchema().get().getSchemaInfo().getProperties(),
                         resultMap
                 ));
-        Assert.assertNotNull(genericRecord.get(MetadataUtil.METADATA_ORIGIN_SCHEMA_VERSION_KEY));
+        Assert.assertNotNull(genericRecord.get(MetadataUtil.METADATA_SCHEMA_VERSION_KEY));
         Assert.assertEquals(ByteBuffer.wrap(message.getSchemaVersion()),
-                genericRecord.get(MetadataUtil.METADATA_ORIGIN_SCHEMA_VERSION_KEY));
+                genericRecord.get(MetadataUtil.METADATA_SCHEMA_VERSION_KEY));
     }
 
     public boolean mapsAreEqual(Map<String, String> mapA, Map<String, String> mapB) {

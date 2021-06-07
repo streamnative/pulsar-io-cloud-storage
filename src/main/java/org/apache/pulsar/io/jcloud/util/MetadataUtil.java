@@ -35,11 +35,11 @@ import org.apache.pulsar.functions.api.Record;
  */
 public class MetadataUtil {
 
-    public static final String METADATA_ORIGIN_PROPERTIES_KEY = "originProperties";
-    public static final String METADATA_ORIGIN_SCHEMA_VERSION_KEY = "originSchemaVersion";
+    public static final String METADATA_PROPERTIES_KEY = "properties";
+    public static final String METADATA_SCHEMA_VERSION_KEY = "schemaVersion";
     public static final String METADATA_MESSAGE_ID_KEY = "messageId";
     public static final String MESSAGE_METADATA_KEY = "__message_metadata__";
-    public static final String MESSAGE_METADATA_NAME = "MessageMetadata";
+    public static final String MESSAGE_METADATA_NAME = "messageMetadata";
     public static final Schema MESSAGE_METADATA = buildMetadataSchema();
 
     private static ThreadLocal<List<Schema.Field>> schemaFieldThreadLocal = ThreadLocal.withInitial(ArrayList::new);
@@ -51,8 +51,8 @@ public class MetadataUtil {
         final SchemaInfo schemaInfo = recordSchema.getSchemaInfo();
 
         GenericData.Record record = new GenericData.Record(MESSAGE_METADATA);
-        record.put(METADATA_ORIGIN_PROPERTIES_KEY, schemaInfo.getProperties());
-        record.put(METADATA_ORIGIN_SCHEMA_VERSION_KEY, ByteBuffer.wrap(message.getSchemaVersion()));
+        record.put(METADATA_PROPERTIES_KEY, schemaInfo.getProperties());
+        record.put(METADATA_SCHEMA_VERSION_KEY, ByteBuffer.wrap(message.getSchemaVersion()));
         record.put(METADATA_MESSAGE_ID_KEY, ByteBuffer.wrap(message.getMessageId().toByteArray()));
         return record;
     }
@@ -63,8 +63,8 @@ public class MetadataUtil {
         final org.apache.pulsar.client.api.Schema<GenericRecord> recordSchema =
                 AvroRecordUtil.extractPulsarSchema(message);
         final SchemaInfo schemaInfo = recordSchema.getSchemaInfo();
-        metadata.put(METADATA_ORIGIN_PROPERTIES_KEY, schemaInfo.getProperties());
-        metadata.put(METADATA_ORIGIN_SCHEMA_VERSION_KEY, message.getSchemaVersion());
+        metadata.put(METADATA_PROPERTIES_KEY, schemaInfo.getProperties());
+        metadata.put(METADATA_SCHEMA_VERSION_KEY, message.getSchemaVersion());
         metadata.put(METADATA_MESSAGE_ID_KEY, message.getMessageId().toByteArray());
 
 
@@ -87,13 +87,13 @@ public class MetadataUtil {
 
     private static Schema buildMetadataSchema(){
         List<Schema.Field> fields = new ArrayList<>();
-        fields.add(new Schema.Field(METADATA_ORIGIN_PROPERTIES_KEY,
+        fields.add(new Schema.Field(METADATA_PROPERTIES_KEY,
                 Schema.createUnion(
                         Schema.create(Schema.Type.NULL),
                         Schema.createMap(Schema.create(Schema.Type.STRING))
                 ))
         );
-        fields.add(new Schema.Field(METADATA_ORIGIN_SCHEMA_VERSION_KEY, Schema.create(Schema.Type.BYTES)));
+        fields.add(new Schema.Field(METADATA_SCHEMA_VERSION_KEY, Schema.create(Schema.Type.BYTES)));
         fields.add(new Schema.Field(METADATA_MESSAGE_ID_KEY, Schema.create(Schema.Type.BYTES)));
         return Schema.createRecord(MESSAGE_METADATA_NAME,
                 null,
