@@ -32,7 +32,7 @@ import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 /**
  * bytes format.
  */
-public class BytesFormat implements Format<GenericRecord>, InitConfiguration {
+public class BytesFormat implements Format<GenericRecord>, InitConfiguration<BlobStoreAbstractConfig> {
 
     private byte[] lineSeparatorBytes;
 

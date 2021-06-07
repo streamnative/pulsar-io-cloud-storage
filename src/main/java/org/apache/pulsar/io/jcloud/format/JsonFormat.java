@@ -29,17 +29,26 @@ import org.apache.pulsar.client.api.Schema;
 import org.apache.pulsar.client.api.schema.Field;
 import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.functions.api.Record;
+import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
+import org.apache.pulsar.io.jcloud.util.MetadataUtil;
 
 /**
  * json format.
  */
-public class JsonFormat implements Format<GenericRecord> {
+public class JsonFormat implements Format<GenericRecord>, InitConfiguration<BlobStoreAbstractConfig> {
 
     private ObjectMapper objectMapper;
+
+    private boolean useMetadata;
 
     @Override
     public String getExtension() {
         return ".json";
+    }
+
+    @Override
+    public void configure(BlobStoreAbstractConfig configuration) {
+        this.useMetadata = configuration.isWithMetadata();
     }
 
     @Override
@@ -52,7 +61,10 @@ public class JsonFormat implements Format<GenericRecord> {
         StringBuilder stringBuilder = new StringBuilder();
         if (record.hasNext()) {
             Record<GenericRecord> next = record.next();
-            Object writeValue = convertRecordToObject(next.getValue());
+            Map<String, Object> writeValue = convertRecordToObject(next.getValue());
+            if (useMetadata) {
+                writeValue.put(MetadataUtil.MESSAGE_METADATA_KEY, MetadataUtil.extractedMetadata(next));
+            }
             String recordAsString = objectMapper.writeValueAsString(writeValue);
             stringBuilder.append(recordAsString).append("\n");
         }

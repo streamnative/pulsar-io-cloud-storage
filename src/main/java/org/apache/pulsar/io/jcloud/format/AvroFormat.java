@@ -18,6 +18,7 @@
  */
 package org.apache.pulsar.io.jcloud.format;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.io.ByteSource;
 import java.io.ByteArrayOutputStream;
 import java.util.Iterator;
@@ -27,14 +28,16 @@ import org.apache.avro.file.DataFileWriter;
 import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.functions.api.Record;
+import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 import org.apache.pulsar.io.jcloud.util.AvroRecordUtil;
+import org.apache.pulsar.io.jcloud.util.MetadataUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * avro format.
  */
-public class AvroFormat implements Format<GenericRecord> {
+public class AvroFormat implements Format<GenericRecord> , InitConfiguration<BlobStoreAbstractConfig>{
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AvroFormat.class);
 
@@ -42,14 +45,24 @@ public class AvroFormat implements Format<GenericRecord> {
 
     private Schema rootAvroSchema;
 
+    private boolean useMetadata;
+
     @Override
     public String getExtension() {
         return ".avro";
     }
 
     @Override
+    public void configure(BlobStoreAbstractConfig configuration) {
+        this.useMetadata = configuration.isWithMetadata();
+    }
+
+    @Override
     public void initSchema(org.apache.pulsar.client.api.Schema<GenericRecord> schema) {
         rootAvroSchema = AvroRecordUtil.convertToAvroSchema(schema);
+        if (useMetadata){
+            rootAvroSchema = MetadataUtil.setMetadataSchema(rootAvroSchema);
+        }
     }
 
     @Override
@@ -58,12 +71,23 @@ public class AvroFormat implements Format<GenericRecord> {
         writer.setCodec(CodecFactory.snappyCodec());
         try (DataFileWriter<Object> fileWriter = writer.create(rootAvroSchema, byteArrayOutputStream)) {
             while (records.hasNext()) {
+                final Record<GenericRecord> next = records.next();
                 org.apache.avro.generic.GenericRecord writeRecord = AvroRecordUtil
-                        .convertGenericRecord(records.next().getValue(), rootAvroSchema);
+                        .convertGenericRecord(next.getValue(), rootAvroSchema);
+
+                if (useMetadata) {
+                    org.apache.avro.generic.GenericRecord metadataRecord = MetadataUtil.extractedMetadataRecord(next);
+                    writeRecord.put(MetadataUtil.MESSAGE_METADATA_KEY, metadataRecord);
+                }
                 fileWriter.append(writeRecord);
             }
             fileWriter.flush();
         }
         return ByteSource.wrap(byteArrayOutputStream.toByteArray());
+    }
+
+    @VisibleForTesting
+    public Schema getRootAvroSchema() {
+        return rootAvroSchema;
     }
 }

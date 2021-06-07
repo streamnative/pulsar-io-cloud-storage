@@ -32,8 +32,6 @@ import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.functions.instance.SinkRecord;
 import org.apache.pulsar.functions.source.PulsarRecord;
 import org.apache.pulsar.io.jcloud.support.ParquetInputFile;
-import org.apache.pulsar.io.jcloud.util.AvroRecordUtil;
-import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +55,13 @@ public class ParquetFormatTest extends FormatTestBase {
         return ".parquet";
     }
 
-    public void handleMessage(TopicName topicName, Message<GenericRecord> msg) {
+    @Override
+    protected boolean supportMetadata() {
+        return true;
+    }
+
+    public org.apache.avro.generic.GenericRecord getFormatGeneratedRecord(TopicName topicName,
+                                                                          Message<GenericRecord> msg) throws Exception {
         @SuppressWarnings("unchecked")
         PulsarRecord<GenericRecord> test = PulsarRecord.<GenericRecord>builder()
                 .topicName(topicName.toString())
@@ -66,25 +70,19 @@ public class ParquetFormatTest extends FormatTestBase {
                 .build();
         List<Record<GenericRecord>> records = new ArrayList<>();
         records.add(new SinkRecord<>(test, test.getValue()));
-        try {
-            getFormat().initSchema(AvroRecordUtil.extractPulsarSchema(msg));
-            ByteSource byteSource = getFormat().recordWriter(records.listIterator());
-            ByteArrayOutputStream stream = new ByteArrayOutputStream();
-            stream.write(byteSource.read());
-            ParquetInputFile file = new ParquetInputFile("a.parquet", stream);
 
-            ParquetReader<org.apache.avro.generic.GenericRecord> reader = AvroParquetReader
-                    .<org.apache.avro.generic.GenericRecord>builder(file)
-                    .withDataModel(GenericData.get())
-                    .build();
-            org.apache.avro.generic.GenericRecord record = reader.read();
+        ByteSource byteSource = getFormat().recordWriter(records.listIterator());
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        stream.write(byteSource.read());
+        ParquetInputFile file = new ParquetInputFile("tmp.parquet", stream);
 
-            assertEquals(msg.getValue(), record);
-            System.out.println("build.record() = " + record);
-            System.out.println("record.getClass() = " + record.getClass());
-        } catch (Exception e) {
-            log.error("", e);
-            Assert.fail();
-        }
+        ParquetReader<org.apache.avro.generic.GenericRecord> reader = AvroParquetReader
+                .<org.apache.avro.generic.GenericRecord>builder(file)
+                .withDataModel(GenericData.get())
+                .build();
+        org.apache.avro.generic.GenericRecord record = reader.read();
+
+        return record;
+
     }
 }

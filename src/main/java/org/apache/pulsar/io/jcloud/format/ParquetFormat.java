@@ -32,14 +32,16 @@ import org.apache.parquet.io.OutputFile;
 import org.apache.parquet.io.PositionOutputStream;
 import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.functions.api.Record;
+import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 import org.apache.pulsar.io.jcloud.BytesOutputStream;
 import org.apache.pulsar.io.jcloud.util.AvroRecordUtil;
+import org.apache.pulsar.io.jcloud.util.MetadataUtil;
 
 
 /**
  * parquet format.
  */
-public class ParquetFormat implements Format<GenericRecord> {
+public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<BlobStoreAbstractConfig> {
     @Override
     public String getExtension() {
         return ".parquet";
@@ -47,9 +49,19 @@ public class ParquetFormat implements Format<GenericRecord> {
 
     private Schema rootAvroSchema;
 
+    private boolean useMetadata;
+
+    @Override
+    public void configure(BlobStoreAbstractConfig configuration) {
+        this.useMetadata = configuration.isWithMetadata();
+    }
+
     @Override
     public void initSchema(org.apache.pulsar.client.api.Schema<GenericRecord> schema) {
         rootAvroSchema = AvroRecordUtil.convertToAvroSchema(schema);
+        if (useMetadata){
+            rootAvroSchema = MetadataUtil.setMetadataSchema(rootAvroSchema);
+        }
     }
 
     @Override
@@ -67,8 +79,13 @@ public class ParquetFormat implements Format<GenericRecord> {
                     .build();
 
             while (records.hasNext()) {
+                final Record<GenericRecord> next = records.next();
                 org.apache.avro.generic.GenericRecord writeRecord = AvroRecordUtil
-                        .convertGenericRecord(records.next().getValue(), rootAvroSchema);
+                        .convertGenericRecord(next.getValue(), rootAvroSchema);
+                if (useMetadata) {
+                    org.apache.avro.generic.GenericRecord metadataRecord = MetadataUtil.extractedMetadataRecord(next);
+                    writeRecord.put(MetadataUtil.MESSAGE_METADATA_KEY, metadataRecord);
+                }
                 parquetWriter.write(writeRecord);
             }
         } finally {
