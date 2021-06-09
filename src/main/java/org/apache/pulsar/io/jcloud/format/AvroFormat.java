@@ -46,6 +46,7 @@ public class AvroFormat implements Format<GenericRecord> , InitConfiguration<Blo
     private Schema rootAvroSchema;
 
     private boolean useMetadata;
+    private CodecFactory codecFactory;
 
     @Override
     public String getExtension() {
@@ -55,6 +56,19 @@ public class AvroFormat implements Format<GenericRecord> , InitConfiguration<Blo
     @Override
     public void configure(BlobStoreAbstractConfig configuration) {
         this.useMetadata = configuration.isWithMetadata();
+        String codecName = configuration.getAvroCodec();
+        if (codecName == null) {
+            this.codecFactory = CodecFactory.nullCodec();
+        } else {
+            try {
+                this.codecFactory = CodecFactory.fromString(codecName);
+                LOGGER.info("Use AVRO codec: {}", codecName);
+            } catch (Throwable cause) {
+                LOGGER.warn("Failed to initialize the codec factory", cause);
+                this.codecFactory = CodecFactory.nullCodec();
+                LOGGER.info("Fallback to use null codec");
+            }
+        }
     }
 
     @Override
@@ -68,7 +82,7 @@ public class AvroFormat implements Format<GenericRecord> , InitConfiguration<Blo
     @Override
     public ByteSource recordWriter(Iterator<Record<GenericRecord>> records) throws Exception {
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        writer.setCodec(CodecFactory.snappyCodec());
+        writer.setCodec(codecFactory);
         try (DataFileWriter<Object> fileWriter = writer.create(rootAvroSchema, byteArrayOutputStream)) {
             while (records.hasNext()) {
                 final Record<GenericRecord> next = records.next();

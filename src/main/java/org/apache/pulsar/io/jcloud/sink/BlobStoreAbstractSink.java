@@ -42,6 +42,7 @@ import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 import org.apache.pulsar.io.jcloud.format.AvroFormat;
 import org.apache.pulsar.io.jcloud.format.BytesFormat;
 import org.apache.pulsar.io.jcloud.format.Format;
+import org.apache.pulsar.io.jcloud.format.InitConfiguration;
 import org.apache.pulsar.io.jcloud.format.JsonFormat;
 import org.apache.pulsar.io.jcloud.format.ParquetFormat;
 import org.apache.pulsar.io.jcloud.partitioner.Partitioner;
@@ -90,6 +91,11 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         }
         checkArgument(blobStore.containerExists(sinkConfig.getBucket()), "%s bucket not exist", sinkConfig.getBucket());
         format = buildFormat(sinkConfig);
+        if (format instanceof InitConfiguration) {
+            InitConfiguration<BlobStoreAbstractConfig> formatConfigInitializer =
+                (InitConfiguration<BlobStoreAbstractConfig>) format;
+            formatConfigInitializer.configure(sinkConfig);
+        }
         partitioner = buildPartitioner(sinkConfig);
         pathPrefix = StringUtils.trimToEmpty(sinkConfig.getPathPrefix());
         long batchTimeMs = sinkConfig.getBatchTimeMs();
