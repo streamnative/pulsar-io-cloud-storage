@@ -14,6 +14,9 @@ jobs:
         with:
           java-version: 1.8
 
+      - name: Login streamnative docker hub
+        run: docker login -u="${{ secrets.DOCKER_USER }}" -p="${{ secrets.DOCKER_PASSWORD }}"
+
       - name: build
         run: |
           version=`./scripts/get-version.sh`
@@ -30,3 +33,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           args: 'pulsar-*'
+
+      - name: build and push docker image
+        run: |
+          PULSAR_VERSION=`./scripts/get-project-version/get-project-version.py`
+          REPO=`mvn -q -Dexec.executable=echo -Dexec.args='${project.artifactId}' --non-recursive exec:exec 2>/dev/null`
+          IMAGE_REPO=streamnative/${REPO}
+          docker build --build-arg PULSAR_VERSION="$PULSAR_VERSION" -t ${IMAGE_REPO}:${PULSAR_VERSION} -f ./image/Dockerfile ./
+          docker push ${IMAGE_REPO}:${PULSAR_VERSION}
