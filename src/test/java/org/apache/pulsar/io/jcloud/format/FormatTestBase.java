@@ -190,7 +190,7 @@ public abstract class FormatTestBase extends PulsarTestBase {
         );
         Assert.assertTrue(
                 mapsAreEqual(
-                        message.getReaderSchema().get().getSchemaInfo().getProperties(),
+                        message.getProperties(),
                         resultMap
                 ));
         Assert.assertNotNull(genericRecord.get(MetadataUtil.METADATA_SCHEMA_VERSION_KEY));
