@@ -21,6 +21,7 @@ package org.apache.pulsar.io.jcloud.format;
 import java.nio.ByteBuffer;
 import java.text.MessageFormat;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -110,7 +111,13 @@ public abstract class FormatTestBase extends PulsarTestBase {
     protected Consumer<Message<GenericRecord>> getMessageConsumer(TopicName topic) {
         return msg -> {
             try {
-                initSchema((Schema<GenericRecord>) msg.getReaderSchema().get());
+                Schema<GenericRecord> schema = (Schema<GenericRecord>) msg.getReaderSchema().get();
+                if (schema.getSchemaInfo().getProperties() == null) {
+                    Map<String, String> properties = new HashMap<>();
+                    properties.put("test", "1");
+                    schema.getSchemaInfo().setProperties(properties);
+                }
+                initSchema(schema);
                 org.apache.avro.generic.GenericRecord formatGeneratedRecord = getFormatGeneratedRecord(topic, msg);
                 assertEquals(msg.getValue(), formatGeneratedRecord);
                 if (supportMetadata()) {
@@ -189,6 +196,11 @@ public abstract class FormatTestBase extends PulsarTestBase {
                 )
         );
         Assert.assertTrue(
+                mapsAreEqual(
+                        message.getProperties(),
+                        resultMap
+                ));
+        Assert.assertFalse(
                 mapsAreEqual(
                         message.getReaderSchema().get().getSchemaInfo().getProperties(),
                         resultMap

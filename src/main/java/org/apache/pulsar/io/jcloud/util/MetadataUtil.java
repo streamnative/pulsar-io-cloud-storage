@@ -27,7 +27,6 @@ import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.client.api.schema.GenericRecord;
-import org.apache.pulsar.common.schema.SchemaInfo;
 import org.apache.pulsar.functions.api.Record;
 
 /**
@@ -46,12 +45,9 @@ public class MetadataUtil {
 
     public static org.apache.avro.generic.GenericRecord extractedMetadataRecord(Record<GenericRecord> next) {
         final Message<GenericRecord> message = next.getMessage().get();
-        final org.apache.pulsar.client.api.Schema<GenericRecord> recordSchema =
-                AvroRecordUtil.extractPulsarSchema(message);
-        final SchemaInfo schemaInfo = recordSchema.getSchemaInfo();
 
         GenericData.Record record = new GenericData.Record(MESSAGE_METADATA);
-        record.put(METADATA_PROPERTIES_KEY, schemaInfo.getProperties());
+        record.put(METADATA_PROPERTIES_KEY, message.getProperties());
         record.put(METADATA_SCHEMA_VERSION_KEY, ByteBuffer.wrap(message.getSchemaVersion()));
         record.put(METADATA_MESSAGE_ID_KEY, ByteBuffer.wrap(message.getMessageId().toByteArray()));
         return record;
@@ -60,13 +56,9 @@ public class MetadataUtil {
     public static Map<String, Object> extractedMetadata(Record<GenericRecord> next) {
         Map<String, Object> metadata = new HashMap<>();
         final Message<GenericRecord> message = next.getMessage().get();
-        final org.apache.pulsar.client.api.Schema<GenericRecord> recordSchema =
-                AvroRecordUtil.extractPulsarSchema(message);
-        final SchemaInfo schemaInfo = recordSchema.getSchemaInfo();
-        metadata.put(METADATA_PROPERTIES_KEY, schemaInfo.getProperties());
+        metadata.put(METADATA_PROPERTIES_KEY, message.getProperties());
         metadata.put(METADATA_SCHEMA_VERSION_KEY, message.getSchemaVersion());
         metadata.put(METADATA_MESSAGE_ID_KEY, message.getMessageId().toByteArray());
-
 
         return metadata;
     }
