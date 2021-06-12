@@ -36,7 +36,7 @@ jobs:
 
       - name: build and push docker image
         run: |
-          PULSAR_VERSION=`./scripts/get-project-version/get-project-version.py`
+          PULSAR_VERSION=`./scripts/get-version.sh`
           REPO=`mvn -q -Dexec.executable=echo -Dexec.args='${project.artifactId}' --non-recursive exec:exec 2>/dev/null`
           IMAGE_REPO=streamnative/${REPO}
           docker build --build-arg PULSAR_VERSION="$PULSAR_VERSION" -t ${IMAGE_REPO}:${PULSAR_VERSION} -f ./image/Dockerfile ./
