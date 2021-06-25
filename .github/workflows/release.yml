@@ -26,13 +26,23 @@ jobs:
           cp README.md ./pulsar-io-cloud-storage-readme.md
           echo "ls pulsar-*"
           ls pulsar-*
+          echo "::set-output name=nar-file::pulsar-io-cloud-storage-${version}.nar"
+          echo "::set-output name=readme-file::pulsar-io-cloud-storage-readme.md"
 
-      - name: publish
-        uses: skx/github-action-publish-binaries@release-0.11
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: publish nar package
+        uses: svenstaro/upload-release-action@v2
         with:
-          args: 'pulsar-*'
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ steps.args.outputs.nar-file }}
+          tag: ${{ github.ref }}
+          overwrite: true
+      - name: publish readme
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ steps.args.outputs.readme-file }}
+          tag: ${{ github.ref }}
+          overwrite: true
 
       - name: build and push docker image
         run: |
