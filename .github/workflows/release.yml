@@ -17,23 +17,6 @@ jobs:
       - name: Login streamnative docker hub
         run: docker login -u="${{ secrets.DOCKER_USER }}" -p="${{ secrets.DOCKER_PASSWORD }}"
 
-      - name: build
-        run: |
-          version=`./scripts/get-version.sh`
-          mvn clean install -DskipTests
-          rm -rf pulsar-*
-          cp ./target/pulsar-io-cloud-storage-${version}.nar ./
-          cp README.md ./pulsar-io-cloud-storage-readme.md
-          echo "ls pulsar-*"
-          ls pulsar-*
-
-      - name: publish
-        uses: skx/github-action-publish-binaries@release-0.11
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          args: 'pulsar-*'
-
       - name: build and push docker image
         run: |
           PULSAR_VERSION=`./scripts/get-version.sh`
