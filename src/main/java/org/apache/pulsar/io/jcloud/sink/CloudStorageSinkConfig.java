@@ -47,6 +47,12 @@ public class CloudStorageSinkConfig extends BlobStoreAbstractConfig {
 
     private String roleSessionName;
 
+    /**
+     * If specified, indicates to use the default credentials form the underlying node,
+     * rather than using the specified key and secret.
+     */
+    private boolean useDefaultCredentials = false;
+
     public static CloudStorageSinkConfig load(String yamlFile) throws IOException {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         return mapper.readValue(new File(yamlFile), CloudStorageSinkConfig.class);
@@ -60,7 +66,9 @@ public class CloudStorageSinkConfig extends BlobStoreAbstractConfig {
     @Override
     public void validate() {
         super.validate();
-        checkNotNull(accessKeyId, "accessKeyId property not set.");
-        checkNotNull(secretAccessKey, "secretAccessKey property not set.");
+        if (!useDefaultCredentials) {
+            checkNotNull(accessKeyId, "accessKeyId property not set.");
+            checkNotNull(secretAccessKey, "secretAccessKey property not set.");
+        }
     }
 }
