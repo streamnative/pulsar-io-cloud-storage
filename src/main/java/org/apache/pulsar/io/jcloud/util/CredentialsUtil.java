@@ -35,8 +35,10 @@ public class CredentialsUtil {
      * @return aws credential provider
      */
     public static AWSCredentialsProvider getAWSCredentialProvider(CloudStorageSinkConfig config) {
-        System.setProperty("aws.accessKeyId", config.getAccessKeyId());
-        System.setProperty("aws.secretKey", config.getSecretAccessKey());
+        if (!config.isUseDefaultCredentials()) {
+            System.setProperty("aws.accessKeyId", config.getAccessKeyId());
+            System.setProperty("aws.secretKey", config.getSecretAccessKey());
+        }
         if (Strings.isNullOrEmpty(config.getRole())) {
             return DefaultAWSCredentialsProviderChain.getInstance();
         } else {
