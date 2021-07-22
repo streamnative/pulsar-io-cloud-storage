@@ -18,10 +18,10 @@
  */
 package org.apache.pulsar.io.jcloud.format;
 
-import com.google.common.io.ByteSource;
 import java.util.Iterator;
 import org.apache.pulsar.client.api.Schema;
 import org.apache.pulsar.functions.api.Record;
+import org.apache.pulsar.jcloud.shade.com.google.common.io.ByteSource;
 
 /**
  * record format.

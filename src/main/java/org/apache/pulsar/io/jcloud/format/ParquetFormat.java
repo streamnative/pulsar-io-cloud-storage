@@ -19,7 +19,6 @@
 package org.apache.pulsar.io.jcloud.format;
 
 
-import com.google.common.io.ByteSource;
 import java.io.IOException;
 import java.util.Iterator;
 import org.apache.avro.Schema;
@@ -36,6 +35,7 @@ import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 import org.apache.pulsar.io.jcloud.BytesOutputStream;
 import org.apache.pulsar.io.jcloud.util.AvroRecordUtil;
 import org.apache.pulsar.io.jcloud.util.MetadataUtil;
+import org.apache.pulsar.jcloud.shade.com.google.common.io.ByteSource;
 
 
 /**

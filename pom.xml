@@ -30,7 +30,7 @@
 
   <groupId>io.streamnative.ecosystem</groupId>
   <artifactId>pulsar-io-cloud-storage</artifactId>
-  <version>2.8.0-rc-202106121853</version>
+  <version>2.8.0.6</version>
   <name>Pulsar Ecosystem :: IO Connector :: Cloud Storage Project</name>
   <description>Cloud Storage Connector integrates Apache Pulsar with Cloud Storage.</description>
 
@@ -45,11 +45,12 @@
     <!-- connector dependencies -->
     <jackson.version>2.11.3</jackson.version>
     <lombok.version>1.16.22</lombok.version>
-    <pulsar.version>2.8.0-rc-202106121853</pulsar.version>
+    <pulsar.version>2.8.0.6</pulsar.version>
     <jclouds.version>2.3.0</jclouds.version>
     <parquet.version>1.12.0</parquet.version>
     <awsjavasdk.version>1.11.774</awsjavasdk.version>
     <jaxb-api>2.3.1</jaxb-api>
+    <gson.version>2.8.6</gson.version>
 
     <!-- test dependencies -->
     <junit.version>4.13.1</junit.version>
@@ -107,6 +108,11 @@
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-annotations</artifactId>
         <version>${spotbugs-annotations.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.streamnative</groupId>
+        <artifactId>jclouds-shaded</artifactId>
+        <version>${pulsar.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.jclouds</groupId>
@@ -222,6 +228,36 @@
     <dependency>
       <groupId>com.fasterxml.jackson.dataformat</groupId>
       <artifactId>jackson-dataformat-yaml</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.streamnative</groupId>
+      <artifactId>jclouds-shaded</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>com.google.code.gson</groupId>
+          <artifactId>gson</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.google.guava</groupId>
+          <artifactId>guava</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.jclouds</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.jclouds.api</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.jclouds.common</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.jclouds.provider</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.jclouds</groupId>
@@ -547,7 +583,7 @@
     </pluginManagement>
 
     <plugins>
-      <!-- compile --> 
+      <!-- compile -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
