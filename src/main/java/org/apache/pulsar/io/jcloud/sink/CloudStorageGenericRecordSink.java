@@ -20,7 +20,6 @@ package org.apache.pulsar.io.jcloud.sink;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.base.Strings;
-import com.google.common.base.Supplier;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
@@ -36,6 +35,7 @@ import org.apache.pulsar.io.core.SinkContext;
 import org.apache.pulsar.io.core.annotations.Connector;
 import org.apache.pulsar.io.core.annotations.IOType;
 import org.apache.pulsar.io.jcloud.credential.JcloudsCredential;
+import org.apache.pulsar.jcloud.shade.com.google.common.base.Supplier;
 import org.jclouds.Constants;
 import org.jclouds.ContextBuilder;
 import org.jclouds.blobstore.BlobStoreContext;

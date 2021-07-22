@@ -19,7 +19,6 @@
 package org.apache.pulsar.io.jcloud.format;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.io.ByteSource;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -31,6 +30,7 @@ import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 import org.apache.pulsar.io.jcloud.util.MetadataUtil;
+import org.apache.pulsar.jcloud.shade.com.google.common.io.ByteSource;
 
 /**
  * json format.

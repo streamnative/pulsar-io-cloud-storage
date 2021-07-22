@@ -18,7 +18,6 @@
  */
 package org.apache.pulsar.io.jcloud.format;
 
-import com.google.common.io.ByteSource;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.avro.file.DataFileReader;
@@ -33,6 +32,7 @@ import org.apache.pulsar.functions.instance.SinkRecord;
 import org.apache.pulsar.functions.source.PulsarRecord;
 import org.apache.pulsar.io.jcloud.util.AvroRecordUtil;
 import org.apache.pulsar.io.jcloud.util.MetadataUtil;
+import org.apache.pulsar.jcloud.shade.com.google.common.io.ByteSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
