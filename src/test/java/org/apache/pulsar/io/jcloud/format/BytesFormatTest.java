@@ -18,6 +18,8 @@
  */
 package org.apache.pulsar.io.jcloud.format;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,8 +36,6 @@ import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.functions.api.Record;
-import org.apache.pulsar.functions.instance.SinkRecord;
-import org.apache.pulsar.functions.source.PulsarRecord;
 import org.apache.pulsar.io.jcloud.util.AvroRecordUtil;
 import org.apache.pulsar.jcloud.shade.com.google.common.io.ByteSource;
 import org.junit.Assert;
@@ -68,14 +68,18 @@ public class BytesFormatTest extends FormatTestBase {
 
     public org.apache.avro.generic.GenericRecord getFormatGeneratedRecord(TopicName topicName,
                                                                           Message<GenericRecord> msg) throws Exception {
-        @SuppressWarnings("unchecked")
-        PulsarRecord<GenericRecord> test = PulsarRecord.<GenericRecord>builder()
-                .topicName(topicName.toString())
-                .partition(0)
-                .message(msg)
-                .build();
+        Record<GenericRecord> mockRecord = mock(Record.class);
+        Schema<GenericRecord> mockSchema = mock(Schema.class);
+        when(mockRecord.getTopicName()).thenReturn(Optional.of(topicName.toString()));
+        when(mockRecord.getPartitionIndex()).thenReturn(Optional.of(0));
+        when(mockRecord.getMessage()).thenReturn(Optional.of(msg));
+        when(mockRecord.getValue()).thenReturn(msg.getValue());
+        when(mockRecord.getPartitionId()).thenReturn(Optional.of(String.format("%s-%s", topicName, 0)));
+        when(mockRecord.getRecordSequence()).thenReturn(Optional.of(3221225506L));
+        when(mockRecord.getSchema()).thenReturn(mockSchema);
+
         List<Record<GenericRecord>> records = new ArrayList<>();
-        records.add(new SinkRecord<>(test, test.getValue()));
+        records.add(mockRecord);
 
         ByteSource byteSource = getFormat().recordWriter(records.listIterator());
         final byte[] expecteds =
@@ -85,7 +89,7 @@ public class BytesFormatTest extends FormatTestBase {
             return null;
         }
         return AvroRecordUtil.convertGenericRecord(
-                test.getValue(),
+                mockRecord.getValue(),
                 AvroRecordUtil.convertToAvroSchema(msg.getReaderSchema().get()));
     }
 

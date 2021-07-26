@@ -421,21 +421,13 @@
     </dependency>
     <dependency>
       <groupId>io.streamnative</groupId>
-      <artifactId>pulsar-functions-instance</artifactId>
-      <version>${pulsar.version}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.streamnative</groupId>
       <artifactId>pulsar-client-original</artifactId>
       <version>${pulsar.version}</version>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>io.streamnative</groupId>
       <artifactId>pulsar-client-admin-original</artifactId>
       <version>${pulsar.version}</version>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>net.java.dev.jna</groupId>

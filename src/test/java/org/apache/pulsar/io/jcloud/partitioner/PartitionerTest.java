@@ -22,11 +22,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import com.google.common.base.Supplier;
 import java.text.MessageFormat;
+import java.util.Optional;
 import junit.framework.TestCase;
 import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.client.impl.MessageIdImpl;
 import org.apache.pulsar.common.naming.TopicName;
-import org.apache.pulsar.functions.source.PulsarRecord;
+import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 import org.junit.Assert;
 import org.junit.Test;
@@ -50,7 +51,7 @@ public class PartitionerTest extends TestCase {
     public String expectedPartitionedPath;
 
     @Parameterized.Parameter(3)
-    public PulsarRecord<Object> pulsarRecord;
+    public Record<Object> pulsarRecord;
 
     @Parameterized.Parameters
     public static Object[][] data() {
@@ -107,30 +108,34 @@ public class PartitionerTest extends TestCase {
         };
     }
 
-    public static PulsarRecord<Object> getPartitionedTopic() {
+    public static Record<Object> getPartitionedTopic() {
         @SuppressWarnings("unchecked")
         Message<Object> mock = mock(Message.class);
         when(mock.getPublishTime()).thenReturn(1599578218610L);
         when(mock.getMessageId()).thenReturn(new MessageIdImpl(12, 34, 1));
         String topic = TopicName.get("test-partition-1").toString();
-        return PulsarRecord.<Object>builder()
-                .message(mock)
-                .topicName(topic)
-                .partition(1)
-                .build();
+        Record<Object> mockRecord = mock(Record.class);
+        when(mockRecord.getTopicName()).thenReturn(Optional.of(topic));
+        when(mockRecord.getPartitionIndex()).thenReturn(Optional.of(1));
+        when(mockRecord.getMessage()).thenReturn(Optional.of(mock));
+        when(mockRecord.getPartitionId()).thenReturn(Optional.of(String.format("%s-%s", topic, 1)));
+        when(mockRecord.getRecordSequence()).thenReturn(Optional.of(3221225506L));
+        return mockRecord;
     }
 
-    public static PulsarRecord<Object> getTopic() {
+    public static Record<Object> getTopic() {
         @SuppressWarnings("unchecked")
         Message<Object> mock = mock(Message.class);
         when(mock.getPublishTime()).thenReturn(1599578218610L);
         when(mock.getMessageId()).thenReturn(new MessageIdImpl(12, 34, 1));
         String topic = TopicName.get("test").toString();
-        return PulsarRecord.<Object>builder()
-                .message(mock)
-                .topicName(topic)
-                .partition(1)
-                .build();
+        Record<Object> mockRecord = mock(Record.class);
+        when(mockRecord.getTopicName()).thenReturn(Optional.of(topic));
+        when(mockRecord.getPartitionIndex()).thenReturn(Optional.of(1));
+        when(mockRecord.getMessage()).thenReturn(Optional.of(mock));
+        when(mockRecord.getPartitionId()).thenReturn(Optional.of(String.format("%s-%s", topic, 1)));
+        when(mockRecord.getRecordSequence()).thenReturn(Optional.of(3221225506L));
+        return mockRecord;
     }
 
     @Test
