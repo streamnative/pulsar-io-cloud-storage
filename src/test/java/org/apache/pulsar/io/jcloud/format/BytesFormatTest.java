@@ -20,7 +20,6 @@ package org.apache.pulsar.io.jcloud.format;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import com.google.common.io.ByteSource;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,6 +37,7 @@ import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.jcloud.util.AvroRecordUtil;
+import org.apache.pulsar.jcloud.shade.com.google.common.io.ByteSource;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
