@@ -21,23 +21,21 @@ jobs:
         run: |
           version=`./scripts/get-version.sh`
           mvn clean install -DskipTests
-          rm -rf pulsar-*
-          cp ./target/pulsar-io-cloud-storage-${version}.nar ./
-          cp README.md ./pulsar-io-cloud-storage-readme.md
-          echo "ls pulsar-*"
-          ls pulsar-*
-
-      - name: publish
-        uses: skx/github-action-publish-binaries@release-0.11
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          args: 'pulsar-*'
+          echo "::set-output name=nar-file::pulsar-io-cloud-storage-${version}.nar"
+          echo "::set-output name=readme-file::pulsar-io-cloud-storage-readme.md"
 
       - name: build and push docker image
-        run: |
-          PULSAR_VERSION=`./scripts/get-version.sh`
-          REPO=`mvn -q -Dexec.executable=echo -Dexec.args='${project.artifactId}' --non-recursive exec:exec 2>/dev/null`
-          IMAGE_REPO=streamnative/${REPO}
-          docker build --build-arg PULSAR_VERSION="$PULSAR_VERSION" -t ${IMAGE_REPO}:${PULSAR_VERSION} -f ./image/Dockerfile ./
-          docker push ${IMAGE_REPO}:${PULSAR_VERSION}
+        uses: nick-invision/retry@v2
+        with:
+          max_attempts: 99
+          retry_wait_seconds: 60
+          timeout_minutes: 5
+          command: |
+            CONNECTOR_VERSION=`./scripts/get-version.sh`
+            PULSAR_VERSION=`mvn -q -Dexec.executable=echo -Dexec.args='${pulsar.version}' --non-recursive exec:exec 2>/dev/null`
+            REPO=`mvn -q -Dexec.executable=echo -Dexec.args='${project.artifactId}' --non-recursive exec:exec 2>/dev/null`
+            IMAGE_REPO=streamnative/${REPO}
+            RUNNER_IMAGE=streamnative/pulsar-functions-java-runner:${PULSAR_VERSION}
+            docker pull ${RUNNER_IMAGE}
+            docker build --build-arg PULSAR_VERSION="$PULSAR_VERSION" -t ${IMAGE_REPO}:${CONNECTOR_VERSION} -f ./image/Dockerfile ./
+            docker push ${IMAGE_REPO}:${CONNECTOR_VERSION}
