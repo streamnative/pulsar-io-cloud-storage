@@ -51,7 +51,7 @@ The Cloud Storage sink connector supports the following properties.
 | `timePartitionDuration` | String| False |"1d" | The time interval for time-based partitioning, such as 1d, or 1h. |
 | `batchSize` | int | False |10 | The number of records submitted in batch. |
 | `batchTimeMs` | long | False |1000 | The interval for batch submission. |
-| `sliceTopicPartitionPath` | Boolean| False |false | when true, split the partitioned topic name into separate folders in the bucket path. |
+| `sliceTopicPartitionPath` | Boolean| False |false | When it is set to `true`, split the partitioned topic name into separate folders in the bucket path. |
 | `withMetadata` | Boolean | False |false | Save message attributes to metadata. |
 
 ## Configure Cloud Storage sink connector
