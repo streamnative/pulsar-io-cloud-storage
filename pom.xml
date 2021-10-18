@@ -46,7 +46,6 @@
     <jackson.version>2.11.3</jackson.version>
     <lombok.version>1.16.22</lombok.version>
     <pulsar.version>2.8.0-rc-202106121853</pulsar.version>
-    <jclouds.version>2.3.0</jclouds.version>
     <parquet.version>1.12.0</parquet.version>
     <awsjavasdk.version>1.11.774</awsjavasdk.version>
     <jaxb-api>2.3.1</jaxb-api>
@@ -113,26 +112,6 @@
         <groupId>io.streamnative</groupId>
         <artifactId>jclouds-shaded</artifactId>
         <version>${pulsar.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.jclouds</groupId>
-        <artifactId>jclouds-blobstore</artifactId>
-        <version>${jclouds.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.jclouds.provider</groupId>
-        <artifactId>aws-s3</artifactId>
-        <version>${jclouds.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.jclouds.provider</groupId>
-        <artifactId>google-cloud-storage</artifactId>
-        <version>${jclouds.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.jclouds.provider</groupId>
-        <artifactId>azureblob</artifactId>
-        <version>${jclouds.version}</version>
       </dependency>
       <dependency>
         <groupId>com.amazonaws</groupId>
@@ -258,22 +237,6 @@
           <artifactId>*</artifactId>
         </exclusion>
       </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.jclouds</groupId>
-      <artifactId>jclouds-blobstore</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.jclouds.provider</groupId>
-      <artifactId>aws-s3</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.jclouds.provider</groupId>
-      <artifactId>google-cloud-storage</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.jclouds.provider</groupId>
-      <artifactId>azureblob</artifactId>
     </dependency>
     <dependency>
       <groupId>com.amazonaws</groupId>
