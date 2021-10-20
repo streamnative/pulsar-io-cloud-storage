@@ -73,7 +73,7 @@ public abstract class PulsarTestBase {
         log.info("-------------------------------------------------------------------------");
 
 
-        final String pulsarImage = System.getProperty("pulsar.systemtest.image", "streamnative/pulsar:2.8.0.7");
+        final String pulsarImage = System.getProperty("pulsar.systemtest.image", "streamnative/pulsar:2.8.1.6");
         pulsarService = new PulsarContainer(DockerImageName.parse(pulsarImage));
         pulsarService.waitingFor(new HttpWaitStrategy()
                 .forPort(BROKER_HTTP_PORT)
