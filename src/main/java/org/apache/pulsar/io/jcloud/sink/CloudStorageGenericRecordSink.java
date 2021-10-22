@@ -19,7 +19,6 @@
 package org.apache.pulsar.io.jcloud.sink;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import com.google.common.base.Strings;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
@@ -38,8 +37,12 @@ import org.apache.pulsar.io.jcloud.credential.JcloudsCredential;
 import org.apache.pulsar.jcloud.shade.com.google.common.base.Supplier;
 import org.jclouds.Constants;
 import org.jclouds.ContextBuilder;
+import org.jclouds.aws.s3.AWSS3ProviderMetadata;
 import org.jclouds.blobstore.BlobStoreContext;
 import org.jclouds.domain.Credentials;
+import org.jclouds.osgi.ApiRegistry;
+import org.jclouds.osgi.ProviderRegistry;
+import org.jclouds.s3.S3ApiMetadata;
 import org.jclouds.s3.reference.S3Constants;
 
 /**
@@ -97,13 +100,20 @@ public class CloudStorageGenericRecordSink extends BlobStoreAbstractSink<CloudSt
         overrides.setProperty(Constants.PROPERTY_SO_TIMEOUT, "25000");
         overrides.setProperty(Constants.PROPERTY_MAX_RETRIES, Integer.toString(100));
 
+        if (sinkConfig.getProvider().equalsIgnoreCase("aws-s3")) {
+            ApiRegistry.registerApi(new S3ApiMetadata());
+            ProviderRegistry.registerProvider(new AWSS3ProviderMetadata());
+        }
+
         ContextBuilder contextBuilder = ContextBuilder.newBuilder(sinkConfig.getProvider())
                 .credentialsSupplier(getCredentialsSupplier(sinkConfig));
-        if (!Strings.isNullOrEmpty(sinkConfig.getEndpoint())) {
+
+        if (!StringUtils.isNotEmpty(sinkConfig.getEndpoint())) {
             contextBuilder.endpoint(sinkConfig.getEndpoint());
             overrides.setProperty(S3Constants.PROPERTY_S3_VIRTUAL_HOST_BUCKETS, "false");
         }
         contextBuilder.overrides(overrides);
+        log.info("getOverrides: {}", overrides.toString());
         return contextBuilder.buildView(BlobStoreContext.class);
     }
 

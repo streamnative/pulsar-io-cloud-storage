@@ -55,6 +55,9 @@ import org.jclouds.blobstore.BlobStoreContext;
 import org.jclouds.blobstore.ContainerNotFoundException;
 import org.jclouds.blobstore.domain.Blob;
 import org.jclouds.blobstore.options.PutOptions;
+import org.jclouds.domain.Location;
+import org.jclouds.domain.LocationBuilder;
+import org.jclouds.domain.LocationScope;
 
 /**
  * A Simple abstract class for BlobStore sink.
@@ -96,8 +99,19 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
             //test use
             blobStore.createContainerInLocation(null, sinkConfig.getBucket());
         }
-        checkArgument(blobStore.containerExists(sinkConfig.getBucket()), "%s bucket not exist",
-                sinkConfig.getBucket());
+        if (StringUtils.isNotEmpty(sinkConfig.getRegion())) {
+            Location location = new LocationBuilder()
+                    .scope(LocationScope.REGION)
+                    .id(sinkConfig.getRegion())
+                    .description(sinkConfig.getRegion())
+                    .build();
+            if (!blobStore.containerExists(sinkConfig.getBucket())) {
+                blobStore.createContainerInLocation(location, sinkConfig.getBucket());
+            }
+        } else {
+            checkArgument(blobStore.containerExists(sinkConfig.getBucket()), "%s bucket not exist",
+                    sinkConfig.getBucket());
+        }
         format = buildFormat(sinkConfig);
         if (format instanceof InitConfiguration) {
             InitConfiguration<BlobStoreAbstractConfig> formatConfigInitializer =
