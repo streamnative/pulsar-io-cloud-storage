@@ -115,8 +115,8 @@ public class PartitionerTest extends TestCase {
                 new Object[]{
                         noPartitionNumberPartitioner,
                         "partition-1" + Partitioner.PATH_SEPARATOR + "3221225506",
-                        "public/default/test/partition" + Partitioner.PATH_SEPARATOR + "3221225506",
-                        getTopic()
+                        "public/default/test" + Partitioner.PATH_SEPARATOR + "3221225506",
+                        getPartitionedTopic()
                 }
         };
     }
@@ -141,7 +141,7 @@ public class PartitionerTest extends TestCase {
         Message<Object> mock = mock(Message.class);
         when(mock.getPublishTime()).thenReturn(1599578218610L);
         when(mock.getMessageId()).thenReturn(new MessageIdImpl(12, 34, 1));
-        String topic = TopicName.get("test-partition-1").toString();
+        String topic = TopicName.get("test").toString();
         Record<Object> mockRecord = mock(Record.class);
         when(mockRecord.getTopicName()).thenReturn(Optional.of(topic));
         when(mockRecord.getPartitionIndex()).thenReturn(Optional.of(1));

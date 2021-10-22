@@ -118,8 +118,8 @@ public class SliceTopicPartitionPartitionerTest extends TestCase {
                 new Object[]{
                         noPartitionNumberPartitioner,
                         "partition-1" + Partitioner.PATH_SEPARATOR + "3221225506",
-                        "public/default/test/partition" + Partitioner.PATH_SEPARATOR + "3221225506",
-                        getTopic()
+                        "public/default/test" + Partitioner.PATH_SEPARATOR + "3221225506",
+                        getPartitionedTopic()
                 },
         };
     }
