@@ -34,7 +34,7 @@ public class PulsarContainer extends GenericContainer<PulsarContainer> {
 
     private static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("streamnative/pulsar");
     @Deprecated
-    private static final String DEFAULT_TAG = "2.8.0.7";
+    private static final String DEFAULT_TAG = "2.8.1.6";
 
     private boolean functionsWorkerEnabled = false;
 

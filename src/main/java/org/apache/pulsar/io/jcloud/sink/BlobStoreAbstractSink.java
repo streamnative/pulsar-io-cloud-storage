@@ -185,7 +185,9 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         rwlock.writeLock().lock();
         try {
             if (incomingList.isEmpty()) {
-                log.info("no records to flush ...");
+                if (log.isDebugEnabled()) {
+                    log.debug("no records to flush ...");
+                }
                 return;
             }
             recordsToInsert = incomingList;

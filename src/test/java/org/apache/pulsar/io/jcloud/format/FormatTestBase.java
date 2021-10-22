@@ -54,8 +54,8 @@ public abstract class FormatTestBase extends PulsarTestBase {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FormatTestBase.class);
 
-    private static TopicName avroTopicName = TopicName.get("test-parquet-avro" + RandomStringUtils.random(5));
-    private static TopicName jsonTopicName = TopicName.get("test-parquet-json" + RandomStringUtils.random(5));
+    private static TopicName avroTopicName = TopicName.get("test-parquet-avro" + RandomStringUtils.randomAlphabetic(5));
+    private static TopicName jsonTopicName = TopicName.get("test-parquet-json" + RandomStringUtils.randomAlphabetic(5));
 
     @BeforeClass
     public static void setUp() throws Exception {
@@ -98,7 +98,7 @@ public abstract class FormatTestBase extends PulsarTestBase {
                 new TestRecord("key1", 1, new TestRecord.TestSubRecord("aaa"))
         );
 
-        sendTypedMessages(jsonTopicName.toString(), SchemaType.AVRO, testRecords, Optional.empty(), TestRecord.class);
+        sendTypedMessages(jsonTopicName.toString(), SchemaType.JSON, testRecords, Optional.empty(), TestRecord.class);
 
         Consumer<Message<GenericRecord>>
                 handle = getMessageConsumer(jsonTopicName);
@@ -172,6 +172,8 @@ public abstract class FormatTestBase extends PulsarTestBase {
     }
 
     protected void validMetadata(org.apache.avro.generic.GenericRecord record, Message<GenericRecord> message) {
+        LOGGER.info("validMetadata record {} GenericRecord {} fields {}",
+                record, message.getValue(), message.getValue().getFields());
         Object object = record.get(MetadataUtil.MESSAGE_METADATA_KEY);
         Assert.assertNotNull(object);
         Assert.assertTrue(object instanceof org.apache.avro.generic.GenericRecord);
