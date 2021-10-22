@@ -78,8 +78,8 @@ public class PartitionerTest extends TestCase {
         return new Object[][]{
                 new Object[]{
                         simplePartitioner,
-                        "partition-1" + Partitioner.PATH_SEPARATOR + "3221225506",
-                        "public/default/test/partition-1" + Partitioner.PATH_SEPARATOR + "3221225506",
+                        "3221225506",
+                        "public/default/test" + Partitioner.PATH_SEPARATOR + "3221225506",
                         getTopic()
                 },
                 new Object[]{
@@ -96,8 +96,8 @@ public class PartitionerTest extends TestCase {
                 },
                 new Object[]{
                         simplePartitioner,
-                        "partition-1" + Partitioner.PATH_SEPARATOR + "3221225506",
-                        "public/default/test-partition-1/partition-1" + Partitioner.PATH_SEPARATOR + "3221225506",
+                        "3221225506",
+                        "public/default/test-partition-1" + Partitioner.PATH_SEPARATOR + "3221225506",
                         getPartitionedTopic()
                 },
                 new Object[]{
@@ -114,7 +114,7 @@ public class PartitionerTest extends TestCase {
                 },
                 new Object[]{
                         noPartitionNumberPartitioner,
-                        "partition-1" + Partitioner.PATH_SEPARATOR + "3221225506",
+                        "3221225506",
                         "public/default/test" + Partitioner.PATH_SEPARATOR + "3221225506",
                         getPartitionedTopic()
                 }
