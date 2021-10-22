@@ -70,6 +70,14 @@ public class SliceTopicPartitionPartitionerTest extends TestCase {
         hourConfig.setSliceTopicPartitionPath(true);
         TimePartitioner<Object> hourPartitioner = new TimePartitioner<>();
         hourPartitioner.configure(hourConfig);
+
+        BlobStoreAbstractConfig noPartitionNumberblobStoreAbstractConfig = new BlobStoreAbstractConfig();
+        noPartitionNumberblobStoreAbstractConfig.setTimePartitionDuration("1d");
+        noPartitionNumberblobStoreAbstractConfig.setTimePartitionPattern("yyyy-MM-dd");
+        noPartitionNumberblobStoreAbstractConfig.setWithTopicPartitionNumber(false);
+        noPartitionNumberblobStoreAbstractConfig.setSliceTopicPartitionPath(true);
+        SimplePartitioner<Object> noPartitionNumberPartitioner = new SimplePartitioner<>();
+        noPartitionNumberPartitioner.configure(noPartitionNumberblobStoreAbstractConfig);
         return new Object[][]{
                 new Object[]{
                         simplePartitioner,
@@ -106,7 +114,13 @@ public class SliceTopicPartitionPartitionerTest extends TestCase {
                         "2020-09-08-12" + Partitioner.PATH_SEPARATOR + "3221225506",
                         "public/default/test/1/2020-09-08-12" + Partitioner.PATH_SEPARATOR + "3221225506"
                         , getPartitionedTopic()
-                }
+                },
+                new Object[]{
+                        noPartitionNumberPartitioner,
+                        "partition-1" + Partitioner.PATH_SEPARATOR + "3221225506",
+                        "public/default/test/partition" + Partitioner.PATH_SEPARATOR + "3221225506",
+                        getTopic()
+                },
         };
     }
 
