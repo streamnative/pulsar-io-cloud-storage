@@ -21,15 +21,17 @@ package org.apache.pulsar.io.jcloud.sink;
 import static com.google.common.base.Preconditions.checkArgument;
 import static org.apache.pulsar.io.jcloud.util.AvroRecordUtil.getPulsarSchema;
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.client.api.Schema;
@@ -70,13 +72,18 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
     protected Format<GenericRecord> format;
 
-    private List<Record<GenericRecord>> incomingList;
-
-    private ReadWriteLock rwlock = new ReentrantReadWriteLock();
-
-    private ScheduledExecutorService flushExecutor;
+    private final ScheduledExecutorService flushExecutor =
+            Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder()
+                .setNameFormat("pulsar-io-cloud-storage-sink-flush-%d")
+                .build());;
 
     private String pathPrefix;
+
+    private long maxBatchSize;
+    private final AtomicLong currentBatchSize = new AtomicLong(0L);
+    private final ConcurrentLinkedDeque<Record<GenericRecord>> pendingFlushQueue = new ConcurrentLinkedDeque<>();
+    private final AtomicBoolean isFlushRunning = new AtomicBoolean(false);
+    private volatile boolean isRunning = false;
 
     @Override
     public void open(Map<String, Object> config, SinkContext sinkContext) throws Exception {
@@ -89,7 +96,8 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
             //test use
             blobStore.createContainerInLocation(null, sinkConfig.getBucket());
         }
-        checkArgument(blobStore.containerExists(sinkConfig.getBucket()), "%s bucket not exist", sinkConfig.getBucket());
+        checkArgument(blobStore.containerExists(sinkConfig.getBucket()), "%s bucket not exist",
+                sinkConfig.getBucket());
         format = buildFormat(sinkConfig);
         if (format instanceof InitConfiguration) {
             InitConfiguration<BlobStoreAbstractConfig> formatConfigInitializer =
@@ -99,9 +107,18 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         partitioner = buildPartitioner(sinkConfig);
         pathPrefix = StringUtils.trimToEmpty(sinkConfig.getPathPrefix());
         long batchTimeMs = sinkConfig.getBatchTimeMs();
-        incomingList = Lists.newArrayList();
-        flushExecutor = Executors.newScheduledThreadPool(1);
-        flushExecutor.scheduleAtFixedRate(this::flush, batchTimeMs, batchTimeMs, TimeUnit.MILLISECONDS);
+        maxBatchSize = sinkConfig.getBatchSize();
+        flushExecutor.scheduleWithFixedDelay(this::flush, batchTimeMs, batchTimeMs, TimeUnit.MILLISECONDS);
+        isRunning = true;
+    }
+
+    private void flushIfNeeded(boolean force) {
+        if (isFlushRunning.get()) {
+            return;
+        }
+        if (force || currentBatchSize.get() >= maxBatchSize) {
+            flushExecutor.submit(this::flush);
+        }
     }
 
     private Partitioner<GenericRecord> buildPartitioner(V sinkConfig) {
@@ -143,6 +160,12 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
     @Override
     public void close() throws Exception {
+        isRunning = false;
+        flushIfNeeded(true);
+        flushExecutor.shutdown();
+        if (!flushExecutor.awaitTermination(10 * sinkConfig.getBatchTimeMs(), TimeUnit.MILLISECONDS)) {
+            log.error("flushExecutor did not terminate in {} ms", 10 * sinkConfig.getBatchTimeMs());
+        }
         if (null != context) {
             context.close();
         }
@@ -150,52 +173,45 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
     @Override
     public void write(Record<GenericRecord> record) throws Exception {
-        final Long sequenceId = record.getRecordSequence().orElse(null);
         if (log.isDebugEnabled()) {
-            log.debug("write message[recordSequence={}]", sequenceId);
+            log.debug("write record={}.", record);
         }
-        int currentSize;
-        rwlock.writeLock().lock();
-        try {
-            incomingList.add(record);
-            currentSize = incomingList.size();
-        } finally {
-            rwlock.writeLock().unlock();
+
+        if (!isRunning) {
+            log.warn("sink is stopped and cannot send the record {}", record);
+            record.fail();
+            return;
         }
-        if (log.isDebugEnabled()) {
-            log.debug("build blob success[recordSequence={}]", sequenceId);
-        }
-        if (currentSize == sinkConfig.getBatchSize()) {
-            flushExecutor.submit(this::flush);
-        }
+
+        checkArgument(record.getMessage().isPresent());
+        pendingFlushQueue.add(record);
+        currentBatchSize.addAndGet(1);
+        flushIfNeeded(false);
     }
 
     private void flush() {
-        try {
-            unsafeFlush();
-        } catch (Throwable cause) {
-            log.error("Encountered exception on flushing data to cloud storage", cause);
-            throw cause;
+        if (log.isDebugEnabled()) {
+            log.debug("flush requested, pending: {}, batchSize: {}",
+                    currentBatchSize.get(), maxBatchSize);
         }
-    }
 
-    private void unsafeFlush() {
-        final List<Record<GenericRecord>> recordsToInsert;
+        if (pendingFlushQueue.isEmpty()) {
+            return;
+        }
 
-        rwlock.writeLock().lock();
-        try {
-            if (incomingList.isEmpty()) {
-                if (log.isDebugEnabled()) {
-                    log.debug("no records to flush ...");
-                }
-                return;
+        if (!isFlushRunning.compareAndSet(false, true)) {
+            return;
+        }
+
+        final Record<GenericRecord> lastNotFlushed = pendingFlushQueue.getLast();
+        final List<Record<GenericRecord>> recordsToInsert = Lists.newArrayList();
+        while (!pendingFlushQueue.isEmpty()) {
+            Record<GenericRecord> r = pendingFlushQueue.pollFirst();
+            recordsToInsert.add(r);
+            if (r == lastNotFlushed) {
+                break;
             }
-            recordsToInsert = incomingList;
-            incomingList = Lists.newArrayList();
-        } finally {
-            rwlock.writeLock().unlock();
         }
-
         log.info("Flushing the buffered records to blob store");
 
         Record<GenericRecord> firstRecord = recordsToInsert.get(0);
@@ -212,7 +228,9 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                     .build();
             log.info("Uploading blob {}", filepath);
             blobStore.putBlob(sinkConfig.getBucket(), blob, PutOptions.NONE);
+            blob.getPayload().release();
             recordsToInsert.forEach(Record::ack);
+            currentBatchSize.addAndGet(-1 * recordsToInsert.size());
             log.info("Successfully uploaded blob {}", filepath);
         } catch (ContainerNotFoundException e) {
             log.error("Blob {} is not found", filepath, e);
@@ -223,9 +241,10 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         } catch (Exception e) {
             log.error("Encountered unknown error writing to blob {}", filepath, e);
             recordsToInsert.forEach(Record::fail);
+        } finally {
+            isFlushRunning.compareAndSet(true, false);
         }
     }
-
 
     public ByteSource bindValue(Iterator<Record<GenericRecord>> message,
                                 Format<GenericRecord> format) throws Exception {
