@@ -226,12 +226,12 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                     .payload(payload)
                     .contentLength(payload.size())
                     .build();
-            log.info("Uploading blob {}", filepath);
+            log.info("Uploading blob {} currentBatchSize {}", filepath, currentBatchSize.get());
             blobStore.putBlob(sinkConfig.getBucket(), blob, PutOptions.NONE);
             blob.getPayload().release();
             recordsToInsert.forEach(Record::ack);
             currentBatchSize.addAndGet(-1 * recordsToInsert.size());
-            log.info("Successfully uploaded blob {}", filepath);
+            log.info("Successfully uploaded blob {} currentBatchSize {}", filepath, currentBatchSize.get());
         } catch (ContainerNotFoundException e) {
             log.error("Blob {} is not found", filepath, e);
             recordsToInsert.forEach(Record::fail);
