@@ -96,7 +96,7 @@ public class BytesFormatTest extends FormatTestBase {
     @Test
     public void testStringWriter() throws Exception {
 
-        TopicName topic = TopicName.get("test-string" + RandomStringUtils.random(5));
+        TopicName topic = TopicName.get("test-string" + RandomStringUtils.randomAlphabetic(5));
 
         PulsarAdmin pulsarAdmin = PulsarAdmin.builder()
                 .serviceHttpUrl(getAdminUrl())
