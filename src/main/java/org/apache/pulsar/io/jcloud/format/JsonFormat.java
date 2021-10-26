@@ -64,7 +64,7 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
     @Override
     public ByteSource recordWriter(Iterator<Record<GenericRecord>> record) throws Exception {
         StringBuilder stringBuilder = new StringBuilder();
-        if (record.hasNext()) {
+        while (record.hasNext()) {
             Record<GenericRecord> next = record.next();
             GenericRecord val = next.getValue();
             log.debug("next record {} schema {} val {}", next, next.getSchema(), val);
