@@ -19,6 +19,9 @@
 package org.apache.pulsar.io.jcloud.sink;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.jclouds.location.reference.LocationConstants.ENDPOINT;
+import static org.jclouds.location.reference.LocationConstants.PROPERTY_REGION;
+import static org.jclouds.location.reference.LocationConstants.PROPERTY_REGIONS;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
@@ -34,6 +37,7 @@ import org.apache.pulsar.io.core.SinkContext;
 import org.apache.pulsar.io.core.annotations.Connector;
 import org.apache.pulsar.io.core.annotations.IOType;
 import org.apache.pulsar.io.jcloud.credential.JcloudsCredential;
+import org.apache.pulsar.io.jcloud.provider.AWSS3SingleRegionProviderMetadata;
 import org.apache.pulsar.jcloud.shade.com.google.common.base.Supplier;
 import org.jclouds.Constants;
 import org.jclouds.ContextBuilder;
@@ -102,7 +106,12 @@ public class CloudStorageGenericRecordSink extends BlobStoreAbstractSink<CloudSt
 
         if (sinkConfig.getProvider().equalsIgnoreCase("aws-s3")) {
             ApiRegistry.registerApi(new S3ApiMetadata());
-            ProviderRegistry.registerProvider(new AWSS3ProviderMetadata());
+            if (!StringUtils.isNotEmpty(sinkConfig.getRegion())) {
+                ProviderRegistry.registerProvider(new AWSS3ProviderMetadata());
+            } else {
+                ProviderRegistry.registerProvider(
+                        new AWSS3SingleRegionProviderMetadata(sinkConfig.getRegion(), sinkConfig.getEndpoint()));
+            }
         }
 
         ContextBuilder contextBuilder = ContextBuilder.newBuilder(sinkConfig.getProvider())
@@ -110,7 +119,13 @@ public class CloudStorageGenericRecordSink extends BlobStoreAbstractSink<CloudSt
 
         if (!StringUtils.isNotEmpty(sinkConfig.getEndpoint())) {
             contextBuilder.endpoint(sinkConfig.getEndpoint());
-            overrides.setProperty(S3Constants.PROPERTY_S3_VIRTUAL_HOST_BUCKETS, "false");
+            overrides.setProperty(ENDPOINT, sinkConfig.getEndpoint());
+            if (sinkConfig.getProvider().equalsIgnoreCase("aws-s3")) {
+                overrides.setProperty(S3Constants.PROPERTY_S3_VIRTUAL_HOST_BUCKETS, "false");
+            }
+        }
+        if (!StringUtils.isNotEmpty(sinkConfig.getRegion())) {
+            overrides.setProperty(PROPERTY_REGION, sinkConfig.getRegion());
         }
         contextBuilder.overrides(overrides);
         log.info("getOverrides: {}", overrides.toString());
