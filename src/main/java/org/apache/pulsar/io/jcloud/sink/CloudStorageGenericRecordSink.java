@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -45,6 +46,7 @@ import org.jclouds.blobstore.BlobStoreContext;
 import org.jclouds.domain.Credentials;
 import org.jclouds.osgi.ApiRegistry;
 import org.jclouds.osgi.ProviderRegistry;
+import org.jclouds.providers.ProviderMetadata;
 import org.jclouds.s3.S3ApiMetadata;
 import org.jclouds.s3.reference.S3Constants;
 
@@ -105,6 +107,7 @@ public class CloudStorageGenericRecordSink extends BlobStoreAbstractSink<CloudSt
 
         if (sinkConfig.getProvider().equalsIgnoreCase("aws-s3")) {
             ApiRegistry.registerApi(new S3ApiMetadata());
+            unregisterS3Provider();
             if (!StringUtils.isNotEmpty(sinkConfig.getRegion())) {
                 ProviderRegistry.registerProvider(new AWSS3ProviderMetadata());
             } else {
@@ -135,5 +138,15 @@ public class CloudStorageGenericRecordSink extends BlobStoreAbstractSink<CloudSt
         final JcloudsCredential jcloudsCredential =
                 jcloudsCredentialMap.getOrDefault(sinkConfig.getProvider(), jcloudsCredentialMap.get("default"));
         return () -> jcloudsCredential.getCredentials(sinkConfig).get();
+    }
+
+    private void unregisterS3Provider() {
+        Iterator<ProviderMetadata> iter = ProviderRegistry.fromRegistry().iterator();
+        while (iter.hasNext()) {
+            ProviderMetadata p = iter.next();
+            if (p.getId().equalsIgnoreCase("aws-s3")) {
+                ProviderRegistry.unregisterProvider(p);
+            }
+        }
     }
 }
