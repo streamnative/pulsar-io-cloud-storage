@@ -32,10 +32,12 @@ import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 public abstract class AbstractPartitioner<T> implements Partitioner<T> {
 
     private boolean sliceTopicPartitionPath;
+    private boolean withTopicPartitionNumber;
 
     @Override
     public void configure(BlobStoreAbstractConfig config) {
         this.sliceTopicPartitionPath = config.isSliceTopicPartitionPath();
+        this.withTopicPartitionNumber = config.isWithTopicPartitionNumber();
     }
 
     @Override
@@ -46,12 +48,17 @@ public abstract class AbstractPartitioner<T> implements Partitioner<T> {
         joinList.add(topicName.getTenant());
         joinList.add(topicName.getNamespacePortion());
 
-        if (topicName.isPartitioned() && sliceTopicPartitionPath) {
+        if (topicName.isPartitioned() && withTopicPartitionNumber) {
+            if (sliceTopicPartitionPath) {
                 TopicName newTopicName = TopicName.get(topicName.getPartitionedTopicName());
                 joinList.add(newTopicName.getLocalName());
                 joinList.add(Integer.toString(topicName.getPartitionIndex()));
+            } else {
+                joinList.add(topicName.getLocalName());
+            }
         } else {
-            joinList.add(topicName.getLocalName());
+            TopicName newTopicName = TopicName.get(topicName.getPartitionedTopicName());
+            joinList.add(newTopicName.getLocalName());
         }
         joinList.add(encodedPartition);
         return StringUtils.join(joinList, PATH_SEPARATOR);
