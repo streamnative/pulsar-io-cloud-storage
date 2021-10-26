@@ -93,6 +93,7 @@ public class BlobStoreAbstractConfig implements Serializable {
     private long batchTimeMs = 1000;
 
     private boolean withMetadata;
+    private boolean withTopicPartitionNumber = true;
 
     public void validate() {
         checkNotNull(bucket, "bucket property not set.");
