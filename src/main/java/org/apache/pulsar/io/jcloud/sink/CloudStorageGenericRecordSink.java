@@ -21,7 +21,6 @@ package org.apache.pulsar.io.jcloud.sink;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.jclouds.location.reference.LocationConstants.ENDPOINT;
 import static org.jclouds.location.reference.LocationConstants.PROPERTY_REGION;
-import static org.jclouds.location.reference.LocationConstants.PROPERTY_REGIONS;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
