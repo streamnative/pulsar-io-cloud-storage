@@ -69,6 +69,7 @@ The Cloud Storage sink connector supports the following properties.
 | `batchTimeMs` | long | False |1000 | The interval for batch submission. |
 | `sliceTopicPartitionPath` | Boolean | False |1000 |  When it is set to `true`, split the partitioned topic name into separate folders in the bucket path. |
 | `withMetadata` | Boolean | False |false | Save message attributes to metadata. |
+| `withTopicPartitionNumber` | Boolean | False |true | When it is set to `true`, include topic partition number to the object path. |
 
 ## Configure Cloud Storage sink connector
 

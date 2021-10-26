@@ -18,7 +18,6 @@
  */
 package org.apache.pulsar.io.jcloud.partitioner;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.functions.api.Record;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,16 +33,8 @@ public class SimplePartitioner<T> extends AbstractPartitioner<T> {
 
     @Override
     public String encodePartition(Record<T> sinkRecord) {
-        String topicName = sinkRecord.getTopicName().
-                orElseThrow(() -> new RuntimeException("topicName not null"));
-        String partitionId = sinkRecord.getPartitionId()
-                .orElseThrow(() -> new RuntimeException("partitionId not null"));
         Long recordSequence = sinkRecord.getRecordSequence()
                 .orElseThrow(() -> new RuntimeException("recordSequence not null"));
-        String number = StringUtils.removeStart(partitionId, topicName).replace("-", "").trim();
-        if (!StringUtils.isNumeric(number)) {
-            throw new RuntimeException("partitionId is fail " + partitionId);
-        }
-        return "partition-" + number + PATH_SEPARATOR + recordSequence;
+        return recordSequence.toString();
     }
 }
