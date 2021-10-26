@@ -95,7 +95,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         context = buildBlobStoreContext(sinkConfig);
         blobStore = context.getBlobStore();
         boolean testCase = "transient".equalsIgnoreCase(sinkConfig.getProvider());
-        if (!blobStore.containerExists(sinkConfig.getBucket()) && testCase) {
+        if (testCase && !blobStore.containerExists(sinkConfig.getBucket())) {
             //test use
             blobStore.createContainerInLocation(null, sinkConfig.getBucket());
         }

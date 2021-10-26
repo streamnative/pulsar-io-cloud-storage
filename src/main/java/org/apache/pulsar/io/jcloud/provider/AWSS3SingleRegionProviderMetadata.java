@@ -25,6 +25,8 @@ import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
 import java.net.URI;
 import java.util.Properties;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.jclouds.aws.s3.AWSS3ApiMetadata;
 import org.jclouds.aws.s3.AWSS3ProviderMetadata;
 import org.jclouds.providers.ProviderMetadata;
@@ -36,6 +38,7 @@ import org.jclouds.providers.internal.BaseProviderMetadata;
  * and prevent any request to `GetBucketLocation`
  *
  */
+@Slf4j
 public class AWSS3SingleRegionProviderMetadata extends BaseProviderMetadata {
     public static AWSS3SingleRegionProviderMetadata.Builder builder(String regionName, String endpoint) {
         Region region = RegionUtils.getRegion(regionName);
@@ -66,8 +69,15 @@ public class AWSS3SingleRegionProviderMetadata extends BaseProviderMetadata {
         Properties properties = AWSS3ProviderMetadata.defaultProperties();
         if (region != null) {
             properties.setProperty(PROPERTY_REGIONS, region.getName());
-            properties.setProperty(PROPERTY_REGION + "." + region.getName() + "." + ENDPOINT,
-                    region.getServiceEndpoint("s3"));
+            if (StringUtils.isNotEmpty(endpoint)) {
+                properties.setProperty(PROPERTY_REGION + "." + region.getName() + "." + ENDPOINT,
+                        endpoint);
+                properties.setProperty("jclouds.endpoint", endpoint);
+            }
+            log.info("awss3 region properties {} {}:{}", properties.getProperty(PROPERTY_REGIONS),
+                    PROPERTY_REGION + "." + region.getName() + "." + ENDPOINT,
+                    properties.getProperty(PROPERTY_REGION + "." + region.getName() + "." + ENDPOINT));
+            log.info("properties {}", properties);
         }
         return properties;
     }

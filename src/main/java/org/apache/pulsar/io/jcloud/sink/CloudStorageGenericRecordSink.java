@@ -108,7 +108,7 @@ public class CloudStorageGenericRecordSink extends BlobStoreAbstractSink<CloudSt
         if (sinkConfig.getProvider().equalsIgnoreCase("aws-s3")) {
             ApiRegistry.registerApi(new S3ApiMetadata());
             unregisterS3Provider();
-            if (!StringUtils.isNotEmpty(sinkConfig.getRegion())) {
+            if (StringUtils.isEmpty(sinkConfig.getRegion())) {
                 ProviderRegistry.registerProvider(new AWSS3ProviderMetadata());
             } else {
                 ProviderRegistry.registerProvider(
@@ -119,14 +119,14 @@ public class CloudStorageGenericRecordSink extends BlobStoreAbstractSink<CloudSt
         ContextBuilder contextBuilder = ContextBuilder.newBuilder(sinkConfig.getProvider())
                 .credentialsSupplier(getCredentialsSupplier(sinkConfig));
 
-        if (!StringUtils.isNotEmpty(sinkConfig.getEndpoint())) {
+        if (StringUtils.isNotEmpty(sinkConfig.getEndpoint())) {
             contextBuilder.endpoint(sinkConfig.getEndpoint());
             overrides.setProperty(ENDPOINT, sinkConfig.getEndpoint());
             if (sinkConfig.getProvider().equalsIgnoreCase("aws-s3")) {
                 overrides.setProperty(S3Constants.PROPERTY_S3_VIRTUAL_HOST_BUCKETS, "false");
             }
         }
-        if (!StringUtils.isNotEmpty(sinkConfig.getRegion())) {
+        if (StringUtils.isNotEmpty(sinkConfig.getRegion())) {
             overrides.setProperty(PROPERTY_REGION, sinkConfig.getRegion());
         }
         contextBuilder.overrides(overrides);
