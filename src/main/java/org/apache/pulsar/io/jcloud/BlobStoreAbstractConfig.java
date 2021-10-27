@@ -20,6 +20,7 @@ package org.apache.pulsar.io.jcloud;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import com.google.common.collect.ImmutableMap;
 import java.io.Serializable;
 import java.time.Instant;
@@ -97,7 +98,12 @@ public class BlobStoreAbstractConfig implements Serializable {
 
     public void validate() {
         checkNotNull(bucket, "bucket property not set.");
-        checkNotNull(endpoint, "endpoint property not set.");
+        if (provider.equalsIgnoreCase("aws-s3")) {
+            checkArgument(isNotBlank(region) || isNotBlank(endpoint),
+                    "Either the aws-end-point or aws-region must be set");
+        } else {
+            checkNotNull(endpoint, "endpoint property not set.");
+        }
 
         if (!formatMap.containsKey(StringUtils.lowerCase(formatType))) {
             throw new IllegalArgumentException("formatType property not set.");
