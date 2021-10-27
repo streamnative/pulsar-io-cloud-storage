@@ -97,6 +97,7 @@ public class BlobStoreAbstractConfig implements Serializable {
     private boolean withTopicPartitionNumber = true;
 
     public void validate() {
+        checkNotNull(provider, "provider not set.");
         checkNotNull(bucket, "bucket property not set.");
         if (provider.equalsIgnoreCase("aws-s3")) {
             checkArgument(isNotBlank(region) || isNotBlank(endpoint),

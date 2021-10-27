@@ -1,10 +1,10 @@
 
 
-## Cloud Storage Sink Connector for Pulsar
+# Cloud Storage Sink Connector for Pulsar
 
 The Cloud Storage sink connector supports exporting data from Pulsar topics to cloud storage (such as AWS S3 and Google GCS) either in Avro, JSON, Parquet or other formats. According to your environment, the Cloud Storage sink connector can guarantee exactly-once support for exporting data to cloud storage.
 
-# Installation
+## Installation
 
 There are two ways to install the Cloud Storage sink connector.
 
@@ -29,12 +29,12 @@ To build the the Cloud Storage sink connector from the source code, follow these
     ./pulsar-io-cloud-storage/target/pulsar-io-cloud-storage-${version}.nar
     ```
 
-# Configuration 
+## Configuration 
 
 The Cloud Storage sink connector supports the following properties.
 
 
-## Cloud Storage sink connector configuration
+### Cloud Storage sink connector configuration
 
 | Name | Type|Required | Default | Description |
 |------|----------|----------|---------|-------------|
@@ -55,7 +55,7 @@ The Cloud Storage sink connector supports the following properties.
 | `withMetadata` | Boolean | False |false | Save message attributes to metadata. |
 | `withTopicPartitionNumber` | Boolean | False |true | When it is set to `true`, include topic partition number to the object path. |
 
-## Configure Cloud Storage sink connector
+### Configure Cloud Storage sink connector
 
 Before using the Cloud Storage sink connector, you need to create a configuration file through one of the following methods.
 
@@ -118,7 +118,7 @@ Before using the Cloud Storage sink connector, you need to create a configuratio
       batchTimeMs: 1000
     ```
 
-# Usage
+## Usage
 
 1. Prepare the AWS Cloud Storage service. In this example, we use `Cloud Storagemock` as an example.
 
@@ -198,8 +198,15 @@ Before using the Cloud Storage sink connector, you need to create a configuratio
     - Format suffix: `.parquet`
         This part is generated based on the `formatType` parameter in the configuration.
 
+## Permissions
 
+### AWS S3 permission policies
 
+The suggested permission policies for AWS S3 are:
 
+- `s3:AbortMultipartUpload`
+- `s3:GetObject*`
+- `s3:PutObject*`
+- `s3:List*`
 
-
+If you do not want to provide `region` in the configuration, you should enable `s3:GetBucketLocation` permission policy as well. 

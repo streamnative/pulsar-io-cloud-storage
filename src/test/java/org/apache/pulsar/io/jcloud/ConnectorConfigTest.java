@@ -65,6 +65,7 @@ public class ConnectorConfigTest {
     @Test
     public void timePartitionDurationTest() throws IOException {
         Map<String, Object> config = new HashMap<>();
+        config.put("provider", "aws-s3");
         config.put("accessKeyId", "aws-s3");
         config.put("secretAccessKey", "aws-s3");
         config.put("bucket", "testbucket");
