@@ -19,7 +19,6 @@
 package org.apache.pulsar.io.jcloud.sink;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.jclouds.location.reference.LocationConstants.ENDPOINT;
 import static org.jclouds.location.reference.LocationConstants.PROPERTY_REGION;
 import static org.jclouds.location.reference.LocationConstants.PROPERTY_REGIONS;
 import java.io.IOException;
@@ -41,13 +40,10 @@ import org.apache.pulsar.io.jcloud.credential.JcloudsCredential;
 import org.apache.pulsar.jcloud.shade.com.google.common.base.Supplier;
 import org.jclouds.Constants;
 import org.jclouds.ContextBuilder;
-import org.jclouds.aws.s3.AWSS3ProviderMetadata;
 import org.jclouds.blobstore.BlobStoreContext;
 import org.jclouds.domain.Credentials;
-import org.jclouds.osgi.ApiRegistry;
 import org.jclouds.osgi.ProviderRegistry;
 import org.jclouds.providers.ProviderMetadata;
-import org.jclouds.s3.S3ApiMetadata;
 import org.jclouds.s3.reference.S3Constants;
 
 /**
