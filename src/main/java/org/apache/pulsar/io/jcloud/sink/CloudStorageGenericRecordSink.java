@@ -131,13 +131,4 @@ public class CloudStorageGenericRecordSink extends BlobStoreAbstractSink<CloudSt
         return () -> jcloudsCredential.getCredentials(sinkConfig).get();
     }
 
-    private void unregisterS3Provider() {
-        Iterator<ProviderMetadata> iter = ProviderRegistry.fromRegistry().iterator();
-        while (iter.hasNext()) {
-            ProviderMetadata p = iter.next();
-            if (p.getId().equalsIgnoreCase("aws-s3")) {
-                ProviderRegistry.unregisterProvider(p);
-            }
-        }
-    }
 }

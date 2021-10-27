@@ -204,9 +204,9 @@ Before using the Cloud Storage sink connector, you need to create a configuratio
 
 The suggested permission policies for AWS S3 are:
 
-- `s3:AbortMultipartUpload`
-- `s3:GetObject*`
-- `s3:PutObject*`
-- `s3:List*`
+  - `s3:AbortMultipartUpload`
+  - `s3:GetObject*`
+  - `s3:PutObject*`
+  - `s3:List*`
 
 If you do not want to provide `region` in the configuration, you should enable `s3:GetBucketLocation` permission policy as well. 
