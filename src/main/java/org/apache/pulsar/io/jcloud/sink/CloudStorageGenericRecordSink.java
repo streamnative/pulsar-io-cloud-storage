@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -42,8 +41,6 @@ import org.jclouds.Constants;
 import org.jclouds.ContextBuilder;
 import org.jclouds.blobstore.BlobStoreContext;
 import org.jclouds.domain.Credentials;
-import org.jclouds.osgi.ProviderRegistry;
-import org.jclouds.providers.ProviderMetadata;
 import org.jclouds.s3.reference.S3Constants;
 
 /**
