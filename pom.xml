@@ -56,6 +56,8 @@
     <mockito.version>3.7.7</mockito.version>
     <powermock.version>2.0.2</powermock.version>
     <testcontainers.version>1.15.2</testcontainers.version>
+    <mocks3.version>2.2.2</mocks3.version>
+    <aws-v2.version>2.16.93</aws-v2.version>
 
     <!-- build plugin dependencies -->
     <license.plugin.version>3.0</license.plugin.version>
@@ -175,6 +177,21 @@
         <groupId>org.testcontainers</groupId>
         <artifactId>pulsar</artifactId>
         <version>${testcontainers.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.adobe.testing</groupId>
+        <artifactId>s3mock-testcontainers</artifactId>
+        <version>${mocks3.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>software.amazon.awssdk</groupId>
+        <artifactId>s3</artifactId>
+        <version>${aws-v2.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>software.amazon.awssdk</groupId>
+        <artifactId>url-connection-client</artifactId>
+        <version>${aws-v2.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -366,7 +383,21 @@
       <artifactId>pulsar</artifactId>
       <scope>test</scope>
     </dependency>
-
+    <dependency>
+      <groupId>com.adobe.testing</groupId>
+      <artifactId>s3mock-testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>s3</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>url-connection-client</artifactId>
+      <scope>test</scope>
+    </dependency>
 
     <dependency>
       <groupId>org.apache.commons</groupId>

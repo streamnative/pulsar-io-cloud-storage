@@ -41,6 +41,7 @@ import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.io.jcloud.container.PulsarContainer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.utility.DockerImageName;
@@ -52,6 +53,7 @@ import org.testcontainers.utility.DockerImageName;
 public abstract class PulsarTestBase {
 
     protected static PulsarContainer pulsarService;
+    protected static Network network = Network.newNetwork();
 
     protected static String serviceUrl;
 
@@ -73,8 +75,9 @@ public abstract class PulsarTestBase {
         log.info("-------------------------------------------------------------------------");
 
 
-        final String pulsarImage = System.getProperty("pulsar.systemtest.image", "streamnative/pulsar:2.8.1.6");
-        pulsarService = new PulsarContainer(DockerImageName.parse(pulsarImage));
+        final String pulsarImage = System.getProperty("pulsar.systemtest.image", "pulsar-io-cloud-storage:latest");
+        pulsarService = new PulsarContainer(DockerImageName.parse(pulsarImage)).withFunctionsWorker()
+                .withNetwork(network);
         pulsarService.waitingFor(new HttpWaitStrategy()
                 .forPort(BROKER_HTTP_PORT)
                 .forStatusCode(200)

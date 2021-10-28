@@ -19,8 +19,16 @@ jobs:
     - name: Code check
       run: mvn license:check checkstyle:check spotbugs:check
 
-    - name: Build with Maven
-      run: mvn install test -DfailIfNoTests=false
+    - name: Build with Maven without test
+      run: mvn clean install -DskipTests
+
+    - name: Build test docker image
+      run: |
+        PULSAR_VERSION=`mvn -q -Dexec.executable=echo -Dexec.args='${pulsar.version}' --non-recursive exec:exec 2>/dev/null`
+        docker build --build-arg PULSAR_VERSION="$PULSAR_VERSION" -t pulsar-io-cloud-storage:latest -f ./.ci/image/Dockerfile ./
+
+    - name: Test with Maven
+      run: mvn test -DfailIfNoTests=false
 
     - name: package surefire artifacts
       if: failure()
