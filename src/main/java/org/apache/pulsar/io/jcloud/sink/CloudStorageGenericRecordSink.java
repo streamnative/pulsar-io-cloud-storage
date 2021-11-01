@@ -19,6 +19,7 @@
 package org.apache.pulsar.io.jcloud.sink;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig.PROVIDER_AWSS3;
 import static org.jclouds.location.reference.LocationConstants.PROPERTY_REGION;
 import static org.jclouds.location.reference.LocationConstants.PROPERTY_REGIONS;
 import java.io.IOException;
@@ -103,14 +104,14 @@ public class CloudStorageGenericRecordSink extends BlobStoreAbstractSink<CloudSt
 
         if (StringUtils.isNotEmpty(sinkConfig.getEndpoint())) {
             contextBuilder.endpoint(sinkConfig.getEndpoint());
-            if (sinkConfig.getProvider().equalsIgnoreCase("aws-s3")) {
+            if (sinkConfig.getProvider().equalsIgnoreCase(PROVIDER_AWSS3)) {
                 overrides.setProperty(S3Constants.PROPERTY_S3_VIRTUAL_HOST_BUCKETS, "false");
             }
         }
 
         if (StringUtils.isNotEmpty(sinkConfig.getRegion())) {
             overrides.setProperty(PROPERTY_REGION, sinkConfig.getRegion());
-            if (sinkConfig.getProvider().equalsIgnoreCase("aws-s3")) {
+            if (sinkConfig.getProvider().equalsIgnoreCase(PROVIDER_AWSS3)) {
                 // For AWS-S3, jclouds will use a full list of AWS regions and run GetBucketLocation query first.
                 // This requires additional permission on GetBucketLocation
                 // If user provided region in config, the connector should not do GetBucketLocation anymore.

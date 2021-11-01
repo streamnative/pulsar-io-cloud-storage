@@ -18,6 +18,7 @@
  */
 package org.apache.pulsar.io.jcloud;
 
+import static org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig.PROVIDER_AWSS3;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,7 +35,7 @@ public class ConnectorConfigTest {
     @Test
     public void loadBasicConfigTest() throws IOException {
         Map<String, Object> config = new HashMap<>();
-        config.put("provider", "aws-s3");
+        config.put("provider", PROVIDER_AWSS3);
         config.put("accessKeyId", "aws-s3");
         config.put("secretAccessKey", "aws-s3");
         config.put("bucket", "testbucket");
@@ -50,7 +51,7 @@ public class ConnectorConfigTest {
         cloudStorageSinkConfig.validate();
 
 
-        Assert.assertEquals("aws-s3", cloudStorageSinkConfig.getProvider());
+        Assert.assertEquals(PROVIDER_AWSS3, cloudStorageSinkConfig.getProvider());
         Assert.assertEquals(config.get("accessKeyId"), cloudStorageSinkConfig.getAccessKeyId());
         Assert.assertEquals(config.get("secretAccessKey"), cloudStorageSinkConfig.getSecretAccessKey());
         Assert.assertEquals(config.get("bucket"), cloudStorageSinkConfig.getBucket());
@@ -65,7 +66,7 @@ public class ConnectorConfigTest {
     @Test
     public void timePartitionDurationTest() throws IOException {
         Map<String, Object> config = new HashMap<>();
-        config.put("provider", "aws-s3");
+        config.put("provider", PROVIDER_AWSS3);
         config.put("accessKeyId", "aws-s3");
         config.put("secretAccessKey", "aws-s3");
         config.put("bucket", "testbucket");
@@ -111,7 +112,7 @@ public class ConnectorConfigTest {
     @Test
     public void pathPrefixTest() throws IOException {
         Map<String, Object> config = new HashMap<>();
-        config.put("provider", "aws-s3");
+        config.put("provider", PROVIDER_AWSS3);
         config.put("accessKeyId", "aws-s3");
         config.put("secretAccessKey", "aws-s3");
         config.put("bucket", "testbucket");

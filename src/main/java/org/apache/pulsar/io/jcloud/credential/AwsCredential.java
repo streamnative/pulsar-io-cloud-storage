@@ -18,6 +18,7 @@
  */
 package org.apache.pulsar.io.jcloud.credential;
 
+import static org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig.PROVIDER_AWSS3;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSSessionCredentials;
@@ -38,7 +39,7 @@ public class AwsCredential implements JcloudsCredential {
 
     @Override
     public String provider() {
-        return "aws-s3";
+        return PROVIDER_AWSS3;
     }
 
     @Override

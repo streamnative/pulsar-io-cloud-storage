@@ -65,6 +65,8 @@ public class BlobStoreAbstractConfig implements Serializable {
             .put("time", new TimePartitioner<>())
             .build();
 
+    public static final String PROVIDER_AWSS3 = "aws-s3";
+
     private String provider;
 
     private String bucket;
@@ -99,7 +101,7 @@ public class BlobStoreAbstractConfig implements Serializable {
     public void validate() {
         checkNotNull(provider, "provider not set.");
         checkNotNull(bucket, "bucket property not set.");
-        if (provider.equalsIgnoreCase("aws-s3")) {
+        if (provider.equalsIgnoreCase(PROVIDER_AWSS3)) {
             checkArgument(isNotBlank(region) || isNotBlank(endpoint),
                     "Either the aws-end-point or aws-region must be set");
         } else {
