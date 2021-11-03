@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.pulsar.io.common.IOConfigUtils;
 import org.apache.pulsar.io.core.SinkContext;
 import org.apache.pulsar.io.core.annotations.Connector;
 import org.apache.pulsar.io.core.annotations.IOType;
@@ -82,8 +83,7 @@ public class CloudStorageGenericRecordSink extends BlobStoreAbstractSink<CloudSt
 
     @Override
     public CloudStorageSinkConfig loadConfig(Map<String, Object> config, SinkContext sinkContext) throws IOException {
-
-        CloudStorageSinkConfig sinkConfig = CloudStorageSinkConfig.load(config);
+        CloudStorageSinkConfig sinkConfig = IOConfigUtils.loadWithSecrets(config, CloudStorageSinkConfig.class, sinkContext);
         if (!sinkConfig.isUseDefaultCredentials()) {
             checkNotNull(sinkConfig.getAccessKeyId(), "accessKeyId property not set.");
             checkNotNull(sinkConfig.getSecretAccessKey(), "secretAccessKey property not set.");
