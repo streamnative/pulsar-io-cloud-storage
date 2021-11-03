@@ -179,12 +179,13 @@ public class ConnectorConfigTest {
                 .thenReturn("myKeyId");
         Mockito.when(sinkContext.getSecret("secretAccessKey"))
                 .thenReturn("myAccessKey");
-        CloudStorageSinkConfig sinkConfig = IOConfigUtils.loadWithSecrets(config, CloudStorageSinkConfig.class, sinkContext);
+        CloudStorageSinkConfig sinkConfig =
+                IOConfigUtils.loadWithSecrets(config, CloudStorageSinkConfig.class, sinkContext);
 
         Assert.assertNotNull(sinkConfig);
         Assert.assertEquals(sinkConfig.getProvider(), "aws-s3");
         Assert.assertEquals(sinkConfig.getBucket(), "testbucket");
         Assert.assertEquals(sinkConfig.getSecretAccessKey(), "myAccessKey");
-        Assert.assertEquals(sinkConfig.getAccessKeyId(),"myKeyId");
+        Assert.assertEquals(sinkConfig.getAccessKeyId(), "myKeyId");
     }
 }

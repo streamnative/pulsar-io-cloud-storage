@@ -83,7 +83,8 @@ public class CloudStorageGenericRecordSink extends BlobStoreAbstractSink<CloudSt
 
     @Override
     public CloudStorageSinkConfig loadConfig(Map<String, Object> config, SinkContext sinkContext) throws IOException {
-        CloudStorageSinkConfig sinkConfig = IOConfigUtils.loadWithSecrets(config, CloudStorageSinkConfig.class, sinkContext);
+        CloudStorageSinkConfig sinkConfig =
+                IOConfigUtils.loadWithSecrets(config, CloudStorageSinkConfig.class, sinkContext);
         if (!sinkConfig.isUseDefaultCredentials()) {
             checkNotNull(sinkConfig.getAccessKeyId(), "accessKeyId property not set.");
             checkNotNull(sinkConfig.getSecretAccessKey(), "secretAccessKey property not set.");
