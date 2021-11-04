@@ -22,9 +22,12 @@ import static org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig.PROVIDER_AWSS3
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.pulsar.io.common.IOConfigUtils;
+import org.apache.pulsar.io.core.SinkContext;
 import org.apache.pulsar.io.jcloud.sink.CloudStorageSinkConfig;
 import org.junit.Assert;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 
 /**
@@ -158,5 +161,33 @@ public class ConnectorConfigTest {
             Assert.fail();
         } catch (Exception e) {
         }
+    }
+
+    @Test
+    public final void loadFromMapCredentialFromSecretTest() throws IOException {
+        Map<String, Object> config = new HashMap<>();
+        config.put("provider", "aws-s3");
+        config.put("bucket", "testbucket");
+        config.put("region", "localhost");
+        config.put("endpoint", "us-standard");
+        config.put("formatType", "avro");
+        config.put("partitionerType", "default");
+        config.put("timePartitionPattern", "yyyy-MM-dd");
+        config.put("timePartitionDuration", "2d");
+        config.put("batchSize", 10);
+
+        SinkContext sinkContext = Mockito.mock(SinkContext.class);
+        Mockito.when(sinkContext.getSecret("accessKeyId"))
+                .thenReturn("myKeyId");
+        Mockito.when(sinkContext.getSecret("secretAccessKey"))
+                .thenReturn("myAccessKey");
+        CloudStorageSinkConfig sinkConfig =
+                IOConfigUtils.loadWithSecrets(config, CloudStorageSinkConfig.class, sinkContext);
+
+        Assert.assertNotNull(sinkConfig);
+        Assert.assertEquals(sinkConfig.getProvider(), "aws-s3");
+        Assert.assertEquals(sinkConfig.getBucket(), "testbucket");
+        Assert.assertEquals(sinkConfig.getSecretAccessKey(), "myAccessKey");
+        Assert.assertEquals(sinkConfig.getAccessKeyId(), "myKeyId");
     }
 }

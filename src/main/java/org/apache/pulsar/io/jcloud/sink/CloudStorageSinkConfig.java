@@ -27,6 +27,7 @@ import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
+import org.apache.pulsar.io.core.annotations.FieldDoc;
 import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 
 /**
@@ -39,8 +40,18 @@ public class CloudStorageSinkConfig extends BlobStoreAbstractConfig {
 
     private static final long serialVersionUID = 1245636479605735555L;
 
+    @FieldDoc(
+            required = false,
+            defaultValue = "",
+            sensitive = true,
+            help = "The Cloud Storage access key ID. It requires permission to write objects.")
     private String accessKeyId;
 
+    @FieldDoc(
+            required = false,
+            defaultValue = "",
+            sensitive = true,
+            help = "The Cloud Storage secret access key.")
     private String secretAccessKey;
 
     private String role;
