@@ -205,7 +205,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
         final Record<GenericRecord> lastNotFlushed = pendingFlushQueue.getLast();
         final List<Record<GenericRecord>> recordsToInsert = Lists.newArrayList();
-        while (!pendingFlushQueue.isEmpty()) {
+        while (!pendingFlushQueue.isEmpty() && recordsToInsert.size() < maxBatchSize) {
             Record<GenericRecord> r = pendingFlushQueue.pollFirst();
             recordsToInsert.add(r);
             if (r == lastNotFlushed) {
