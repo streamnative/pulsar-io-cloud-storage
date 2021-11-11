@@ -47,6 +47,7 @@ import org.apache.pulsar.io.jcloud.format.InitConfiguration;
 import org.apache.pulsar.io.jcloud.format.JsonFormat;
 import org.apache.pulsar.io.jcloud.format.ParquetFormat;
 import org.apache.pulsar.io.jcloud.partitioner.Partitioner;
+import org.apache.pulsar.io.jcloud.partitioner.PartitionerType;
 import org.apache.pulsar.io.jcloud.partitioner.SimplePartitioner;
 import org.apache.pulsar.io.jcloud.partitioner.TimePartitioner;
 import org.apache.pulsar.jcloud.shade.com.google.common.io.ByteSource;
@@ -123,12 +124,12 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
     private Partitioner<GenericRecord> buildPartitioner(V sinkConfig) {
         Partitioner<GenericRecord> partitioner;
-        String partitionerType = StringUtils.defaultIfBlank(sinkConfig.getPartitionerType(), "partition");
+        PartitionerType partitionerType = PartitionerType.valueOf(StringUtils.defaultIfBlank(sinkConfig.getPartitionerType(), "partition"));
         switch (partitionerType) {
-            case "time":
+            case TIME:
                 partitioner = new TimePartitioner<>();
                 break;
-            case "partition":
+            case DEFAULT:
                 partitioner = new SimplePartitioner<>();
                 break;
             default:

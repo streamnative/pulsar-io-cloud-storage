@@ -37,6 +37,7 @@ import org.apache.pulsar.io.jcloud.format.Format;
 import org.apache.pulsar.io.jcloud.format.JsonFormat;
 import org.apache.pulsar.io.jcloud.format.ParquetFormat;
 import org.apache.pulsar.io.jcloud.partitioner.Partitioner;
+import org.apache.pulsar.io.jcloud.partitioner.PartitionerType;
 import org.apache.pulsar.io.jcloud.partitioner.SimplePartitioner;
 import org.apache.pulsar.io.jcloud.partitioner.TimePartitioner;
 import org.slf4j.Logger;
@@ -61,8 +62,8 @@ public class BlobStoreAbstractConfig implements Serializable {
             .put("bytes", new BytesFormat())
             .build();
     private static final Map<String, Partitioner<?>> partitionerMap = new ImmutableMap.Builder<String, Partitioner<?>>()
-            .put("default", new SimplePartitioner<>())
-            .put("time", new TimePartitioner<>())
+            .put(PartitionerType.DEFAULT.name, new SimplePartitioner<>())
+            .put(PartitionerType.TIME.name, new TimePartitioner<>())
             .build();
 
     public static final String PROVIDER_AWSS3 = "aws-s3";
@@ -115,7 +116,7 @@ public class BlobStoreAbstractConfig implements Serializable {
         if (!partitionerMap.containsKey(StringUtils.lowerCase(partitionerType))) {
             throw new IllegalArgumentException("partitionerType property not set.");
         }
-        if ("time".equalsIgnoreCase(partitionerType)) {
+        if (PartitionerType.TIME.name.equalsIgnoreCase(partitionerType)) {
             if (StringUtils.isNoneBlank(timePartitionPattern)) {
                 LOGGER.info("test timePartitionPattern is ok {} {}",
                         timePartitionPattern,
