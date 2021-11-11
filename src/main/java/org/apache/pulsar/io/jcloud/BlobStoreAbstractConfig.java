@@ -62,8 +62,8 @@ public class BlobStoreAbstractConfig implements Serializable {
             .put("bytes", new BytesFormat())
             .build();
     private static final Map<String, Partitioner<?>> partitionerMap = new ImmutableMap.Builder<String, Partitioner<?>>()
-            .put(PartitionerType.PARTITION.name, new SimplePartitioner<>())
-            .put(PartitionerType.TIME.name, new TimePartitioner<>())
+            .put(PartitionerType.partition.name(), new SimplePartitioner<>())
+            .put(PartitionerType.time.name(), new TimePartitioner<>())
             .build();
 
     public static final String PROVIDER_AWSS3 = "aws-s3";
@@ -116,7 +116,7 @@ public class BlobStoreAbstractConfig implements Serializable {
         if (!partitionerMap.containsKey(StringUtils.lowerCase(partitionerType))) {
             throw new IllegalArgumentException("partitionerType property not set.");
         }
-        if (PartitionerType.TIME.name.equalsIgnoreCase(partitionerType)) {
+        if (PartitionerType.time.name().equalsIgnoreCase(partitionerType)) {
             if (StringUtils.isNoneBlank(timePartitionPattern)) {
                 LOGGER.info("test timePartitionPattern is ok {} {}",
                         timePartitionPattern,
