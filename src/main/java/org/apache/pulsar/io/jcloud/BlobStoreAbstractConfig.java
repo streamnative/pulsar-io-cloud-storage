@@ -114,7 +114,7 @@ public class BlobStoreAbstractConfig implements Serializable {
         }
 
         if (!partitionerMap.containsKey(StringUtils.lowerCase(partitionerType))
-                || partitionerType.equalsIgnoreCase("default")) {
+                && !partitionerType.equalsIgnoreCase("default")) {
             throw new IllegalArgumentException("partitionerType property not set.");
         }
         if (PartitionerType.time.name().equalsIgnoreCase(partitionerType)) {
