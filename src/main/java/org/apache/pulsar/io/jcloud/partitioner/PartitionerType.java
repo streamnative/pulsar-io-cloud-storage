@@ -22,7 +22,7 @@ package org.apache.pulsar.io.jcloud.partitioner;
  * partitioner types.
  */
 public enum PartitionerType {
-    DEFAULT("partition"),
+    PARTITION("partition"),
     TIME("time");
     public final String name;
 

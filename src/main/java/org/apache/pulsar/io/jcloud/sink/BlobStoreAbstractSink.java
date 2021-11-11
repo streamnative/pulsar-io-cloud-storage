@@ -129,7 +129,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
             case TIME:
                 partitioner = new TimePartitioner<>();
                 break;
-            case DEFAULT:
+            case PARTITION:
                 partitioner = new SimplePartitioner<>();
                 break;
             default:
