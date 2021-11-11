@@ -124,18 +124,22 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
     private Partitioner<GenericRecord> buildPartitioner(V sinkConfig) {
         Partitioner<GenericRecord> partitioner;
-        PartitionerType partitionerType =
-                PartitionerType.valueOf(
-                        StringUtils.defaultIfBlank(sinkConfig.getPartitionerType(), PartitionerType.partition.name()));
+        String partitionerTypeName = StringUtils.defaultIfBlank(
+                sinkConfig.getPartitionerType(), PartitionerType.partition.name());
+        PartitionerType partitionerType;
+        try {
+            partitionerType = PartitionerType.valueOf(partitionerTypeName);
+        } catch (Exception e) {
+            throw new RuntimeException("not support partitioner type " + partitionerTypeName);
+        }
         switch (partitionerType) {
             case time:
                 partitioner = new TimePartitioner<>();
                 break;
             case partition:
+            default:
                 partitioner = new SimplePartitioner<>();
                 break;
-            default:
-                throw new RuntimeException("not support partitioner type " + partitionerType);
         }
         partitioner.configure(sinkConfig);
         return partitioner;
