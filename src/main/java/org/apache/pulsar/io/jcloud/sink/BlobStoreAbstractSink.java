@@ -124,7 +124,9 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
     private Partitioner<GenericRecord> buildPartitioner(V sinkConfig) {
         Partitioner<GenericRecord> partitioner;
-        PartitionerType partitionerType = PartitionerType.valueOf(StringUtils.defaultIfBlank(sinkConfig.getPartitionerType(), PartitionerType.partition.name()));
+        PartitionerType partitionerType =
+                PartitionerType.valueOf(
+                        StringUtils.defaultIfBlank(sinkConfig.getPartitionerType(), PartitionerType.partition.name()));
         switch (partitionerType) {
             case time:
                 partitioner = new TimePartitioner<>();
