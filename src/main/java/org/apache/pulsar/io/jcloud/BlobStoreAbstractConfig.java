@@ -63,7 +63,6 @@ public class BlobStoreAbstractConfig implements Serializable {
             .build();
     private static final Map<String, Partitioner<?>> partitionerMap = new ImmutableMap.Builder<String, Partitioner<?>>()
             .put(PartitionerType.partition.name(), new SimplePartitioner<>())
-            .put("partition", new SimplePartitioner<>())
             .put(PartitionerType.time.name(), new TimePartitioner<>())
             .build();
 
@@ -114,7 +113,8 @@ public class BlobStoreAbstractConfig implements Serializable {
             throw new IllegalArgumentException("formatType property not set.");
         }
 
-        if (!partitionerMap.containsKey(StringUtils.lowerCase(partitionerType))) {
+        if (!partitionerMap.containsKey(StringUtils.lowerCase(partitionerType))
+                || partitionerType.equalsIgnoreCase("default")) {
             throw new IllegalArgumentException("partitionerType property not set.");
         }
         if (PartitionerType.time.name().equalsIgnoreCase(partitionerType)) {
