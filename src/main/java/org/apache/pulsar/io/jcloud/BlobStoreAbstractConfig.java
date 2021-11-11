@@ -63,6 +63,7 @@ public class BlobStoreAbstractConfig implements Serializable {
             .build();
     private static final Map<String, Partitioner<?>> partitionerMap = new ImmutableMap.Builder<String, Partitioner<?>>()
             .put(PartitionerType.partition.name(), new SimplePartitioner<>())
+            .put("partition", new SimplePartitioner<>())
             .put(PartitionerType.time.name(), new TimePartitioner<>())
             .build();
 
