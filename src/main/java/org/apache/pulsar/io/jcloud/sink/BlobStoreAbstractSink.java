@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.client.api.Schema;
 import org.apache.pulsar.client.api.schema.GenericRecord;
@@ -47,6 +48,7 @@ import org.apache.pulsar.io.jcloud.format.InitConfiguration;
 import org.apache.pulsar.io.jcloud.format.JsonFormat;
 import org.apache.pulsar.io.jcloud.format.ParquetFormat;
 import org.apache.pulsar.io.jcloud.partitioner.Partitioner;
+import org.apache.pulsar.io.jcloud.partitioner.PartitionerType;
 import org.apache.pulsar.io.jcloud.partitioner.SimplePartitioner;
 import org.apache.pulsar.io.jcloud.partitioner.TimePartitioner;
 import org.apache.pulsar.jcloud.shade.com.google.common.io.ByteSource;
@@ -123,16 +125,17 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
     private Partitioner<GenericRecord> buildPartitioner(V sinkConfig) {
         Partitioner<GenericRecord> partitioner;
-        String partitionerType = StringUtils.defaultIfBlank(sinkConfig.getPartitionerType(), "partition");
+        String partitionerTypeName = sinkConfig.getPartitionerType();
+        PartitionerType partitionerType =
+                EnumUtils.getEnumIgnoreCase(PartitionerType.class, partitionerTypeName, PartitionerType.PARTITION);
         switch (partitionerType) {
-            case "time":
+            case TIME:
                 partitioner = new TimePartitioner<>();
                 break;
-            case "partition":
+            case PARTITION:
+            default:
                 partitioner = new SimplePartitioner<>();
                 break;
-            default:
-                throw new RuntimeException("not support partitioner type " + partitionerType);
         }
         partitioner.configure(sinkConfig);
         return partitioner;
