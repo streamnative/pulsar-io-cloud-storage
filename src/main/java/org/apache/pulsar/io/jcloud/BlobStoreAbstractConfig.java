@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import lombok.Data;
 import lombok.experimental.Accessors;
+import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.io.jcloud.format.AvroFormat;
 import org.apache.pulsar.io.jcloud.format.BytesFormat;
@@ -60,10 +61,6 @@ public class BlobStoreAbstractConfig implements Serializable {
             .put("json", new JsonFormat())
             .put("parquet", new ParquetFormat())
             .put("bytes", new BytesFormat())
-            .build();
-    private static final Map<String, Partitioner<?>> partitionerMap = new ImmutableMap.Builder<String, Partitioner<?>>()
-            .put(PartitionerType.partition.name(), new SimplePartitioner<>())
-            .put(PartitionerType.time.name(), new TimePartitioner<>())
             .build();
 
     public static final String PROVIDER_AWSS3 = "aws-s3";
@@ -113,11 +110,13 @@ public class BlobStoreAbstractConfig implements Serializable {
             throw new IllegalArgumentException("formatType property not set.");
         }
 
-        if (!partitionerMap.containsKey(StringUtils.lowerCase(partitionerType))
+        if (EnumUtils.getEnumIgnoreCase(PartitionerType.class, partitionerType) == null
                 && !partitionerType.equalsIgnoreCase("default")) {
-            throw new IllegalArgumentException("partitionerType property not set.");
+            // `default` option is for backward compatibility
+            throw new IllegalArgumentException(
+                    "partitionerType property not set properly, available options: partition / time");
         }
-        if (PartitionerType.time.name().equalsIgnoreCase(partitionerType)) {
+        if (PartitionerType.TIME.name().equalsIgnoreCase(partitionerType)) {
             if (StringUtils.isNoneBlank(timePartitionPattern)) {
                 LOGGER.info("test timePartitionPattern is ok {} {}",
                         timePartitionPattern,

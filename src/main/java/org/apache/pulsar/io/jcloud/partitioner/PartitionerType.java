@@ -22,6 +22,6 @@ package org.apache.pulsar.io.jcloud.partitioner;
  * partitioner types.
  */
 public enum PartitionerType {
-    partition,
-    time;
+    PARTITION,
+    TIME;
 }

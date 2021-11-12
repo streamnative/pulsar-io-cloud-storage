@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.client.api.Schema;
 import org.apache.pulsar.client.api.schema.GenericRecord;
@@ -124,19 +125,14 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
     private Partitioner<GenericRecord> buildPartitioner(V sinkConfig) {
         Partitioner<GenericRecord> partitioner;
-        String partitionerTypeName = StringUtils.defaultIfBlank(
-                sinkConfig.getPartitionerType(), PartitionerType.partition.name());
-        PartitionerType partitionerType;
-        try {
-            partitionerType = PartitionerType.valueOf(partitionerTypeName);
-        } catch (Exception e) {
-            throw new RuntimeException("not support partitioner type " + partitionerTypeName);
-        }
+        String partitionerTypeName = sinkConfig.getPartitionerType();
+        PartitionerType partitionerType =
+                EnumUtils.getEnumIgnoreCase(PartitionerType.class, partitionerTypeName, PartitionerType.PARTITION);
         switch (partitionerType) {
-            case time:
+            case TIME:
                 partitioner = new TimePartitioner<>();
                 break;
-            case partition:
+            case PARTITION:
             default:
                 partitioner = new SimplePartitioner<>();
                 break;

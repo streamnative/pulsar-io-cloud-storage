@@ -19,6 +19,7 @@
 package org.apache.pulsar.io.jcloud.partitioner;
 
 import static org.junit.Assert.assertEquals;
+import org.apache.commons.lang3.EnumUtils;
 import org.junit.Test;
 
 /**
@@ -27,7 +28,7 @@ import org.junit.Test;
 public class PartitionerTypeTest {
     @Test
     public void testValueOf() {
-        assertEquals(PartitionerType.partition, PartitionerType.valueOf("partition"));
-        assertEquals(PartitionerType.time, PartitionerType.valueOf("time"));
+        assertEquals(PartitionerType.PARTITION, EnumUtils.getEnumIgnoreCase(PartitionerType.class, "partition"));
+        assertEquals(PartitionerType.TIME, EnumUtils.getEnumIgnoreCase(PartitionerType.class, "time"));
     }
 }
