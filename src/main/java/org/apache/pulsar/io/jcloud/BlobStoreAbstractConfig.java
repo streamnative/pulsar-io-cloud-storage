@@ -37,10 +37,7 @@ import org.apache.pulsar.io.jcloud.format.BytesFormat;
 import org.apache.pulsar.io.jcloud.format.Format;
 import org.apache.pulsar.io.jcloud.format.JsonFormat;
 import org.apache.pulsar.io.jcloud.format.ParquetFormat;
-import org.apache.pulsar.io.jcloud.partitioner.Partitioner;
 import org.apache.pulsar.io.jcloud.partitioner.PartitionerType;
-import org.apache.pulsar.io.jcloud.partitioner.SimplePartitioner;
-import org.apache.pulsar.io.jcloud.partitioner.TimePartitioner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
