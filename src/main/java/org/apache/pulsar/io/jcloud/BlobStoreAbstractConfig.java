@@ -97,6 +97,7 @@ public class BlobStoreAbstractConfig implements Serializable {
 
     private boolean withMetadata;
     private boolean withTopicPartitionNumber = true;
+    private String rawSeparator;
 
     public void validate() {
         checkNotNull(provider, "provider not set.");
