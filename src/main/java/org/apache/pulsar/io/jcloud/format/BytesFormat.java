@@ -18,7 +18,6 @@
  */
 package org.apache.pulsar.io.jcloud.format;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.client.api.Schema;

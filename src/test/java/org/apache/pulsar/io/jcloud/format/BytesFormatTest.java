@@ -20,7 +20,6 @@ package org.apache.pulsar.io.jcloud.format;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
