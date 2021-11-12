@@ -36,7 +36,9 @@ import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.functions.api.Record;
+import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 import org.apache.pulsar.io.jcloud.util.AvroRecordUtil;
+import org.apache.pulsar.io.jcloud.util.HexStringUtils;
 import org.apache.pulsar.jcloud.shade.com.google.common.io.ByteSource;
 import org.junit.Assert;
 import org.junit.Test;
@@ -48,6 +50,7 @@ import org.slf4j.LoggerFactory;
  */
 public class BytesFormatTest extends FormatTestBase {
     private static final Logger LOGGER = LoggerFactory.getLogger(BytesFormatTest.class);
+    private static final String SEPARATOR = "0x10203040";
 
     private BytesFormat format = new BytesFormat();
 
@@ -64,6 +67,13 @@ public class BytesFormatTest extends FormatTestBase {
     @Override
     protected boolean supportMetadata() {
         return false;
+    }
+
+    @Override
+    protected BlobStoreAbstractConfig getBlobStoreAbstractConfig() {
+        BlobStoreAbstractConfig config = super.getBlobStoreAbstractConfig();
+        config.setBytesFormatTypeSeparator(SEPARATOR);
+        return config;
     }
 
     public org.apache.avro.generic.GenericRecord getFormatGeneratedRecord(TopicName topicName,
@@ -83,7 +93,7 @@ public class BytesFormatTest extends FormatTestBase {
 
         ByteSource byteSource = getFormat().recordWriter(records.listIterator());
         final byte[] expecteds =
-                ArrayUtils.addAll(msg.getData(), System.lineSeparator().getBytes(StandardCharsets.UTF_8));
+                ArrayUtils.addAll(msg.getData(), HexStringUtils.convertHexStringToBytes(SEPARATOR));
         Assert.assertArrayEquals(expecteds, byteSource.read());
         if (msg.getValue().getSchemaType().isPrimitive()){
             return null;
