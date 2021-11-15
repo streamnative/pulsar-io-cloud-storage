@@ -48,7 +48,8 @@ public class GoogleCloudStorageProviderTest {
         cloudStorageSinkConfig.validate();
 
         Assert.assertEquals(PROVIDER_GCS, cloudStorageSinkConfig.getProvider());
-        Assert.assertEquals(config.get("gcsServiceAccountKeyFilePath"), cloudStorageSinkConfig.getGcsServiceAccountKeyFilePath());
+        Assert.assertEquals(config.get("gcsServiceAccountKeyFilePath"),
+                cloudStorageSinkConfig.getGcsServiceAccountKeyFilePath());
         Assert.assertEquals(config.get("bucket"), cloudStorageSinkConfig.getBucket());
         Assert.assertEquals(config.get("region"), cloudStorageSinkConfig.getRegion());
         Assert.assertEquals(config.get("formatType"), cloudStorageSinkConfig.getFormatType());
