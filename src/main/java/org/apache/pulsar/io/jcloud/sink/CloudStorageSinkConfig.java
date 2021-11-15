@@ -97,11 +97,5 @@ public class CloudStorageSinkConfig extends BlobStoreAbstractConfig {
             checkNotNull(accessKeyId, "accessKeyId property not set.");
             checkNotNull(secretAccessKey, "secretAccessKey property not set.");
         }
-        if (getProvider().equalsIgnoreCase(PROVIDER_GCS)) {
-            checkArgument(
-                    StringUtils.isEmpty(gcsServiceAccountKeyFilePath)
-                            && StringUtils.isEmpty(gcsServiceAccountKeyFileContent),
-                    "The service account key path and key content is empty for GCS driver");
-        }
     }
 }

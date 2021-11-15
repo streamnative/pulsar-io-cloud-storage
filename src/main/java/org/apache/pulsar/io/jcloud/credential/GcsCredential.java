@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 public class GcsCredential implements JcloudsCredential {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GcsCredential.class);
+    private static final String GOOGLE_APPLICATION_CREDENTIALS_ENV = "GOOGLE_APPLICATION_CREDENTIALS";
 
     @Override
     public String provider() {
@@ -50,20 +51,32 @@ public class GcsCredential implements JcloudsCredential {
         //     following instructions in page https://support.google.com/googleapi/answer/6158849
         String gcsKeyPath = sinkConfig.getGcsServiceAccountKeyFilePath();
         String gcsKeyContent = sinkConfig.getGcsServiceAccountKeyFileContent();
-        if (!StringUtils.isEmpty(gcsKeyPath)) {
-            try {
-                String loadedContent = Files.toString(
-                        new File(gcsKeyPath), Charset.defaultCharset());
-                return () -> new GoogleCredentialsFromJson(loadedContent).get();
-            } catch (IOException ioe) {
-                LOGGER.error("Cannot read GCS service account credentials file: {}", gcsKeyPath);
-                throw new RuntimeException(ioe);
-            }
-        } else if (!StringUtils.isEmpty(gcsKeyContent)) {
+        if (StringUtils.isNotEmpty(gcsKeyContent)) {
             return () -> new GoogleCredentialsFromJson(gcsKeyContent).get();
+        } else if (StringUtils.isNotEmpty(gcsKeyPath)) {
+            try {
+                loadFromFile(gcsKeyPath);
+            } catch (Exception ex) {
+                LOGGER.error("Cannot read GCS service account credentials file: {}", gcsKeyPath);
+                throw new RuntimeException(ex);
+            }
         } else {
-            throw new RuntimeException(
-                    "The service account key path and key content is empty for GCS driver");
+            final String envFilePath = System.getProperty(GOOGLE_APPLICATION_CREDENTIALS_ENV);
+            if (StringUtils.isNotEmpty(envFilePath)) {
+                try {
+                    loadFromFile(envFilePath);
+                } catch (Exception ex) {
+                    LOGGER.error("Cannot read GCS service account credentials file: {}", envFilePath);
+                    throw new RuntimeException(ex);
+                }
+            }
         }
+        throw new RuntimeException("The service account key path and key content is empty for GCS driver");
+    }
+
+    private static Supplier<Credentials> loadFromFile(String filePath) throws Exception {
+        String loadedContent = Files.toString(
+                new File(filePath), Charset.defaultCharset());
+        return () -> new GoogleCredentialsFromJson(loadedContent).get();
     }
 }
