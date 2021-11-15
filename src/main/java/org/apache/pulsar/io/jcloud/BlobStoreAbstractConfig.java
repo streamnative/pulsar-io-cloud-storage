@@ -61,6 +61,7 @@ public class BlobStoreAbstractConfig implements Serializable {
             .build();
 
     public static final String PROVIDER_AWSS3 = "aws-s3";
+    public static final String PROVIDER_GCS = "google-cloud-storage";
 
     private String provider;
 

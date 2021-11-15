@@ -18,6 +18,7 @@
  */
 package org.apache.pulsar.io.jcloud.sink;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -27,6 +28,7 @@ import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.io.core.annotations.FieldDoc;
 import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 
@@ -54,6 +56,20 @@ public class CloudStorageSinkConfig extends BlobStoreAbstractConfig {
             help = "The Cloud Storage secret access key.")
     private String secretAccessKey;
 
+    @FieldDoc(
+            required = false,
+            defaultValue = "",
+            sensitive = true,
+            help = "The GCS service account key file path.")
+    private String gcsServiceAccountKeyFilePath;
+
+    @FieldDoc(
+            required = false,
+            defaultValue = "",
+            sensitive = true,
+            help = "The GCS service account key file content.")
+    private String gcsServiceAccountKeyFileContent;
+
     private String role;
 
     private String roleSessionName;
@@ -77,9 +93,15 @@ public class CloudStorageSinkConfig extends BlobStoreAbstractConfig {
     @Override
     public void validate() {
         super.validate();
-        if (!useDefaultCredentials) {
+        if (!useDefaultCredentials && getProvider().equalsIgnoreCase(PROVIDER_AWSS3)) {
             checkNotNull(accessKeyId, "accessKeyId property not set.");
             checkNotNull(secretAccessKey, "secretAccessKey property not set.");
+        }
+        if (getProvider().equalsIgnoreCase(PROVIDER_GCS)) {
+            checkArgument(
+                    StringUtils.isEmpty(gcsServiceAccountKeyFilePath)
+                            && StringUtils.isEmpty(gcsServiceAccountKeyFileContent),
+                    "The service account key path and key content is empty for GCS driver");
         }
     }
 }
