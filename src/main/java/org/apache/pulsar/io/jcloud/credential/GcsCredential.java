@@ -56,7 +56,7 @@ public class GcsCredential implements JcloudsCredential {
                 loadFromFile(gcsKeyPath);
             } catch (Exception ex) {
                 LOGGER.error("Cannot read GCS service account credentials file: {}", gcsKeyPath);
-                throw new RuntimeException(ex);
+                throw new IllegalArgumentException(ex);
             }
         } else {
             final String envFilePath = System.getProperty(GOOGLE_APPLICATION_CREDENTIALS_ENV);
@@ -65,11 +65,11 @@ public class GcsCredential implements JcloudsCredential {
                     loadFromFile(envFilePath);
                 } catch (Exception ex) {
                     LOGGER.error("Cannot read GCS service account credentials file: {}", envFilePath);
-                    throw new RuntimeException(ex);
+                    throw new IllegalArgumentException(ex);
                 }
             }
         }
-        throw new RuntimeException("The service account key path and key content is empty for GCS driver");
+        throw new IllegalArgumentException("The service account key path and key content is empty for GCS driver");
     }
 
     private static Supplier<Credentials> loadFromFile(String filePath) throws Exception {
