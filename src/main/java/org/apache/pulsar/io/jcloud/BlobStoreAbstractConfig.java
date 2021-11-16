@@ -30,15 +30,14 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import lombok.Data;
 import lombok.experimental.Accessors;
+import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.io.jcloud.format.AvroFormat;
 import org.apache.pulsar.io.jcloud.format.BytesFormat;
 import org.apache.pulsar.io.jcloud.format.Format;
 import org.apache.pulsar.io.jcloud.format.JsonFormat;
 import org.apache.pulsar.io.jcloud.format.ParquetFormat;
-import org.apache.pulsar.io.jcloud.partitioner.Partitioner;
-import org.apache.pulsar.io.jcloud.partitioner.SimplePartitioner;
-import org.apache.pulsar.io.jcloud.partitioner.TimePartitioner;
+import org.apache.pulsar.io.jcloud.partitioner.PartitionerType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,12 +59,9 @@ public class BlobStoreAbstractConfig implements Serializable {
             .put("parquet", new ParquetFormat())
             .put("bytes", new BytesFormat())
             .build();
-    private static final Map<String, Partitioner<?>> partitionerMap = new ImmutableMap.Builder<String, Partitioner<?>>()
-            .put("default", new SimplePartitioner<>())
-            .put("time", new TimePartitioner<>())
-            .build();
 
     public static final String PROVIDER_AWSS3 = "aws-s3";
+    public static final String PROVIDER_GCS = "google-cloud-storage";
 
     private String provider;
 
@@ -113,10 +109,13 @@ public class BlobStoreAbstractConfig implements Serializable {
             throw new IllegalArgumentException("formatType property not set.");
         }
 
-        if (!partitionerMap.containsKey(StringUtils.lowerCase(partitionerType))) {
-            throw new IllegalArgumentException("partitionerType property not set.");
+        if (EnumUtils.getEnumIgnoreCase(PartitionerType.class, partitionerType) == null
+                && !partitionerType.equalsIgnoreCase("default")) {
+            // `default` option is for backward compatibility
+            throw new IllegalArgumentException(
+                    "partitionerType property not set properly, available options: partition / time");
         }
-        if ("time".equalsIgnoreCase(partitionerType)) {
+        if (PartitionerType.TIME.name().equalsIgnoreCase(partitionerType)) {
             if (StringUtils.isNoneBlank(timePartitionPattern)) {
                 LOGGER.info("test timePartitionPattern is ok {} {}",
                         timePartitionPattern,

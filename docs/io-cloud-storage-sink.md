@@ -54,7 +54,7 @@ The Cloud Storage sink connector supports the following properties.
 
 | Name | Type|Required | Default | Description |
 |------|----------|----------|---------|-------------|
-| `provider` |String| True | " " (empty string) | The Cloud Storage type. for example, `aws-s3`,`gcs`|
+| `provider` |String| True | " " (empty string) | The Cloud Storage type. for example, `aws-s3`,`google-cloud-storage`|
 | `accessKeyId` |String| True | " " (empty string) | The Cloud Storage access key ID. |
 | `secretAccessKey` | String| True | " " (empty string) | The Cloud Storage secret access key. |
 | `role` | String |False | " " (empty string) | The Cloud Storage role. |
@@ -71,6 +71,8 @@ The Cloud Storage sink connector supports the following properties.
 | `withMetadata` | Boolean | False |false | Save message attributes to metadata. |
 | `withTopicPartitionNumber` | Boolean | False |true | When it is set to `true`, include topic partition number to the object path. |
 | `bytesFormatTypeSeparator` | String | False |"0x10" | It is inserted between records for the `formatType` of bytes. By default, it is set to '0x10'. An input record that contains the line separator looks like multiple records in the output object. |
+| `gcsServiceAccountKeyFilePath` | String | False | "" | Path to the GCS credentials file. If empty, the credentials file will be read from the `GOOGLE_APPLICATION_CREDENTIALS` environment variable. |
+| `gcsServiceAccountKeyFileContent` | String | False | "" | The contents of the JSON service key file. If empty, credentials are read from `gcsServiceAccountKeyFilePath` file. |
 
 ## Configure Cloud Storage sink connector
 
