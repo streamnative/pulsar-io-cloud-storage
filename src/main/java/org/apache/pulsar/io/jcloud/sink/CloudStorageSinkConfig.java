@@ -54,6 +54,20 @@ public class CloudStorageSinkConfig extends BlobStoreAbstractConfig {
             help = "The Cloud Storage secret access key.")
     private String secretAccessKey;
 
+    @FieldDoc(
+            required = false,
+            defaultValue = "",
+            sensitive = true,
+            help = "The GCS service account key file path.")
+    private String gcsServiceAccountKeyFilePath;
+
+    @FieldDoc(
+            required = false,
+            defaultValue = "",
+            sensitive = true,
+            help = "The GCS service account key file content.")
+    private String gcsServiceAccountKeyFileContent;
+
     private String role;
 
     private String roleSessionName;
@@ -77,7 +91,7 @@ public class CloudStorageSinkConfig extends BlobStoreAbstractConfig {
     @Override
     public void validate() {
         super.validate();
-        if (!useDefaultCredentials) {
+        if (!useDefaultCredentials && getProvider().equalsIgnoreCase(PROVIDER_AWSS3)) {
             checkNotNull(accessKeyId, "accessKeyId property not set.");
             checkNotNull(secretAccessKey, "secretAccessKey property not set.");
         }
