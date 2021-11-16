@@ -21,7 +21,7 @@ package org.apache.pulsar.io.jcloud.credential;
 import static org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig.PROVIDER_GCS;
 import com.google.common.io.Files;
 import java.io.File;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.io.jcloud.sink.CloudStorageSinkConfig;
@@ -74,7 +74,7 @@ public class GcsCredential implements JcloudsCredential {
 
     private static Supplier<Credentials> loadFromFile(String filePath) throws Exception {
         String loadedContent = Files.toString(
-                new File(filePath), Charset.defaultCharset());
+                new File(filePath), StandardCharsets.UTF_8);
         return () -> new GoogleCredentialsFromJson(loadedContent).get();
     }
 }

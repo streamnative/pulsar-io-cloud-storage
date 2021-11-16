@@ -112,7 +112,9 @@ public class CloudStorageGenericRecordSink extends BlobStoreAbstractSink<CloudSt
 
         if (StringUtils.isNotEmpty(sinkConfig.getEndpoint())) {
             contextBuilder.endpoint(sinkConfig.getEndpoint());
-            overrides.setProperty(S3Constants.PROPERTY_S3_VIRTUAL_HOST_BUCKETS, "false");
+            if (sinkConfig.getProvider().equalsIgnoreCase(PROVIDER_AWSS3)) {
+                overrides.setProperty(S3Constants.PROPERTY_S3_VIRTUAL_HOST_BUCKETS, "false");
+            }
         }
 
         if (StringUtils.isNotEmpty(sinkConfig.getRegion())) {
