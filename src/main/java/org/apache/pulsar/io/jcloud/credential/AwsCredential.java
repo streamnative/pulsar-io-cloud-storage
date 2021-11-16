@@ -60,7 +60,7 @@ public class AwsCredential implements JcloudsCredential {
             if (creds == null) {
                 // we don't expect this to happen, as we
                 // successfully fetched creds on boot
-                throw new RuntimeException("Unable to fetch S3 credentials after start, unexpected!");
+                throw new IllegalArgumentException("Unable to fetch S3 credentials after start, unexpected!");
             }
             // if we have session credentials, we need to send the session token
             // this allows us to support EC2 metadata credentials
