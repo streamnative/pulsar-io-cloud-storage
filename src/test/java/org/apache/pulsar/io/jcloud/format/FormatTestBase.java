@@ -162,11 +162,16 @@ public abstract class FormatTestBase extends PulsarTestBase {
         return recordValue.getField(field);
     }
 
-    protected void initSchema(Schema<GenericRecord> schema) {
-        final BlobStoreAbstractConfig config = new BlobStoreAbstractConfig();
+    protected BlobStoreAbstractConfig getBlobStoreAbstractConfig() {
+        BlobStoreAbstractConfig config = new BlobStoreAbstractConfig();
         if (supportMetadata()) {
             config.setWithMetadata(true);
         }
+        return config;
+    }
+
+    protected void initSchema(Schema<GenericRecord> schema) {
+        final BlobStoreAbstractConfig config = getBlobStoreAbstractConfig();
         ((InitConfiguration<BlobStoreAbstractConfig>) getFormat()).configure(config);
         getFormat().initSchema(schema);
     }
