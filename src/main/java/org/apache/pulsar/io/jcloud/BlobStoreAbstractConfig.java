@@ -93,6 +93,7 @@ public class BlobStoreAbstractConfig implements Serializable {
 
     private boolean withMetadata;
     private boolean withTopicPartitionNumber = true;
+    private String bytesFormatTypeSeparator = "0x10";
 
     public void validate() {
         checkNotNull(provider, "provider not set.");
@@ -132,6 +133,13 @@ public class BlobStoreAbstractConfig implements Serializable {
                     "pathPrefix cannot start with '/',the style is 'xx/xxx/'.");
             checkArgument(StringUtils.endsWith(pathPrefix, "/"),
                     "pathPrefix must end with '/',the style is 'xx/xxx/'.");
+        }
+
+        if ("bytes".equalsIgnoreCase(formatType)) {
+            checkArgument(StringUtils.isEmpty(bytesFormatTypeSeparator),
+                    "bytesFormatTypeSeparator cannot be empty when formatType is 'bytes'");
+            checkArgument(!StringUtils.startsWith(bytesFormatTypeSeparator, "0x"),
+                    "bytesFormatTypeSeparator should be a hex encoded string, which starts with '0x'");
         }
     }
 
