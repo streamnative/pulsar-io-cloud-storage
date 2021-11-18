@@ -53,7 +53,7 @@ public class GcsCredential implements JcloudsCredential {
             return () -> new GoogleCredentialsFromJson(gcsKeyContent).get();
         } else if (StringUtils.isNotEmpty(gcsKeyPath)) {
             try {
-                loadFromFile(gcsKeyPath);
+                return loadFromFile(gcsKeyPath);
             } catch (Exception ex) {
                 LOGGER.error("Cannot read GCS service account credentials file: {}", gcsKeyPath);
                 throw new IllegalArgumentException(ex);
@@ -62,7 +62,7 @@ public class GcsCredential implements JcloudsCredential {
             final String envFilePath = System.getProperty(GOOGLE_APPLICATION_CREDENTIALS_ENV);
             if (StringUtils.isNotEmpty(envFilePath)) {
                 try {
-                    loadFromFile(envFilePath);
+                    return loadFromFile(envFilePath);
                 } catch (Exception ex) {
                     LOGGER.error("Cannot read GCS service account credentials file: {}", envFilePath);
                     throw new IllegalArgumentException(ex);
