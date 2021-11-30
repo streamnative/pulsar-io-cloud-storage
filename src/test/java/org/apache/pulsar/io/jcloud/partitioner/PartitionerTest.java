@@ -125,7 +125,7 @@ public class PartitionerTest extends TestCase {
                         getPartitionedTopic()
                 },
                 new Object[]{
-                        numberConfig,
+                        numberPartitioner,
                         "2020-09-08-12" + Partitioner.PATH_SEPARATOR + "3221225506",
                         "public/default/test-partition-1/2020-09-08-12" + Partitioner.PATH_SEPARATOR + "3221225506",
                         getPartitionedTopic()
