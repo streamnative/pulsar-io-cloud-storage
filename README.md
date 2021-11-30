@@ -45,7 +45,7 @@ The Cloud Storage sink connector supports the following properties.
 | `formatType` | String| False | "json" | The data format type. Available options are JSON, Avro, Bytes, or Parquet. By default, it is set to JSON. |
 | `partitionerType` | String| False |"partition" | The partitioning type. It can be configured by topic partitions or by time. By default, the partition type is configured by topic partitions. |
 | `timePartitionPattern` | String| False |"yyyy-MM-dd" | The format pattern of the time-based partitioning. For details, refer to the Java date and time format. |
-| `timePartitionDuration` | String| False |"1d" | The time interval for time-based partitioning, such as 1d, or 1h. |
+| `timePartitionDuration` | String| False |"86400000" | The time interval for time-based partitioning, support formatted interval string, such as `30d`, `24h`, `30m`, `10s`, also support number in milliseconds precision, such as `86400000` refers to `24h` or `1d`. |
 | `batchSize` | int | False |10 | The number of records submitted in batch. |
 | `batchTimeMs` | long | False |1000 | The interval for batch submission. |
 | `sliceTopicPartitionPath` | Boolean| False |false | When it is set to `true`, split the partitioned topic name into separate folders in the bucket path. |

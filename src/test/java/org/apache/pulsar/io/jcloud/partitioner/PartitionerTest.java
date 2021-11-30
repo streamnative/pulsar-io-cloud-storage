@@ -75,6 +75,12 @@ public class PartitionerTest extends TestCase {
         noPartitionNumberblobStoreAbstractConfig.setWithTopicPartitionNumber(false);
         SimplePartitioner<Object> noPartitionNumberPartitioner = new SimplePartitioner<>();
         noPartitionNumberPartitioner.configure(noPartitionNumberblobStoreAbstractConfig);
+
+        BlobStoreAbstractConfig numberConfig = new BlobStoreAbstractConfig();
+        numberConfig.setTimePartitionDuration("7200000");
+        numberConfig.setTimePartitionPattern("yyyy-MM-dd-HH");
+        TimePartitioner<Object> numberPartitioner = new TimePartitioner<>();
+        numberPartitioner.configure(numberConfig);
         return new Object[][]{
                 new Object[]{
                         simplePartitioner,
@@ -117,7 +123,13 @@ public class PartitionerTest extends TestCase {
                         "3221225506",
                         "public/default/test" + Partitioner.PATH_SEPARATOR + "3221225506",
                         getPartitionedTopic()
-                }
+                },
+                new Object[]{
+                        numberConfig,
+                        "2020-09-08-12" + Partitioner.PATH_SEPARATOR + "3221225506",
+                        "public/default/test-partition-1/2020-09-08-12" + Partitioner.PATH_SEPARATOR + "3221225506",
+                        getPartitionedTopic()
+                },
         };
     }
 
