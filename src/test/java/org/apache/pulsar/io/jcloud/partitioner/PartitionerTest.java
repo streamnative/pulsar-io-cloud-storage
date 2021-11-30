@@ -126,8 +126,8 @@ public class PartitionerTest extends TestCase {
                 },
                 new Object[]{
                         numberPartitioner,
-                        "2020-09-08-12" + Partitioner.PATH_SEPARATOR + "3221225506",
-                        "public/default/test-partition-1/2020-09-08-12" + Partitioner.PATH_SEPARATOR + "3221225506",
+                        "2020-09-08-14" + Partitioner.PATH_SEPARATOR + "3221225506",
+                        "public/default/test-partition-1/2020-09-08-14" + Partitioner.PATH_SEPARATOR + "3221225506",
                         getPartitionedTopic()
                 },
         };
