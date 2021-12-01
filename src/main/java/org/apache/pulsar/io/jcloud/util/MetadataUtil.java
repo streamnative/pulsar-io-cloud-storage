@@ -19,6 +19,7 @@
 package org.apache.pulsar.io.jcloud.util;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -43,25 +44,43 @@ public class MetadataUtil {
 
     private static ThreadLocal<List<Schema.Field>> schemaFieldThreadLocal = ThreadLocal.withInitial(ArrayList::new);
 
-    public static org.apache.avro.generic.GenericRecord extractedMetadataRecord(Record<GenericRecord> next) {
+    public static org.apache.avro.generic.GenericRecord extractedMetadataRecord(Record<GenericRecord> next, boolean useHumanReadableMessageId) {
         final Message<GenericRecord> message = next.getMessage().get();
 
         GenericData.Record record = new GenericData.Record(MESSAGE_METADATA);
         record.put(METADATA_PROPERTIES_KEY, message.getProperties());
         record.put(METADATA_SCHEMA_VERSION_KEY, ByteBuffer.wrap(message.getSchemaVersion()));
-        record.put(METADATA_MESSAGE_ID_KEY, ByteBuffer.wrap(message.getMessageId().toByteArray()));
+        if (useHumanReadableMessageId) {
+            record.put(METADATA_MESSAGE_ID_KEY, ByteBuffer.wrap(message.getMessageId().toString().getBytes(
+                    StandardCharsets.UTF_8)));
+        } else {
+            record.put(METADATA_MESSAGE_ID_KEY, ByteBuffer.wrap(message.getMessageId().toByteArray()));
+        }
         return record;
     }
 
+    public static org.apache.avro.generic.GenericRecord extractedMetadataRecord(Record<GenericRecord> next) {
+        return extractedMetadataRecord(next, false);
+    }
+
     public static Map<String, Object> extractedMetadata(Record<GenericRecord> next) {
+        return extractedMetadata(next, false);
+    }
+
+    public static Map<String, Object> extractedMetadata(Record<GenericRecord> next, boolean useHumanReadableMessageId) {
         Map<String, Object> metadata = new HashMap<>();
         final Message<GenericRecord> message = next.getMessage().get();
         metadata.put(METADATA_PROPERTIES_KEY, message.getProperties());
         metadata.put(METADATA_SCHEMA_VERSION_KEY, message.getSchemaVersion());
-        metadata.put(METADATA_MESSAGE_ID_KEY, message.getMessageId().toByteArray());
-
+        if (useHumanReadableMessageId) {
+            metadata.put(METADATA_MESSAGE_ID_KEY, ByteBuffer.wrap(message.getMessageId().toString()
+                            .getBytes(StandardCharsets.UTF_8)));
+        } else {
+            metadata.put(METADATA_MESSAGE_ID_KEY, ByteBuffer.wrap(message.getMessageId().toByteArray()));
+        }
         return metadata;
     }
+
     public static Schema setMetadataSchema(Schema schema) {
         final List<Schema.Field> fieldWithMetadata = schemaFieldThreadLocal.get();
         fieldWithMetadata.clear();

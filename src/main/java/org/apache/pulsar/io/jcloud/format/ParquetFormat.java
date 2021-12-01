@@ -50,10 +50,12 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
     private Schema rootAvroSchema;
 
     private boolean useMetadata;
+    private boolean useHumanReadableMessageId;
 
     @Override
     public void configure(BlobStoreAbstractConfig configuration) {
         this.useMetadata = configuration.isWithMetadata();
+        this.useHumanReadableMessageId = configuration.isWithMetadata();
     }
 
     @Override
@@ -83,7 +85,7 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
                 org.apache.avro.generic.GenericRecord writeRecord = AvroRecordUtil
                         .convertGenericRecord(next.getValue(), rootAvroSchema);
                 if (useMetadata) {
-                    org.apache.avro.generic.GenericRecord metadataRecord = MetadataUtil.extractedMetadataRecord(next);
+                    org.apache.avro.generic.GenericRecord metadataRecord = MetadataUtil.extractedMetadataRecord(next, useHumanReadableMessageId);
                     writeRecord.put(MetadataUtil.MESSAGE_METADATA_KEY, metadataRecord);
                 }
                 parquetWriter.write(writeRecord);
