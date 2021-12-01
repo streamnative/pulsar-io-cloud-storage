@@ -59,16 +59,28 @@ public class TimePartitioner<T> extends AbstractPartitioner<T> {
         if (StringUtils.isBlank(timePartitionDuration)) {
             return DEFAULT_PARTITION_DURATION;
         }
-        String number = timePartitionDuration.substring(0, timePartitionDuration.length() - 1);
-        switch (timePartitionDuration.charAt(timePartitionDuration.length() - 1)) {
-            case 'd':
-            case 'D':
-                return Long.parseLong(number) * 24L * 3600L * 1000L;
-            case 'h':
-            case 'H':
-                return Long.parseLong(number) * 3600L * 1000L;
-            default:
-                throw new RuntimeException("not support timePartitionPattern " + timePartitionDuration);
+        if (Character.isAlphabetic(timePartitionDuration.charAt(timePartitionDuration.length() - 1))) {
+            String number = timePartitionDuration.substring(0, timePartitionDuration.length() - 1);
+            switch (timePartitionDuration.charAt(timePartitionDuration.length() - 1)) {
+                case 'd':
+                case 'D':
+                    return Long.parseLong(number) * 24L * 3600L * 1000L;
+                case 'h':
+                case 'H':
+                    return Long.parseLong(number) * 3600L * 1000L;
+                case 'm':
+                    return Long.parseLong(number) * 60L * 1000L;
+                case 's':
+                    return Long.parseLong(number) * 1000L;
+                default:
+                    throw new RuntimeException("not supported time duration scale " + timePartitionDuration);
+            }
+        } else {
+            try {
+                return Long.parseLong(timePartitionDuration);
+            } catch (NumberFormatException ex) {
+                throw new RuntimeException("not supported time duration format " + timePartitionDuration, ex);
+            }
         }
     }
 
