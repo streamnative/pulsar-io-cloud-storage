@@ -23,7 +23,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -55,12 +54,12 @@ public class MetadataUtilTest {
 
         Map<String, Object> metadataWithHumanReadableMessageId =
                 MetadataUtil.extractedMetadata(mockRecord, true);
-        Assert.assertArrayEquals((byte[]) metadataWithHumanReadableMessageId.get(METADATA_MESSAGE_ID_KEY),
-                messageIdString.getBytes(StandardCharsets.UTF_8));
+        Assert.assertEquals(metadataWithHumanReadableMessageId.get(METADATA_MESSAGE_ID_KEY), messageIdString);
         Assert.assertNotEquals(metadataWithHumanReadableMessageId.get(METADATA_MESSAGE_ID_KEY),
                 ByteBuffer.wrap(messageIdBytes));
 
         Map<String, Object> metadata = MetadataUtil.extractedMetadata(mockRecord, false);
         Assert.assertEquals(metadata.get(METADATA_MESSAGE_ID_KEY), ByteBuffer.wrap(messageIdBytes));
+        Assert.assertNotEquals(metadata.get(METADATA_MESSAGE_ID_KEY), messageIdString);
     }
 }

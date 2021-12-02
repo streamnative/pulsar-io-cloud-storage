@@ -19,7 +19,6 @@
 package org.apache.pulsar.io.jcloud.util;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -48,11 +47,11 @@ public class MetadataUtil {
                                                                                 boolean useHumanReadableMessageId) {
         final Message<GenericRecord> message = next.getMessage().get();
 
-        GenericData.Record record = new GenericData.Record(MESSAGE_METADATA);
+        GenericData.Record record = new GenericData.Record(buildMetadataSchema(useHumanReadableMessageId));
         record.put(METADATA_PROPERTIES_KEY, message.getProperties());
         record.put(METADATA_SCHEMA_VERSION_KEY, ByteBuffer.wrap(message.getSchemaVersion()));
         if (useHumanReadableMessageId) {
-            record.put(METADATA_MESSAGE_ID_KEY, message.getMessageId().toString().getBytes(StandardCharsets.UTF_8));
+            record.put(METADATA_MESSAGE_ID_KEY, message.getMessageId().toString());
         } else {
             record.put(METADATA_MESSAGE_ID_KEY, ByteBuffer.wrap(message.getMessageId().toByteArray()));
         }
@@ -74,7 +73,7 @@ public class MetadataUtil {
         metadata.put(METADATA_PROPERTIES_KEY, message.getProperties());
         metadata.put(METADATA_SCHEMA_VERSION_KEY, message.getSchemaVersion());
         if (useHumanReadableMessageId) {
-            metadata.put(METADATA_MESSAGE_ID_KEY, message.getMessageId().toString().getBytes(StandardCharsets.UTF_8));
+            metadata.put(METADATA_MESSAGE_ID_KEY, message.getMessageId().toString());
         } else {
             metadata.put(METADATA_MESSAGE_ID_KEY, ByteBuffer.wrap(message.getMessageId().toByteArray()));
         }
@@ -87,7 +86,22 @@ public class MetadataUtil {
         schema.getFields().forEach(f -> {
             fieldWithMetadata.add(new Schema.Field(f, f.schema()));
         });
-        fieldWithMetadata.add(new Schema.Field(MESSAGE_METADATA_KEY, MESSAGE_METADATA));
+        fieldWithMetadata.add(new Schema.Field(MESSAGE_METADATA_KEY, buildMetadataSchema()));
+        return Schema.createRecord(schema.getName(),
+                schema.getDoc(),
+                schema.getNamespace(),
+                schema.isError(),
+                fieldWithMetadata
+        );
+    }
+
+    public static Schema setMetadataSchema(Schema schema, boolean useHumanReadableMessageId) {
+        final List<Schema.Field> fieldWithMetadata = schemaFieldThreadLocal.get();
+        fieldWithMetadata.clear();
+        schema.getFields().forEach(f -> {
+            fieldWithMetadata.add(new Schema.Field(f, f.schema()));
+        });
+        fieldWithMetadata.add(new Schema.Field(MESSAGE_METADATA_KEY, buildMetadataSchema(useHumanReadableMessageId)));
         return Schema.createRecord(schema.getName(),
                 schema.getDoc(),
                 schema.getNamespace(),
@@ -97,6 +111,10 @@ public class MetadataUtil {
     }
 
     private static Schema buildMetadataSchema(){
+        return buildMetadataSchema(false);
+    }
+
+    private static Schema buildMetadataSchema(boolean useHumanReadableMessageId){
         List<Schema.Field> fields = new ArrayList<>();
         fields.add(new Schema.Field(METADATA_PROPERTIES_KEY,
                 Schema.createUnion(
@@ -105,7 +123,11 @@ public class MetadataUtil {
                 ))
         );
         fields.add(new Schema.Field(METADATA_SCHEMA_VERSION_KEY, Schema.create(Schema.Type.BYTES)));
-        fields.add(new Schema.Field(METADATA_MESSAGE_ID_KEY, Schema.create(Schema.Type.BYTES)));
+        if (useHumanReadableMessageId) {
+            fields.add(new Schema.Field(METADATA_MESSAGE_ID_KEY, Schema.create(Schema.Type.STRING)));
+        } else {
+            fields.add(new Schema.Field(METADATA_MESSAGE_ID_KEY, Schema.create(Schema.Type.BYTES)));
+        }
         return Schema.createRecord(MESSAGE_METADATA_NAME,
                 null,
                 null,

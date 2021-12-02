@@ -62,7 +62,7 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
     public void initSchema(org.apache.pulsar.client.api.Schema<GenericRecord> schema) {
         rootAvroSchema = AvroRecordUtil.convertToAvroSchema(schema);
         if (useMetadata){
-            rootAvroSchema = MetadataUtil.setMetadataSchema(rootAvroSchema);
+            rootAvroSchema = MetadataUtil.setMetadataSchema(rootAvroSchema, useHumanReadableMessageId);
         }
     }
 

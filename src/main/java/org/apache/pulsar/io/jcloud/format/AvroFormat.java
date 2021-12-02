@@ -77,7 +77,7 @@ public class AvroFormat implements Format<GenericRecord> , InitConfiguration<Blo
     public void initSchema(org.apache.pulsar.client.api.Schema<GenericRecord> schema) {
         rootAvroSchema = AvroRecordUtil.convertToAvroSchema(schema);
         if (useMetadata){
-            rootAvroSchema = MetadataUtil.setMetadataSchema(rootAvroSchema);
+            rootAvroSchema = MetadataUtil.setMetadataSchema(rootAvroSchema, useHumanReadableMessageId);
         }
     }
 
