@@ -52,8 +52,7 @@ public class MetadataUtil {
         record.put(METADATA_PROPERTIES_KEY, message.getProperties());
         record.put(METADATA_SCHEMA_VERSION_KEY, ByteBuffer.wrap(message.getSchemaVersion()));
         if (useHumanReadableMessageId) {
-            record.put(METADATA_MESSAGE_ID_KEY, ByteBuffer.wrap(message.getMessageId().toString().getBytes(
-                    StandardCharsets.UTF_8)));
+            record.put(METADATA_MESSAGE_ID_KEY, message.getMessageId().toString().getBytes(StandardCharsets.UTF_8));
         } else {
             record.put(METADATA_MESSAGE_ID_KEY, ByteBuffer.wrap(message.getMessageId().toByteArray()));
         }
@@ -75,8 +74,7 @@ public class MetadataUtil {
         metadata.put(METADATA_PROPERTIES_KEY, message.getProperties());
         metadata.put(METADATA_SCHEMA_VERSION_KEY, message.getSchemaVersion());
         if (useHumanReadableMessageId) {
-            metadata.put(METADATA_MESSAGE_ID_KEY, ByteBuffer.wrap(message.getMessageId().toString()
-                            .getBytes(StandardCharsets.UTF_8)));
+            metadata.put(METADATA_MESSAGE_ID_KEY, message.getMessageId().toString().getBytes(StandardCharsets.UTF_8));
         } else {
             metadata.put(METADATA_MESSAGE_ID_KEY, ByteBuffer.wrap(message.getMessageId().toByteArray()));
         }

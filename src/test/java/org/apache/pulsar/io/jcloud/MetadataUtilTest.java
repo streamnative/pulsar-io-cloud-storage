@@ -56,13 +56,13 @@ public class MetadataUtilTest {
         Map<String, Object> metadataWithHumanReadableMessageId =
                 MetadataUtil.extractedMetadata(mockRecord, true);
         Assert.assertEquals(metadataWithHumanReadableMessageId.get(METADATA_MESSAGE_ID_KEY),
-                ByteBuffer.wrap(messageIdString.getBytes(StandardCharsets.UTF_8)));
+                messageIdString.getBytes(StandardCharsets.UTF_8));
         Assert.assertNotEquals(metadataWithHumanReadableMessageId.get(METADATA_MESSAGE_ID_KEY),
                 ByteBuffer.wrap(messageIdBytes));
 
         Map<String, Object> metadata = MetadataUtil.extractedMetadata(mockRecord, false);
         Assert.assertEquals(metadata.get(METADATA_MESSAGE_ID_KEY), ByteBuffer.wrap(messageIdBytes));
         Assert.assertNotEquals(metadata.get(METADATA_MESSAGE_ID_KEY),
-                ByteBuffer.wrap(messageIdString.getBytes(StandardCharsets.UTF_8)));
+                messageIdString.getBytes(StandardCharsets.UTF_8));
     }
 }
