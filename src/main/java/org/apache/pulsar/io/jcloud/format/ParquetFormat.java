@@ -85,7 +85,8 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
                 org.apache.avro.generic.GenericRecord writeRecord = AvroRecordUtil
                         .convertGenericRecord(next.getValue(), rootAvroSchema);
                 if (useMetadata) {
-                    org.apache.avro.generic.GenericRecord metadataRecord = MetadataUtil.extractedMetadataRecord(next, useHumanReadableMessageId);
+                    org.apache.avro.generic.GenericRecord metadataRecord =
+                            MetadataUtil.extractedMetadataRecord(next, useHumanReadableMessageId);
                     writeRecord.put(MetadataUtil.MESSAGE_METADATA_KEY, metadataRecord);
                 }
                 parquetWriter.write(writeRecord);

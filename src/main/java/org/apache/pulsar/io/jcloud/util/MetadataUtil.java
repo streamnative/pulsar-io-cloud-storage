@@ -44,7 +44,8 @@ public class MetadataUtil {
 
     private static ThreadLocal<List<Schema.Field>> schemaFieldThreadLocal = ThreadLocal.withInitial(ArrayList::new);
 
-    public static org.apache.avro.generic.GenericRecord extractedMetadataRecord(Record<GenericRecord> next, boolean useHumanReadableMessageId) {
+    public static org.apache.avro.generic.GenericRecord extractedMetadataRecord(Record<GenericRecord> next,
+                                                                                boolean useHumanReadableMessageId) {
         final Message<GenericRecord> message = next.getMessage().get();
 
         GenericData.Record record = new GenericData.Record(MESSAGE_METADATA);
@@ -67,7 +68,8 @@ public class MetadataUtil {
         return extractedMetadata(next, false);
     }
 
-    public static Map<String, Object> extractedMetadata(Record<GenericRecord> next, boolean useHumanReadableMessageId) {
+    public static Map<String, Object> extractedMetadata(Record<GenericRecord> next,
+                                                        boolean useHumanReadableMessageId) {
         Map<String, Object> metadata = new HashMap<>();
         final Message<GenericRecord> message = next.getMessage().get();
         metadata.put(METADATA_PROPERTIES_KEY, message.getProperties());
