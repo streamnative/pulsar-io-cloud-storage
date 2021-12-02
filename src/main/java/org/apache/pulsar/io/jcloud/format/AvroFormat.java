@@ -46,6 +46,7 @@ public class AvroFormat implements Format<GenericRecord> , InitConfiguration<Blo
     private Schema rootAvroSchema;
 
     private boolean useMetadata;
+    private boolean useHumanReadableMessageId;
     private CodecFactory codecFactory;
 
     @Override
@@ -56,6 +57,7 @@ public class AvroFormat implements Format<GenericRecord> , InitConfiguration<Blo
     @Override
     public void configure(BlobStoreAbstractConfig configuration) {
         this.useMetadata = configuration.isWithMetadata();
+        this.useHumanReadableMessageId = configuration.isUseHumanReadableMessageId();
         String codecName = configuration.getAvroCodec();
         if (codecName == null) {
             this.codecFactory = CodecFactory.nullCodec();
@@ -75,7 +77,7 @@ public class AvroFormat implements Format<GenericRecord> , InitConfiguration<Blo
     public void initSchema(org.apache.pulsar.client.api.Schema<GenericRecord> schema) {
         rootAvroSchema = AvroRecordUtil.convertToAvroSchema(schema);
         if (useMetadata){
-            rootAvroSchema = MetadataUtil.setMetadataSchema(rootAvroSchema);
+            rootAvroSchema = MetadataUtil.setMetadataSchema(rootAvroSchema, useHumanReadableMessageId);
         }
     }
 
@@ -90,7 +92,8 @@ public class AvroFormat implements Format<GenericRecord> , InitConfiguration<Blo
                         .convertGenericRecord(next.getValue(), rootAvroSchema);
 
                 if (useMetadata) {
-                    org.apache.avro.generic.GenericRecord metadataRecord = MetadataUtil.extractedMetadataRecord(next);
+                    org.apache.avro.generic.GenericRecord metadataRecord =
+                            MetadataUtil.extractedMetadataRecord(next, useHumanReadableMessageId);
                     writeRecord.put(MetadataUtil.MESSAGE_METADATA_KEY, metadataRecord);
                 }
                 fileWriter.append(writeRecord);

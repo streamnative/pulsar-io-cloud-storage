@@ -69,6 +69,7 @@ The Cloud Storage sink connector supports the following properties.
 | `batchTimeMs` | long | False |1000 | The interval for batch submission. |
 | `sliceTopicPartitionPath` | Boolean | False |1000 |  When it is set to `true`, split the partitioned topic name into separate folders in the bucket path. |
 | `withMetadata` | Boolean | False |false | Save message attributes to metadata. |
+| `useHumanReadableMessageId` | Boolean | False |false | Use human-readable format string for messageId in message metadata, the messageId will be in format like `ledgerId:entryId:partitionIndex:batchIndex`. Otherwise, the messageId will be in Hex-encoded string.|
 | `withTopicPartitionNumber` | Boolean | False |true | When it is set to `true`, include topic partition number to the object path. |
 | `bytesFormatTypeSeparator` | String | False |"0x10" | It is inserted between records for the `formatType` of bytes. By default, it is set to '0x10'. An input record that contains the line separator looks like multiple records in the output object. |
 | `gcsServiceAccountKeyFilePath` | String | False | "" | Path to the GCS credentials file. If empty, the credentials file will be read from the `GOOGLE_APPLICATION_CREDENTIALS` environment variable. |

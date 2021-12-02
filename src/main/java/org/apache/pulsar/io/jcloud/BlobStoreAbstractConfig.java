@@ -92,6 +92,7 @@ public class BlobStoreAbstractConfig implements Serializable {
     private long batchTimeMs = 1000;
 
     private boolean withMetadata;
+    private boolean useHumanReadableMessageId = false;
     private boolean withTopicPartitionNumber = true;
     private String bytesFormatTypeSeparator = "0x10";
 
