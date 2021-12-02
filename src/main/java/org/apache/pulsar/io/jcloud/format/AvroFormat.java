@@ -57,7 +57,7 @@ public class AvroFormat implements Format<GenericRecord> , InitConfiguration<Blo
     @Override
     public void configure(BlobStoreAbstractConfig configuration) {
         this.useMetadata = configuration.isWithMetadata();
-        this.useHumanReadableMessageId = configuration.isWithMetadata();
+        this.useHumanReadableMessageId = configuration.isUseHumanReadableMessageId();
         String codecName = configuration.getAvroCodec();
         if (codecName == null) {
             this.codecFactory = CodecFactory.nullCodec();

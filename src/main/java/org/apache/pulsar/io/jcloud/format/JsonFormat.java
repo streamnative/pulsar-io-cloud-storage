@@ -55,7 +55,7 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
     @Override
     public void configure(BlobStoreAbstractConfig configuration) {
         this.useMetadata = configuration.isWithMetadata();
-        this.useHumanReadableMessageId = configuration.isWithMetadata();
+        this.useHumanReadableMessageId = configuration.isUseHumanReadableMessageId();
     }
 
     @Override
