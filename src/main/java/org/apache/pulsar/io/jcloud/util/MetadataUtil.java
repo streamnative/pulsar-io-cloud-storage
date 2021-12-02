@@ -43,32 +43,65 @@ public class MetadataUtil {
 
     private static ThreadLocal<List<Schema.Field>> schemaFieldThreadLocal = ThreadLocal.withInitial(ArrayList::new);
 
-    public static org.apache.avro.generic.GenericRecord extractedMetadataRecord(Record<GenericRecord> next) {
+    public static org.apache.avro.generic.GenericRecord extractedMetadataRecord(Record<GenericRecord> next,
+                                                                                boolean useHumanReadableMessageId) {
         final Message<GenericRecord> message = next.getMessage().get();
 
-        GenericData.Record record = new GenericData.Record(MESSAGE_METADATA);
+        GenericData.Record record = new GenericData.Record(buildMetadataSchema(useHumanReadableMessageId));
         record.put(METADATA_PROPERTIES_KEY, message.getProperties());
         record.put(METADATA_SCHEMA_VERSION_KEY, ByteBuffer.wrap(message.getSchemaVersion()));
-        record.put(METADATA_MESSAGE_ID_KEY, ByteBuffer.wrap(message.getMessageId().toByteArray()));
+        if (useHumanReadableMessageId) {
+            record.put(METADATA_MESSAGE_ID_KEY, message.getMessageId().toString());
+        } else {
+            record.put(METADATA_MESSAGE_ID_KEY, ByteBuffer.wrap(message.getMessageId().toByteArray()));
+        }
         return record;
     }
 
+    public static org.apache.avro.generic.GenericRecord extractedMetadataRecord(Record<GenericRecord> next) {
+        return extractedMetadataRecord(next, false);
+    }
+
     public static Map<String, Object> extractedMetadata(Record<GenericRecord> next) {
+        return extractedMetadata(next, false);
+    }
+
+    public static Map<String, Object> extractedMetadata(Record<GenericRecord> next,
+                                                        boolean useHumanReadableMessageId) {
         Map<String, Object> metadata = new HashMap<>();
         final Message<GenericRecord> message = next.getMessage().get();
         metadata.put(METADATA_PROPERTIES_KEY, message.getProperties());
         metadata.put(METADATA_SCHEMA_VERSION_KEY, message.getSchemaVersion());
-        metadata.put(METADATA_MESSAGE_ID_KEY, message.getMessageId().toByteArray());
-
+        if (useHumanReadableMessageId) {
+            metadata.put(METADATA_MESSAGE_ID_KEY, message.getMessageId().toString());
+        } else {
+            metadata.put(METADATA_MESSAGE_ID_KEY, ByteBuffer.wrap(message.getMessageId().toByteArray()));
+        }
         return metadata;
     }
+
     public static Schema setMetadataSchema(Schema schema) {
         final List<Schema.Field> fieldWithMetadata = schemaFieldThreadLocal.get();
         fieldWithMetadata.clear();
         schema.getFields().forEach(f -> {
             fieldWithMetadata.add(new Schema.Field(f, f.schema()));
         });
-        fieldWithMetadata.add(new Schema.Field(MESSAGE_METADATA_KEY, MESSAGE_METADATA));
+        fieldWithMetadata.add(new Schema.Field(MESSAGE_METADATA_KEY, buildMetadataSchema()));
+        return Schema.createRecord(schema.getName(),
+                schema.getDoc(),
+                schema.getNamespace(),
+                schema.isError(),
+                fieldWithMetadata
+        );
+    }
+
+    public static Schema setMetadataSchema(Schema schema, boolean useHumanReadableMessageId) {
+        final List<Schema.Field> fieldWithMetadata = schemaFieldThreadLocal.get();
+        fieldWithMetadata.clear();
+        schema.getFields().forEach(f -> {
+            fieldWithMetadata.add(new Schema.Field(f, f.schema()));
+        });
+        fieldWithMetadata.add(new Schema.Field(MESSAGE_METADATA_KEY, buildMetadataSchema(useHumanReadableMessageId)));
         return Schema.createRecord(schema.getName(),
                 schema.getDoc(),
                 schema.getNamespace(),
@@ -78,6 +111,10 @@ public class MetadataUtil {
     }
 
     private static Schema buildMetadataSchema(){
+        return buildMetadataSchema(false);
+    }
+
+    private static Schema buildMetadataSchema(boolean useHumanReadableMessageId){
         List<Schema.Field> fields = new ArrayList<>();
         fields.add(new Schema.Field(METADATA_PROPERTIES_KEY,
                 Schema.createUnion(
@@ -86,7 +123,11 @@ public class MetadataUtil {
                 ))
         );
         fields.add(new Schema.Field(METADATA_SCHEMA_VERSION_KEY, Schema.create(Schema.Type.BYTES)));
-        fields.add(new Schema.Field(METADATA_MESSAGE_ID_KEY, Schema.create(Schema.Type.BYTES)));
+        if (useHumanReadableMessageId) {
+            fields.add(new Schema.Field(METADATA_MESSAGE_ID_KEY, Schema.create(Schema.Type.STRING)));
+        } else {
+            fields.add(new Schema.Field(METADATA_MESSAGE_ID_KEY, Schema.create(Schema.Type.BYTES)));
+        }
         return Schema.createRecord(MESSAGE_METADATA_NAME,
                 null,
                 null,
