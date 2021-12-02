@@ -42,15 +42,15 @@ import org.apache.pulsar.jcloud.shade.com.google.common.io.ByteSource;
  * parquet format.
  */
 public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<BlobStoreAbstractConfig> {
-    @Override
-    public String getExtension() {
-        return ".parquet";
-    }
-
     private Schema rootAvroSchema;
 
     private boolean useMetadata;
     private boolean useHumanReadableMessageId;
+
+    @Override
+    public String getExtension() {
+        return ".parquet";
+    }
 
     @Override
     public void configure(BlobStoreAbstractConfig configuration) {
