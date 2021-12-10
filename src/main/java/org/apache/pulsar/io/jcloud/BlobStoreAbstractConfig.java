@@ -88,6 +88,7 @@ public class BlobStoreAbstractConfig implements Serializable {
     private boolean sliceTopicPartitionPath;
 
     private int batchSize = 10;
+    private int pendingQueueSize = -1;
 
     private long batchTimeMs = 1000;
 
@@ -142,6 +143,11 @@ public class BlobStoreAbstractConfig implements Serializable {
             checkArgument(!StringUtils.startsWith(bytesFormatTypeSeparator, "0x"),
                     "bytesFormatTypeSeparator should be a hex encoded string, which starts with '0x'");
         }
+
+        if (pendingQueueSize == -1) {
+            pendingQueueSize = batchSize * 2;
+        }
+        checkArgument(pendingQueueSize > 0, "pendingQueueSize must be a positive integer.");
     }
 
 }
