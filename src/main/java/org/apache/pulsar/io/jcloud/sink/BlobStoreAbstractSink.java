@@ -26,7 +26,7 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -83,14 +83,20 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
     private long maxBatchSize;
     private final AtomicLong currentBatchSize = new AtomicLong(0L);
-    private final ConcurrentLinkedDeque<Record<GenericRecord>> pendingFlushQueue = new ConcurrentLinkedDeque<>();
+    private ArrayBlockingQueue<Record<GenericRecord>> pendingFlushQueue;
     private final AtomicBoolean isFlushRunning = new AtomicBoolean(false);
+    private SinkContext sinkContext;
     private volatile boolean isRunning = false;
+
+    private static final String METRICS_TOTAL_SUCCESS = "_cloud_storage_sink_total_success_";
+    private static final String METRICS_TOTAL_FAILURE = "_cloud_storage_sink_total_failure_";
+    private static final String METRICS_LATEST_UPLOAD_ELAPSED_TIME = "_cloud_storage_latest_upload_elapsed_time_";
 
     @Override
     public void open(Map<String, Object> config, SinkContext sinkContext) throws Exception {
         sinkConfig = loadConfig(config, sinkContext);
         sinkConfig.validate();
+        pendingFlushQueue = new ArrayBlockingQueue<>(sinkConfig.getPendingQueueSize());
         context = buildBlobStoreContext(sinkConfig);
         blobStore = context.getBlobStore();
         boolean testCase = "transient".equalsIgnoreCase(sinkConfig.getProvider());
@@ -112,6 +118,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         maxBatchSize = sinkConfig.getBatchSize();
         flushExecutor.scheduleWithFixedDelay(this::flush, batchTimeMs, batchTimeMs, TimeUnit.MILLISECONDS);
         isRunning = true;
+        this.sinkContext = sinkContext;
     }
 
     private void flushIfNeeded(boolean force) {
@@ -187,7 +194,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         }
 
         checkArgument(record.getMessage().isPresent());
-        pendingFlushQueue.add(record);
+        pendingFlushQueue.put(record);
         currentBatchSize.addAndGet(1);
         flushIfNeeded(false);
     }
@@ -206,13 +213,11 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
             return;
         }
 
-        final Record<GenericRecord> lastNotFlushed = pendingFlushQueue.getLast();
         final List<Record<GenericRecord>> recordsToInsert = Lists.newArrayList();
         while (!pendingFlushQueue.isEmpty() && recordsToInsert.size() < maxBatchSize) {
-            Record<GenericRecord> r = pendingFlushQueue.pollFirst();
-            recordsToInsert.add(r);
-            if (r == lastNotFlushed) {
-                break;
+            Record<GenericRecord> r = pendingFlushQueue.poll();
+            if (r != null) {
+                recordsToInsert.add(r);
             }
         }
         log.info("Flushing the buffered records to blob store");
@@ -230,20 +235,30 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                     .contentLength(payload.size())
                     .build();
             log.info("Uploading blob {} currentBatchSize {}", filepath, currentBatchSize.get());
+            long elapsedMs = System.currentTimeMillis();
             blobStore.putBlob(sinkConfig.getBucket(), blob, PutOptions.NONE);
+            elapsedMs = System.currentTimeMillis() - elapsedMs;
+            log.debug("Uploading blob elapsed time in ms: {}", elapsedMs);
             blob.getPayload().release();
             recordsToInsert.forEach(Record::ack);
             currentBatchSize.addAndGet(-1 * recordsToInsert.size());
+            if (sinkContext != null) {
+                sinkContext.recordMetric(METRICS_TOTAL_SUCCESS, recordsToInsert.size());
+                sinkContext.recordMetric(METRICS_LATEST_UPLOAD_ELAPSED_TIME, elapsedMs);
+            }
             log.info("Successfully uploaded blob {} currentBatchSize {}", filepath, currentBatchSize.get());
-        } catch (ContainerNotFoundException e) {
-            log.error("Blob {} is not found", filepath, e);
-            recordsToInsert.forEach(Record::fail);
-        } catch (IOException e) {
-            log.error("Failed to write to blob {}", filepath, e);
-            recordsToInsert.forEach(Record::fail);
         } catch (Exception e) {
-            log.error("Encountered unknown error writing to blob {}", filepath, e);
+            if (e instanceof ContainerNotFoundException) {
+                log.error("Blob {} is not found", filepath, e);
+            } else if (e instanceof IOException) {
+                log.error("Failed to write to blob {}", filepath, e);
+            } else {
+                log.error("Encountered unknown error writing to blob {}", filepath, e);
+            }
             recordsToInsert.forEach(Record::fail);
+            if (sinkContext != null) {
+                sinkContext.recordMetric(METRICS_TOTAL_FAILURE, recordsToInsert.size());
+            }
         } finally {
             isFlushRunning.compareAndSet(true, false);
         }
