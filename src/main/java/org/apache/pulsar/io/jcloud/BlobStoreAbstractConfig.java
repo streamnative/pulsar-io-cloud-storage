@@ -144,7 +144,7 @@ public class BlobStoreAbstractConfig implements Serializable {
                     "bytesFormatTypeSeparator should be a hex encoded string, which starts with '0x'");
         }
 
-        if (pendingQueueSize == -1) {
+        if (pendingQueueSize <= 0) {
             pendingQueueSize = batchSize * 10;
         }
         checkArgument(pendingQueueSize > 0, "pendingQueueSize must be a positive integer.");
