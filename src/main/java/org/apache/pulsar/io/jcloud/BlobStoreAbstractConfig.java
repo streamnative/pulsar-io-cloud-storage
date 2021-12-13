@@ -145,9 +145,10 @@ public class BlobStoreAbstractConfig implements Serializable {
         }
 
         if (pendingQueueSize == -1) {
-            pendingQueueSize = batchSize * 2;
+            pendingQueueSize = batchSize * 10;
         }
         checkArgument(pendingQueueSize > 0, "pendingQueueSize must be a positive integer.");
+        checkArgument(pendingQueueSize < batchSize, "pendingQueueSize must be large than batchSize");
     }
 
 }
