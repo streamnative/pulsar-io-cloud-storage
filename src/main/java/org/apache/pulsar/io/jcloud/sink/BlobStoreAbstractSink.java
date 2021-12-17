@@ -202,17 +202,29 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
     private void flush() {
         if (log.isDebugEnabled()) {
             log.debug("flush requested, pending: {}, batchSize: {}",
-                    currentBatchSize.get(), maxBatchSize);
+                currentBatchSize.get(), maxBatchSize);
         }
 
         if (pendingFlushQueue.isEmpty()) {
+            log.info("Skip flushing, because the pending flush queue is empty ...");
             return;
         }
 
         if (!isFlushRunning.compareAndSet(false, true)) {
+            log.info("Skip flushing, because there is an outstanding flush ...");
             return;
         }
 
+        try {
+            unsafeFlush();
+        } catch (Throwable t) {
+            log.error("Caught unexpected exception: ", t);
+        } finally {
+            isFlushRunning.compareAndSet(true, false);
+        }
+    }
+
+    private void unsafeFlush() {
         final List<Record<GenericRecord>> recordsToInsert = Lists.newArrayList();
         while (!pendingFlushQueue.isEmpty() && recordsToInsert.size() < maxBatchSize) {
             Record<GenericRecord> r = pendingFlushQueue.poll();
@@ -220,7 +232,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                 recordsToInsert.add(r);
             }
         }
-        log.info("Flushing the buffered records to blob store");
+        log.info("Flushing {} buffered records to blob store", recordsToInsert);
 
         Record<GenericRecord> firstRecord = recordsToInsert.get(0);
         Schema<GenericRecord> schema = getPulsarSchema(firstRecord);
@@ -259,8 +271,6 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
             if (sinkContext != null) {
                 sinkContext.recordMetric(METRICS_TOTAL_FAILURE, recordsToInsert.size());
             }
-        } finally {
-            isFlushRunning.compareAndSet(true, false);
         }
     }
 
