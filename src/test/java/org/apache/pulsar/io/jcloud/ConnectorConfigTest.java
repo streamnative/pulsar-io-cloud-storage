@@ -87,8 +87,8 @@ public class ConnectorConfigTest {
         try {
             config.put("timePartitionDuration", "1000");
             CloudStorageSinkConfig.load(config).validate();
-            Assert.fail();
         } catch (Exception e) {
+            Assert.fail();
         }
         try {
             config.put("timePartitionDuration", "1000h");
@@ -98,6 +98,20 @@ public class ConnectorConfigTest {
         }
         try {
             config.put("timePartitionDuration", "1000d");
+            CloudStorageSinkConfig.load(config).validate();
+        } catch (Exception e) {
+            Assert.fail();
+        }
+
+        try {
+            config.put("timePartitionDuration", "1000m");
+            CloudStorageSinkConfig.load(config).validate();
+        } catch (Exception e) {
+            Assert.fail();
+        }
+
+        try {
+            config.put("timePartitionDuration", "1000s");
             CloudStorageSinkConfig.load(config).validate();
         } catch (Exception e) {
             Assert.fail();
