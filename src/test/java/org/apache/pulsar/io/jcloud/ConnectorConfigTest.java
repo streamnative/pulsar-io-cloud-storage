@@ -189,4 +189,66 @@ public class ConnectorConfigTest {
         Assert.assertEquals(sinkConfig.getSecretAccessKey(), "myAccessKey");
         Assert.assertEquals(sinkConfig.getAccessKeyId(), "myKeyId");
     }
+
+    @Test
+    public final void timePartitionerDurationTest() throws IOException {
+        Map<String, Object> config = new HashMap<>();
+        config.put("provider", "aws-s3");
+        config.put("bucket", "testbucket");
+        config.put("region", "localhost");
+        config.put("endpoint", "us-standard");
+        config.put("formatType", "avro");
+        config.put("partitionerType", "default");
+        config.put("timePartitionPattern", "yyyy-MM-dd");
+        config.put("batchSize", 10);
+
+        try {
+            config.put("timePartitionDuration", "2d");
+            CloudStorageSinkConfig.load(config).validate();
+        } catch (Exception e) {
+            Assert.fail();
+        }
+
+        try {
+            config.put("timePartitionDuration", "3D");
+            CloudStorageSinkConfig.load(config).validate();
+        } catch (Exception e) {
+            Assert.fail();
+        }
+
+        try {
+            config.put("timePartitionDuration", "2h");
+            CloudStorageSinkConfig.load(config).validate();
+        } catch (Exception e) {
+            Assert.fail();
+        }
+
+        try {
+            config.put("timePartitionDuration", "3H");
+            CloudStorageSinkConfig.load(config).validate();
+        } catch (Exception e) {
+            Assert.fail();
+        }
+
+        try {
+            config.put("timePartitionDuration", "10m");
+            CloudStorageSinkConfig.load(config).validate();
+        } catch (Exception e) {
+            Assert.fail();
+        }
+
+        try {
+            config.put("timePartitionDuration", "60s");
+            CloudStorageSinkConfig.load(config).validate();
+        } catch (Exception e) {
+            Assert.fail();
+        }
+
+        try {
+            config.put("timePartitionDuration", "60000");
+            CloudStorageSinkConfig.load(config).validate();
+        } catch (Exception e) {
+            Assert.fail();
+        }
+    }
 }

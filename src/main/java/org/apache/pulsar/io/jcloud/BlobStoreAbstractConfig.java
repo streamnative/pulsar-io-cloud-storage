@@ -125,7 +125,7 @@ public class BlobStoreAbstractConfig implements Serializable {
                 );
             }
             if (StringUtils.isNoneBlank(timePartitionDuration)) {
-                checkArgument(Pattern.matches("^\\d+[dhDH]$", timePartitionDuration), "timePartitionDuration invalid.");
+                checkArgument(Pattern.matches("^\\d+[dhDHms]?$", timePartitionDuration), "timePartitionDuration invalid.");
             }
         }
         checkArgument(batchSize > 0, "batchSize must be a positive integer.");
