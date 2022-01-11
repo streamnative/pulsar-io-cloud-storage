@@ -195,6 +195,8 @@ public class ConnectorConfigTest {
         Map<String, Object> config = new HashMap<>();
         config.put("provider", "aws-s3");
         config.put("bucket", "testbucket");
+        config.put("accessKeyId", "aws-s3");
+        config.put("secretAccessKey", "aws-s3");
         config.put("region", "localhost");
         config.put("endpoint", "us-standard");
         config.put("formatType", "avro");
