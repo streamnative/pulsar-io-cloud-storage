@@ -203,4 +203,37 @@ public class ConnectorConfigTest {
         Assert.assertEquals(sinkConfig.getSecretAccessKey(), "myAccessKey");
         Assert.assertEquals(sinkConfig.getAccessKeyId(), "myKeyId");
     }
+
+    @Test
+    public void byteConfigTest() throws IOException {
+        Map<String, Object> config = new HashMap<>();
+        config.put("provider", PROVIDER_AWSS3);
+        config.put("accessKeyId", "aws-s3");
+        config.put("secretAccessKey", "aws-s3");
+        config.put("bucket", "testbucket");
+        config.put("region", "localhost");
+        config.put("endpoint", "us-standard");
+        config.put("pathPrefix", "pulsar/");
+        config.put("formatType", "bytes");
+        config.put("partitionerType", "default");
+        config.put("timePartitionPattern", "yyyy-MM-dd");
+        config.put("timePartitionDuration", "2d");
+        config.put("batchSize", 10);
+        config.put("bytesFormatTypeSeparator", "0x10");
+        CloudStorageSinkConfig cloudStorageSinkConfig = CloudStorageSinkConfig.load(config);
+        cloudStorageSinkConfig.validate();
+
+        Assert.assertEquals(PROVIDER_AWSS3, cloudStorageSinkConfig.getProvider());
+        Assert.assertEquals(config.get("accessKeyId"), cloudStorageSinkConfig.getAccessKeyId());
+        Assert.assertEquals(config.get("secretAccessKey"), cloudStorageSinkConfig.getSecretAccessKey());
+        Assert.assertEquals(config.get("bucket"), cloudStorageSinkConfig.getBucket());
+        Assert.assertEquals(config.get("region"), cloudStorageSinkConfig.getRegion());
+        Assert.assertEquals(config.get("formatType"), cloudStorageSinkConfig.getFormatType());
+        Assert.assertEquals(config.get("partitionerType"), cloudStorageSinkConfig.getPartitionerType());
+        Assert.assertEquals(config.get("timePartitionPattern"), cloudStorageSinkConfig.getTimePartitionPattern());
+        Assert.assertEquals(config.get("timePartitionDuration"), cloudStorageSinkConfig.getTimePartitionDuration());
+        Assert.assertEquals(config.get("batchSize"), cloudStorageSinkConfig.getBatchSize());
+        Assert.assertEquals(config.get("bytesFormatTypeSeparator"), cloudStorageSinkConfig.getBytesFormatTypeSeparator());
+        Assert.assertEquals((int) config.get("batchSize") * 10, cloudStorageSinkConfig.getPendingQueueSize());
+    }
 }

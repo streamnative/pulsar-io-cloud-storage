@@ -139,7 +139,7 @@ public class BlobStoreAbstractConfig implements Serializable {
         }
 
         if ("bytes".equalsIgnoreCase(formatType)) {
-            checkArgument(StringUtils.isEmpty(bytesFormatTypeSeparator),
+            checkArgument(StringUtils.isNotEmpty(bytesFormatTypeSeparator),
                     "bytesFormatTypeSeparator cannot be empty when formatType is 'bytes'");
             checkArgument(!StringUtils.startsWith(bytesFormatTypeSeparator, "0x"),
                     "bytesFormatTypeSeparator should be a hex encoded string, which starts with '0x'");
