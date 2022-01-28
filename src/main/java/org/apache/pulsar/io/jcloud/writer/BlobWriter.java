@@ -16,37 +16,18 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.pulsar.io.jcloud.format;
+package org.apache.pulsar.io.jcloud.writer;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Iterator;
-import org.apache.pulsar.client.api.Schema;
-import org.apache.pulsar.functions.api.Record;
-import org.apache.pulsar.jcloud.shade.com.google.common.io.ByteSource;
 
 /**
- * record format.
+ * A simple interface for uploading to a blob/object store, allowing
+ * to use multiple different SDKs natively.
+ * This should eventually replace all of jclouds.
  */
-public interface Format<T> {
-    /**
-     * get format extension.
-     *
-     * @return format extension
-     */
-    String getExtension();
+public interface BlobWriter extends Closeable {
 
-    void initSchema(Schema<T> schema);
-
-    /**
-     * format record to bytes.
-     *
-     * @param record record
-     * @return bytes warp
-     * @throws Exception exception
-     */
-    default ByteSource recordWriter(Iterator<Record<T>> record) throws Exception {
-        return ByteSource.wrap(recordWriterBuf(record).array());
-    }
-
-    ByteBuffer recordWriterBuf(Iterator<Record<T>> record) throws Exception;
+    void uploadBlob(String key, ByteBuffer payload) throws IOException;
 }

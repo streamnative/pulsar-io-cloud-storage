@@ -23,6 +23,7 @@ import static org.apache.pulsar.io.jcloud.util.AvroRecordUtil.getPulsarSchema;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -51,12 +52,8 @@ import org.apache.pulsar.io.jcloud.partitioner.Partitioner;
 import org.apache.pulsar.io.jcloud.partitioner.PartitionerType;
 import org.apache.pulsar.io.jcloud.partitioner.SimplePartitioner;
 import org.apache.pulsar.io.jcloud.partitioner.TimePartitioner;
-import org.apache.pulsar.jcloud.shade.com.google.common.io.ByteSource;
-import org.jclouds.blobstore.BlobStore;
-import org.jclouds.blobstore.BlobStoreContext;
+import org.apache.pulsar.io.jcloud.writer.BlobWriter;
 import org.jclouds.blobstore.ContainerNotFoundException;
-import org.jclouds.blobstore.domain.Blob;
-import org.jclouds.blobstore.options.PutOptions;
 
 /**
  * A Simple abstract class for BlobStore sink.
@@ -66,9 +63,6 @@ import org.jclouds.blobstore.options.PutOptions;
 public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> implements Sink<GenericRecord> {
 
     private V sinkConfig;
-
-    protected BlobStoreContext context;
-    protected BlobStore blobStore;
 
     protected Partitioner<GenericRecord> partitioner;
 
@@ -88,6 +82,8 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
     private SinkContext sinkContext;
     private volatile boolean isRunning = false;
 
+    private BlobWriter blobWriter;
+
     private static final String METRICS_TOTAL_SUCCESS = "_cloud_storage_sink_total_success_";
     private static final String METRICS_TOTAL_FAILURE = "_cloud_storage_sink_total_failure_";
     private static final String METRICS_LATEST_UPLOAD_ELAPSED_TIME = "_cloud_storage_latest_upload_elapsed_time_";
@@ -97,15 +93,6 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         sinkConfig = loadConfig(config, sinkContext);
         sinkConfig.validate();
         pendingFlushQueue = new ArrayBlockingQueue<>(sinkConfig.getPendingQueueSize());
-        context = buildBlobStoreContext(sinkConfig);
-        blobStore = context.getBlobStore();
-        boolean testCase = "transient".equalsIgnoreCase(sinkConfig.getProvider());
-        if (testCase && !blobStore.containerExists(sinkConfig.getBucket())) {
-            //test use
-            blobStore.createContainerInLocation(null, sinkConfig.getBucket());
-        }
-        checkArgument(blobStore.containerExists(sinkConfig.getBucket()), "%s bucket not exist",
-                sinkConfig.getBucket());
         format = buildFormat(sinkConfig);
         if (format instanceof InitConfiguration) {
             InitConfiguration<BlobStoreAbstractConfig> formatConfigInitializer =
@@ -119,6 +106,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         flushExecutor.scheduleWithFixedDelay(this::flush, batchTimeMs, batchTimeMs, TimeUnit.MILLISECONDS);
         isRunning = true;
         this.sinkContext = sinkContext;
+        this.blobWriter = initBlobWriter(sinkConfig);
     }
 
     private void flushIfNeeded(boolean force) {
@@ -165,8 +153,11 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
     }
 
     protected abstract V loadConfig(Map<String, Object> config, SinkContext sinkContext) throws IOException;
+    protected abstract BlobWriter initBlobWriter(V sinkConfig);
 
-    protected abstract BlobStoreContext buildBlobStoreContext(V sinkConfig);
+    public void uploadPayload(ByteBuffer payload, String filepath) throws IOException {
+        blobWriter.uploadBlob(filepath, payload);
+    }
 
     @Override
     public void close() throws Exception {
@@ -176,9 +167,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         if (!flushExecutor.awaitTermination(10 * sinkConfig.getBatchTimeMs(), TimeUnit.MILLISECONDS)) {
             log.error("flushExecutor did not terminate in {} ms", 10 * sinkConfig.getBatchTimeMs());
         }
-        if (null != context) {
-            context.close();
-        }
+        blobWriter.close();
     }
 
     @Override
@@ -198,6 +187,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         currentBatchSize.addAndGet(1);
         flushIfNeeded(false);
     }
+
 
     private void flush() {
         if (log.isDebugEnabled()) {
@@ -241,17 +231,12 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         final Iterator<Record<GenericRecord>> iter = recordsToInsert.iterator();
         String filepath = buildPartitionPath(firstRecord, partitioner, format);
         try {
-            ByteSource payload = bindValue(iter, format);
-            Blob blob = blobStore.blobBuilder(filepath)
-                    .payload(payload)
-                    .contentLength(payload.size())
-                    .build();
+            ByteBuffer payload = bindValue(iter, format);
             log.info("Uploading blob {} currentBatchSize {}", filepath, currentBatchSize.get());
             long elapsedMs = System.currentTimeMillis();
-            blobStore.putBlob(sinkConfig.getBucket(), blob, PutOptions.NONE);
+            uploadPayload(payload, filepath);
             elapsedMs = System.currentTimeMillis() - elapsedMs;
             log.debug("Uploading blob elapsed time in ms: {}", elapsedMs);
-            blob.getPayload().release();
             recordsToInsert.forEach(Record::ack);
             currentBatchSize.addAndGet(-1 * recordsToInsert.size());
             if (sinkContext != null) {
@@ -274,9 +259,9 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         }
     }
 
-    public ByteSource bindValue(Iterator<Record<GenericRecord>> message,
+    public ByteBuffer bindValue(Iterator<Record<GenericRecord>> message,
                                 Format<GenericRecord> format) throws Exception {
-        return format.recordWriter(message);
+        return format.recordWriterBuf(message);
     }
 
     public String buildPartitionPath(Record<GenericRecord> message,

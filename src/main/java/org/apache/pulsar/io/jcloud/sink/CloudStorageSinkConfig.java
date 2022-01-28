@@ -68,9 +68,29 @@ public class CloudStorageSinkConfig extends BlobStoreAbstractConfig {
             help = "The GCS service account key file content.")
     private String gcsServiceAccountKeyFileContent;
 
+    @FieldDoc(
+            required = false,
+            defaultValue = "",
+            help = "The aws role to use. Implies to use an assume role.")
     private String role;
 
+    @FieldDoc(
+            required = false,
+            defaultValue = "",
+            help = "The aws role session name to use. Implies to use an assume role.")
     private String roleSessionName;
+
+    @FieldDoc(
+            required = false,
+            defaultValue = "",
+            help = "The sts endpoint to use, default to default sts endpoint.")
+    private String stsEndpoint;
+
+    @FieldDoc(
+            required = false,
+            defaultValue = "",
+            help = "The sts region to use, defaults to the 'region' config or env region.")
+    private String stsRegion;
 
     /**
      * If specified, indicates to use the default credentials form the underlying node,

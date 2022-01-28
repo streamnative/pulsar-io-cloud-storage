@@ -61,6 +61,8 @@ public class BlobStoreAbstractConfig implements Serializable {
             .build();
 
     public static final String PROVIDER_AWSS3 = "aws-s3";
+    public static final String PROVIDER_AWSS3V2 = "s3v2";
+    public static final String PROVIDER_S3 = "s3";
     public static final String PROVIDER_GCS = "google-cloud-storage";
 
     private String provider;
@@ -91,6 +93,9 @@ public class BlobStoreAbstractConfig implements Serializable {
     private int pendingQueueSize = -1;
 
     private long batchTimeMs = 1000;
+
+    private boolean usePathStyleUrl = true;
+    private String awsCannedAcl = "";
 
     private boolean withMetadata;
     private boolean useHumanReadableMessageId = false;
