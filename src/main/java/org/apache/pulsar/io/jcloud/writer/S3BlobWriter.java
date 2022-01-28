@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.io.jcloud.sink.CloudStorageSinkConfig;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
@@ -44,6 +46,7 @@ import software.amazon.awssdk.services.sts.model.AssumeRoleRequest;
  * An implementation of BlobWriter that uses the native AWS-SDK, which offers a more direct API
  * and better performance.
  */
+@Slf4j
 public class S3BlobWriter implements BlobWriter {
 
     private final S3Client s3;
@@ -53,16 +56,16 @@ public class S3BlobWriter implements BlobWriter {
     public S3BlobWriter(CloudStorageSinkConfig sinkConfig) {
 
         S3ClientBuilder s3Builder = S3Client.builder().credentialsProvider(getCredChain(sinkConfig));
-        if (!sinkConfig.getRegion().isEmpty()) {
+        if (StringUtils.isNotEmpty(sinkConfig.getRegion())) {
             s3Builder = s3Builder.region(Region.of(sinkConfig.getRegion()));
         }
-        if (!sinkConfig.getEndpoint().isEmpty()) {
+        if (StringUtils.isNotEmpty(sinkConfig.getEndpoint())) {
             s3Builder = s3Builder.endpointOverride(URI.create(sinkConfig.getEndpoint()));
         }
         s3 = s3Builder.build();
 
         bucket = sinkConfig.getBucket();
-        if (!sinkConfig.getAwsCannedAcl().isEmpty()) {
+        if (StringUtils.isNotEmpty(sinkConfig.getAwsCannedAcl())) {
             acl = ObjectCannedACL.fromValue(sinkConfig.getAwsCannedAcl());
         }
     }
@@ -84,25 +87,26 @@ public class S3BlobWriter implements BlobWriter {
 
     private static AwsCredentialsProvider getCredChain(CloudStorageSinkConfig sinkConfig) {
         AwsCredentialsProvider chain = DefaultCredentialsProvider.builder().build();
-        if (!sinkConfig.getAccessKeyId().isEmpty() && !sinkConfig.getSecretAccessKey().isEmpty()) {
+        if (StringUtils.isNotEmpty(sinkConfig.getAccessKeyId())
+                && StringUtils.isNotEmpty(sinkConfig.getSecretAccessKey())) {
             chain = StaticCredentialsProvider.create(
                     AwsBasicCredentials.create(sinkConfig.getAccessKeyId(), sinkConfig.getSecretAccessKey()));
         }
 
-        if (!sinkConfig.getRole().isEmpty() && !sinkConfig.getRoleSessionName().isEmpty()) {
+        if (StringUtils.isNotEmpty(sinkConfig.getRole()) && StringUtils.isNotEmpty(sinkConfig.getRoleSessionName())) {
             AssumeRoleRequest assumeRoleRequest = AssumeRoleRequest.builder()
                     .roleArn(sinkConfig.getRole())
                     .roleSessionName(sinkConfig.getRoleSessionName())
                     .build();
             StsClientBuilder stsb = StsClient.builder().credentialsProvider(chain);
             // try both regions, use the basic region first, then more specific sts region
-            if (!sinkConfig.getRegion().isEmpty()) {
+            if (StringUtils.isNotEmpty(sinkConfig.getRegion())) {
                 stsb = stsb.region(Region.of(sinkConfig.getRegion()));
             }
-            if (!sinkConfig.getStsRegion().isEmpty()) {
+            if (StringUtils.isNotEmpty(sinkConfig.getStsRegion())) {
                 stsb = stsb.region(Region.of(sinkConfig.getStsRegion()));
             }
-            if (!sinkConfig.getStsEndpoint().isEmpty()) {
+            if (StringUtils.isNotEmpty(sinkConfig.getStsEndpoint())) {
                 stsb = stsb.endpointOverride(URI.create(sinkConfig.getStsEndpoint()));
             }
 

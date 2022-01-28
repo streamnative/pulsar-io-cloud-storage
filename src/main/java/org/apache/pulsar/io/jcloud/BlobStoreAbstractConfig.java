@@ -108,8 +108,6 @@ public class BlobStoreAbstractConfig implements Serializable {
         if (provider.equalsIgnoreCase(PROVIDER_AWSS3)) {
             checkArgument(isNotBlank(region) || isNotBlank(endpoint),
                     "Either the aws-end-point or aws-region must be set");
-        } else {
-            checkNotNull(endpoint, "endpoint property not set.");
         }
 
         if (!formatMap.containsKey(StringUtils.lowerCase(formatType))) {
