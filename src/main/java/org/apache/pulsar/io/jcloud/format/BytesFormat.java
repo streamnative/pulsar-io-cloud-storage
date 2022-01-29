@@ -18,6 +18,7 @@
  */
 package org.apache.pulsar.io.jcloud.format;
 
+import java.nio.ByteBuffer;
 import java.util.Iterator;
 import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.client.api.Schema;
@@ -26,7 +27,6 @@ import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 import org.apache.pulsar.io.jcloud.util.HexStringUtils;
 import org.apache.pulsar.jcloud.shade.com.google.common.io.ByteArrayDataOutput;
-import org.apache.pulsar.jcloud.shade.com.google.common.io.ByteSource;
 import org.apache.pulsar.jcloud.shade.com.google.common.io.ByteStreams;
 
 /**
@@ -51,7 +51,7 @@ public class BytesFormat implements Format<GenericRecord>, InitConfiguration<Blo
     }
 
     @Override
-    public ByteSource recordWriter(Iterator<Record<GenericRecord>> record) throws Exception {
+    public ByteBuffer recordWriterBuf(Iterator<Record<GenericRecord>> record) throws Exception {
         final ByteArrayDataOutput dataOutput = ByteStreams.newDataOutput();
         while (record.hasNext()) {
             final Record<GenericRecord> next = record.next();
@@ -60,6 +60,6 @@ public class BytesFormat implements Format<GenericRecord>, InitConfiguration<Blo
             dataOutput.write(data);
             dataOutput.write(lineSeparatorBytes);
         }
-        return ByteSource.wrap(dataOutput.toByteArray());
+        return ByteBuffer.wrap(dataOutput.toByteArray());
     }
 }

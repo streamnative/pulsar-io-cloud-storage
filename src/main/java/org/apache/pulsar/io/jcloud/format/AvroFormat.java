@@ -20,6 +20,7 @@ package org.apache.pulsar.io.jcloud.format;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
 import java.util.Iterator;
 import org.apache.avro.Schema;
 import org.apache.avro.file.CodecFactory;
@@ -30,7 +31,6 @@ import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 import org.apache.pulsar.io.jcloud.util.AvroRecordUtil;
 import org.apache.pulsar.io.jcloud.util.MetadataUtil;
-import org.apache.pulsar.jcloud.shade.com.google.common.io.ByteSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,7 +82,7 @@ public class AvroFormat implements Format<GenericRecord> , InitConfiguration<Blo
     }
 
     @Override
-    public ByteSource recordWriter(Iterator<Record<GenericRecord>> records) throws Exception {
+    public ByteBuffer recordWriterBuf(Iterator<Record<GenericRecord>> records) throws Exception {
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         writer.setCodec(codecFactory);
         try (DataFileWriter<Object> fileWriter = writer.create(rootAvroSchema, byteArrayOutputStream)) {
@@ -100,7 +100,7 @@ public class AvroFormat implements Format<GenericRecord> , InitConfiguration<Blo
             }
             fileWriter.flush();
         }
-        return ByteSource.wrap(byteArrayOutputStream.toByteArray());
+        return ByteBuffer.wrap(byteArrayOutputStream.toByteArray());
     }
 
     @VisibleForTesting
