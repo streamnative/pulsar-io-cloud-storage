@@ -20,6 +20,7 @@ package org.apache.pulsar.io.jcloud.format;
 
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Iterator;
 import org.apache.avro.Schema;
 import org.apache.commons.compress.utils.IOUtils;
@@ -35,7 +36,6 @@ import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 import org.apache.pulsar.io.jcloud.BytesOutputStream;
 import org.apache.pulsar.io.jcloud.util.AvroRecordUtil;
 import org.apache.pulsar.io.jcloud.util.MetadataUtil;
-import org.apache.pulsar.jcloud.shade.com.google.common.io.ByteSource;
 
 
 /**
@@ -67,7 +67,7 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
     }
 
     @Override
-    public ByteSource recordWriter(Iterator<Record<GenericRecord>> records) throws Exception {
+    public ByteBuffer recordWriterBuf(Iterator<Record<GenericRecord>> records) throws Exception {
         int pageSize = 64 * 1024;
         ParquetWriter<Object> parquetWriter = null;
         S3ParquetOutputFile file = new S3ParquetOutputFile();
@@ -94,7 +94,7 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
         } finally {
             IOUtils.closeQuietly(parquetWriter);
         }
-        return ByteSource.wrap(file.toByteArray());
+        return ByteBuffer.wrap(file.toByteArray());
     }
 
     private static class S3ParquetOutputFile implements OutputFile {
