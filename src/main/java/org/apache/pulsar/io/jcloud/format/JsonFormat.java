@@ -21,6 +21,7 @@ package org.apache.pulsar.io.jcloud.format;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -34,7 +35,6 @@ import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 import org.apache.pulsar.io.jcloud.util.MetadataUtil;
-import org.apache.pulsar.jcloud.shade.com.google.common.io.ByteSource;
 
 /**
  * json format.
@@ -64,7 +64,7 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
     }
 
     @Override
-    public ByteSource recordWriter(Iterator<Record<GenericRecord>> record) throws Exception {
+    public ByteBuffer recordWriterBuf(Iterator<Record<GenericRecord>> record) throws Exception {
         StringBuilder stringBuilder = new StringBuilder();
         while (record.hasNext()) {
             Record<GenericRecord> next = record.next();
@@ -78,7 +78,7 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
             String recordAsString = objectMapper.writeValueAsString(writeValue);
             stringBuilder.append(recordAsString).append("\n");
         }
-        return ByteSource.wrap(stringBuilder.toString().getBytes(StandardCharsets.UTF_8));
+        return ByteBuffer.wrap(stringBuilder.toString().getBytes(StandardCharsets.UTF_8));
     }
 
     private Map<String, Object> convertRecordToObject(GenericRecord record) throws IOException {

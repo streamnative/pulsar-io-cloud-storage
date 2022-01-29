@@ -61,6 +61,8 @@ public class BlobStoreAbstractConfig implements Serializable {
             .build();
 
     public static final String PROVIDER_AWSS3 = "aws-s3";
+    public static final String PROVIDER_AWSS3V2 = "s3v2";
+    public static final String PROVIDER_S3 = "s3";
     public static final String PROVIDER_GCS = "google-cloud-storage";
 
     private String provider;
@@ -92,6 +94,9 @@ public class BlobStoreAbstractConfig implements Serializable {
 
     private long batchTimeMs = 1000;
 
+    private boolean usePathStyleUrl = true;
+    private String awsCannedAcl = "";
+
     private boolean withMetadata;
     private boolean useHumanReadableMessageId = false;
     private boolean withTopicPartitionNumber = true;
@@ -103,8 +108,6 @@ public class BlobStoreAbstractConfig implements Serializable {
         if (provider.equalsIgnoreCase(PROVIDER_AWSS3)) {
             checkArgument(isNotBlank(region) || isNotBlank(endpoint),
                     "Either the aws-end-point or aws-region must be set");
-        } else {
-            checkNotNull(endpoint, "endpoint property not set.");
         }
 
         if (!formatMap.containsKey(StringUtils.lowerCase(formatType))) {
