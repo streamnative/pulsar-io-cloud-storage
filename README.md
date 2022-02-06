@@ -33,29 +33,29 @@ The Cloud Storage sink connector supports the following properties.
 
 ### Cloud Storage sink connector configuration
 
-| Name | Type|Required | Default | Description |
-|------|----------|----------|---------|-------------|
-| `provider` |String| True | null | The Cloud Storage type, such as `aws-s3`,`google-cloud-storage`.|
-| `accessKeyId` |String| True | null | The Cloud Storage access key ID. It requires permission to write objects. |
-| `secretAccessKey` | String| True | null | The Cloud Storage secret access key. |
-| `role` | String |False | null | The Cloud Storage role. |
-| `roleSessionName` | String| False | null | The Cloud Storage role session name. |
-| `bucket` | String| True | null | The Cloud Storage bucket. |
-| `endpoint` | String| True | null | The Cloud Storage endpoint. |
-| `formatType` | String| False | "json" | The data format type. Available options are JSON, Avro, Bytes, or Parquet. By default, it is set to JSON. |
-| `partitionerType` | String| False |"partition" | The partitioning type. It can be configured by topic partitions or by time. By default, the partition type is configured by topic partitions. |
-| `timePartitionPattern` | String| False |"yyyy-MM-dd" | The format pattern of the time-based partitioning. For details, refer to the Java date and time format. |
+| Name | Type|Required | Default | Description                                                                                                                                                                                                      |
+|------|----------|----------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `provider` |String| True | null | The Cloud Storage type, such as `aws-s3`,`google-cloud-storage`,`s3v2`(s3v2 uses AWS client but not jcloud client).                                                                                              |
+| `accessKeyId` |String| True | null | The Cloud Storage access key ID. It requires permission to write objects.                                                                                                                                        |
+| `secretAccessKey` | String| True | null | The Cloud Storage secret access key.                                                                                                                                                                             |
+| `role` | String |False | null | The Cloud Storage role.                                                                                                                                                                                          |
+| `roleSessionName` | String| False | null | The Cloud Storage role session name.                                                                                                                                                                             |
+| `bucket` | String| True | null | The Cloud Storage bucket.                                                                                                                                                                                        |
+| `endpoint` | String| True | null | The Cloud Storage endpoint.                                                                                                                                                                                      |
+| `formatType` | String| False | "json" | The data format type. Available options are JSON, Avro, Bytes, or Parquet. By default, it is set to JSON.                                                                                                        |
+| `partitionerType` | String| False |"partition" | The partitioning type. It can be configured by topic partitions or by time. By default, the partition type is configured by topic partitions.                                                                    |
+| `timePartitionPattern` | String| False |"yyyy-MM-dd" | The format pattern of the time-based partitioning. For details, refer to the Java date and time format.                                                                                                          |
 | `timePartitionDuration` | String| False |"86400000" | The time interval for time-based partitioning, support formatted interval string, such as `30d`, `24h`, `30m`, `10s`, also support number in milliseconds precision, such as `86400000` refers to `24h` or `1d`. |
-| `batchSize` | int | False |10 | The number of records submitted in batch. |
-| `batchTimeMs` | long | False |1000 | The interval for batch submission. |
-| `sliceTopicPartitionPath` | Boolean| False |false | When it is set to `true`, split the partitioned topic name into separate folders in the bucket path. |
-| `withMetadata` | Boolean | False |false | Save message attributes to metadata. |
-| `useHumanReadableMessageId` | Boolean | False |false | Use human-readable format string for messageId in message metadata, the messageId will be in format like `ledgerId:entryId:partitionIndex:batchIndex`. Otherwise, the messageId will be in Hex-encoded string.|
-| `withTopicPartitionNumber` | Boolean | False |true | When it is set to `true`, include topic partition number to the object path. |
-| `bytesFormatTypeSeparator` | String | False |"0x10" | It is inserted between records for the `formatType` of bytes. By default, it is set to '0x10'. An input record that contains the line separator looks like multiple records in the output object. |
-| `gcsServiceAccountKeyFilePath` | String | False | "" | Path to the GCS credentials file. If empty, the credentials file will be read from the `GOOGLE_APPLICATION_CREDENTIALS` environment variable. |
-| `gcsServiceAccountKeyFileContent` | String | False | "" | The contents of the JSON service key file. If empty, credentials are read from `gcsServiceAccountKeyFilePath` file. |
-| `pendingQueueSize` | int | False | 100 | The number of records buffered in queue, by default it will always be `batchSize * 10`, and it can be set manually. |
+| `batchSize` | int | False |10 | The number of records submitted in batch.                                                                                                                                                                        |
+| `batchTimeMs` | long | False |1000 | The interval for batch submission.                                                                                                                                                                               |
+| `sliceTopicPartitionPath` | Boolean| False |false | When it is set to `true`, split the partitioned topic name into separate folders in the bucket path.                                                                                                             |
+| `withMetadata` | Boolean | False |false | Save message attributes to metadata.                                                                                                                                                                             |
+| `useHumanReadableMessageId` | Boolean | False |false | Use human-readable format string for messageId in message metadata, the messageId will be in format like `ledgerId:entryId:partitionIndex:batchIndex`. Otherwise, the messageId will be in Hex-encoded string.   |
+| `withTopicPartitionNumber` | Boolean | False |true | When it is set to `true`, include topic partition number to the object path.                                                                                                                                     |
+| `bytesFormatTypeSeparator` | String | False |"0x10" | It is inserted between records for the `formatType` of bytes. By default, it is set to '0x10'. An input record that contains the line separator looks like multiple records in the output object.                |
+| `gcsServiceAccountKeyFilePath` | String | False | "" | Path to the GCS credentials file. If empty, the credentials file will be read from the `GOOGLE_APPLICATION_CREDENTIALS` environment variable.                                                                    |
+| `gcsServiceAccountKeyFileContent` | String | False | "" | The contents of the JSON service key file. If empty, credentials are read from `gcsServiceAccountKeyFilePath` file.                                                                                              |
+| `pendingQueueSize` | int | False | 100 | The number of records buffered in queue, by default it will always be `batchSize * 10`, and it can be set manually.                                                                                              |
 
 ### Configure Cloud Storage sink connector
 
