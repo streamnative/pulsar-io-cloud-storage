@@ -46,7 +46,8 @@ public class AvroFormat implements Format<GenericRecord> , InitConfiguration<Blo
     private Schema rootAvroSchema;
 
     private boolean useMetadata;
-    private boolean useHumanReadableMessageId;
+    private boolean useHumanReadableMessageId = false;
+    private boolean useHumanReadableSchemaVersion = false;
     private CodecFactory codecFactory;
 
     @Override
@@ -58,6 +59,7 @@ public class AvroFormat implements Format<GenericRecord> , InitConfiguration<Blo
     public void configure(BlobStoreAbstractConfig configuration) {
         this.useMetadata = configuration.isWithMetadata();
         this.useHumanReadableMessageId = configuration.isUseHumanReadableMessageId();
+        this.useHumanReadableSchemaVersion = configuration.isUseHumanReadableSchemaVersion();
         String codecName = configuration.getAvroCodec();
         if (codecName == null) {
             this.codecFactory = CodecFactory.nullCodec();
@@ -77,7 +79,8 @@ public class AvroFormat implements Format<GenericRecord> , InitConfiguration<Blo
     public void initSchema(org.apache.pulsar.client.api.Schema<GenericRecord> schema) {
         rootAvroSchema = AvroRecordUtil.convertToAvroSchema(schema);
         if (useMetadata){
-            rootAvroSchema = MetadataUtil.setMetadataSchema(rootAvroSchema, useHumanReadableMessageId);
+            rootAvroSchema = MetadataUtil.setMetadataSchema(rootAvroSchema,
+                    useHumanReadableMessageId, useHumanReadableSchemaVersion);
         }
     }
 
@@ -93,7 +96,8 @@ public class AvroFormat implements Format<GenericRecord> , InitConfiguration<Blo
 
                 if (useMetadata) {
                     org.apache.avro.generic.GenericRecord metadataRecord =
-                            MetadataUtil.extractedMetadataRecord(next, useHumanReadableMessageId);
+                            MetadataUtil.extractedMetadataRecord(next,
+                                    useHumanReadableMessageId, useHumanReadableSchemaVersion);
                     writeRecord.put(MetadataUtil.MESSAGE_METADATA_KEY, metadataRecord);
                 }
                 fileWriter.append(writeRecord);

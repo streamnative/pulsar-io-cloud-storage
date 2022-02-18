@@ -99,6 +99,7 @@ public class BlobStoreAbstractConfig implements Serializable {
 
     private boolean withMetadata;
     private boolean useHumanReadableMessageId = false;
+    private boolean useHumanReadableSchemaVersion = false;
     private boolean withTopicPartitionNumber = true;
     private String bytesFormatTypeSeparator = "0x10";
 
