@@ -75,7 +75,7 @@ The Cloud Storage sink connector supports the following properties.
 | `gcsServiceAccountKeyFilePath` | String | False | "" | Path to the GCS credentials file. If empty, the credentials file will be read from the `GOOGLE_APPLICATION_CREDENTIALS` environment variable.                                                                    |
 | `gcsServiceAccountKeyFileContent` | String | False | "" | The contents of the JSON service key file. If empty, credentials are read from `gcsServiceAccountKeyFilePath` file.                                                                                              |
 | `pendingQueueSize` | int | False | 100 | The number of records buffered in queue, by default it will always be `batchSize * 100`, and it can be set manually.                                                                                             |
-| `useHumanReadableSchemaVersion` | Boolean | False |false | Use human-readable format string for schema version in message metadata, the schema version will be in plain string format. Otherwise, the schema version will be in hex-encoded string.                         |
+| `useHumanReadableSchemaVersion` | Boolean | False |false | Use a human-readable format string for schema version in the message metadata. If it is set to `true`, the schema version is in plain string format. Otherwise, the schema version is in hex-encoded string.                         |
 
 ## Configure Cloud Storage sink connector
 
