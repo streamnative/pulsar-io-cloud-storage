@@ -46,8 +46,8 @@ public class AvroFormat implements Format<GenericRecord> , InitConfiguration<Blo
     private Schema rootAvroSchema;
 
     private boolean useMetadata;
-    private boolean useHumanReadableMessageId = false;
-    private boolean useHumanReadableSchemaVersion = false;
+    private boolean useHumanReadableMessageId;
+    private boolean useHumanReadableSchemaVersion;
     private CodecFactory codecFactory;
 
     @Override

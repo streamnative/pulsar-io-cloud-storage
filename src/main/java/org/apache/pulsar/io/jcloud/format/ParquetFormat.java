@@ -45,8 +45,8 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
     private Schema rootAvroSchema;
 
     private boolean useMetadata;
-    private boolean useHumanReadableMessageId = false;
-    private boolean useHumanReadableSchemaVersion = false;
+    private boolean useHumanReadableMessageId;
+    private boolean useHumanReadableSchemaVersion;
 
     @Override
     public String getExtension() {

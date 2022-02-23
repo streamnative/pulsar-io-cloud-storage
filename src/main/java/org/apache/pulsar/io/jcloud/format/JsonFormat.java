@@ -45,8 +45,8 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
     private ObjectMapper objectMapper;
 
     private boolean useMetadata;
-    private boolean useHumanReadableMessageId = false;
-    private boolean useHumanReadableSchemaVersion = false;
+    private boolean useHumanReadableMessageId;
+    private boolean useHumanReadableSchemaVersion;
 
     @Override
     public String getExtension() {
