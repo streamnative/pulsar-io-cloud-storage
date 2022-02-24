@@ -46,6 +46,7 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
 
     private boolean useMetadata;
     private boolean useHumanReadableMessageId;
+    private boolean useHumanReadableSchemaVersion;
 
     @Override
     public String getExtension() {
@@ -56,6 +57,7 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
     public void configure(BlobStoreAbstractConfig configuration) {
         this.useMetadata = configuration.isWithMetadata();
         this.useHumanReadableMessageId = configuration.isUseHumanReadableMessageId();
+        this.useHumanReadableSchemaVersion = configuration.isUseHumanReadableSchemaVersion();
     }
 
     @Override
@@ -73,7 +75,7 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
             Map<String, Object> writeValue = convertRecordToObject(next.getValue());
             if (useMetadata) {
                 writeValue.put(MetadataUtil.MESSAGE_METADATA_KEY,
-                        MetadataUtil.extractedMetadata(next, useHumanReadableMessageId));
+                        MetadataUtil.extractedMetadata(next, useHumanReadableMessageId, useHumanReadableSchemaVersion));
             }
             String recordAsString = objectMapper.writeValueAsString(writeValue);
             stringBuilder.append(recordAsString).append("\n");

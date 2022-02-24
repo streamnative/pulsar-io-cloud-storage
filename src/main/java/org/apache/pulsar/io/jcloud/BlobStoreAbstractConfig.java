@@ -98,7 +98,8 @@ public class BlobStoreAbstractConfig implements Serializable {
     private String awsCannedAcl = "";
 
     private boolean withMetadata;
-    private boolean useHumanReadableMessageId = false;
+    private boolean useHumanReadableMessageId;
+    private boolean useHumanReadableSchemaVersion;
     private boolean withTopicPartitionNumber = true;
     private String bytesFormatTypeSeparator = "0x10";
 

@@ -19,10 +19,12 @@
 package org.apache.pulsar.io.jcloud;
 
 import static org.apache.pulsar.io.jcloud.util.MetadataUtil.METADATA_MESSAGE_ID_KEY;
+import static org.apache.pulsar.io.jcloud.util.MetadataUtil.METADATA_SCHEMA_VERSION_KEY;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -41,6 +43,7 @@ public class MetadataUtilTest {
     @Test
     public void testExtractedMetadata() throws IOException {
         String messageIdString = "1:2:3:4";
+        byte[] schemaVersionBytes = new byte[]{0x0A};
         byte[] messageIdBytes = new byte[]{0x00, 0x01, 0x02, 0x03};
         Record<GenericRecord> mockRecord = mock(Record.class);
         Message<GenericRecord> mockMessage = mock(Message.class);
@@ -48,18 +51,28 @@ public class MetadataUtilTest {
         when(mockRecord.getMessage()).thenReturn(Optional.of(mockMessage));
         when(mockMessage.getMessageId()).thenReturn(mockMessageId);
         when(mockMessage.getProperties()).thenReturn(Collections.emptyMap());
-        when(mockMessage.getSchemaVersion()).thenReturn(new byte[]{0x00});
+        when(mockMessage.getSchemaVersion()).thenReturn(schemaVersionBytes);
         when(mockMessageId.toString()).thenReturn(messageIdString);
         when(mockMessageId.toByteArray()).thenReturn(messageIdBytes);
 
+        Map<String, Object> metadataWithHumanReadableMetadata =
+                MetadataUtil.extractedMetadata(mockRecord, true, true);
+        Assert.assertEquals(metadataWithHumanReadableMetadata.get(METADATA_MESSAGE_ID_KEY), messageIdString);
+        Assert.assertNotEquals(metadataWithHumanReadableMetadata.get(METADATA_MESSAGE_ID_KEY),
+                ByteBuffer.wrap(messageIdBytes));
+        Assert.assertEquals(metadataWithHumanReadableMetadata.get(METADATA_SCHEMA_VERSION_KEY),
+                new String(schemaVersionBytes, StandardCharsets.UTF_8));
+
         Map<String, Object> metadataWithHumanReadableMessageId =
-                MetadataUtil.extractedMetadata(mockRecord, true);
+                MetadataUtil.extractedMetadata(mockRecord, true, false);
         Assert.assertEquals(metadataWithHumanReadableMessageId.get(METADATA_MESSAGE_ID_KEY), messageIdString);
         Assert.assertNotEquals(metadataWithHumanReadableMessageId.get(METADATA_MESSAGE_ID_KEY),
                 ByteBuffer.wrap(messageIdBytes));
 
-        Map<String, Object> metadata = MetadataUtil.extractedMetadata(mockRecord, false);
+
+        Map<String, Object> metadata = MetadataUtil.extractedMetadata(mockRecord, false, false);
         Assert.assertEquals(metadata.get(METADATA_MESSAGE_ID_KEY), ByteBuffer.wrap(messageIdBytes));
+        Assert.assertEquals(metadata.get(METADATA_SCHEMA_VERSION_KEY), schemaVersionBytes);
         Assert.assertNotEquals(metadata.get(METADATA_MESSAGE_ID_KEY), messageIdString);
     }
 }
