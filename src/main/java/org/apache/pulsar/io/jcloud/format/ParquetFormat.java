@@ -46,6 +46,7 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
 
     private boolean useMetadata;
     private boolean useHumanReadableMessageId;
+    private boolean useHumanReadableSchemaVersion;
 
     @Override
     public String getExtension() {
@@ -56,13 +57,15 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
     public void configure(BlobStoreAbstractConfig configuration) {
         this.useMetadata = configuration.isWithMetadata();
         this.useHumanReadableMessageId = configuration.isUseHumanReadableMessageId();
+        this.useHumanReadableSchemaVersion = configuration.isUseHumanReadableSchemaVersion();
     }
 
     @Override
     public void initSchema(org.apache.pulsar.client.api.Schema<GenericRecord> schema) {
         rootAvroSchema = AvroRecordUtil.convertToAvroSchema(schema);
         if (useMetadata){
-            rootAvroSchema = MetadataUtil.setMetadataSchema(rootAvroSchema, useHumanReadableMessageId);
+            rootAvroSchema = MetadataUtil.setMetadataSchema(rootAvroSchema,
+                    useHumanReadableMessageId, useHumanReadableSchemaVersion);
         }
     }
 
@@ -86,7 +89,8 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
                         .convertGenericRecord(next.getValue(), rootAvroSchema);
                 if (useMetadata) {
                     org.apache.avro.generic.GenericRecord metadataRecord =
-                            MetadataUtil.extractedMetadataRecord(next, useHumanReadableMessageId);
+                            MetadataUtil.extractedMetadataRecord(next,
+                                    useHumanReadableMessageId, useHumanReadableSchemaVersion);
                     writeRecord.put(MetadataUtil.MESSAGE_METADATA_KEY, metadataRecord);
                 }
                 parquetWriter.write(writeRecord);
