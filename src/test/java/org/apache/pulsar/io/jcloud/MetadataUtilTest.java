@@ -24,7 +24,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -43,7 +42,7 @@ public class MetadataUtilTest {
     @Test
     public void testExtractedMetadata() throws IOException {
         String messageIdString = "1:2:3:4";
-        byte[] schemaVersionBytes = new byte[]{0x0A};
+        byte[] schemaVersionBytes = new byte[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0A};
         byte[] messageIdBytes = new byte[]{0x00, 0x01, 0x02, 0x03};
         Record<GenericRecord> mockRecord = mock(Record.class);
         Message<GenericRecord> mockMessage = mock(Message.class);
@@ -61,7 +60,7 @@ public class MetadataUtilTest {
         Assert.assertNotEquals(metadataWithHumanReadableMetadata.get(METADATA_MESSAGE_ID_KEY),
                 ByteBuffer.wrap(messageIdBytes));
         Assert.assertEquals(metadataWithHumanReadableMetadata.get(METADATA_SCHEMA_VERSION_KEY),
-                new String(schemaVersionBytes, StandardCharsets.UTF_8));
+                MetadataUtil.parseSchemaVersionFromBytes(schemaVersionBytes));
 
         Map<String, Object> metadataWithHumanReadableMessageId =
                 MetadataUtil.extractedMetadata(mockRecord, true, false);
