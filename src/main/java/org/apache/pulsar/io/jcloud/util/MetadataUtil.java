@@ -19,7 +19,6 @@
 package org.apache.pulsar.io.jcloud.util;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -53,7 +52,8 @@ public class MetadataUtil {
                 useHumanReadableMessageId, useHumanReadableSchemaVersion));
         record.put(METADATA_PROPERTIES_KEY, message.getProperties());
         if (useHumanReadableMessageId) {
-            record.put(METADATA_SCHEMA_VERSION_KEY, new String(message.getSchemaVersion(), StandardCharsets.UTF_8));
+            record.put(METADATA_SCHEMA_VERSION_KEY,
+                    MetadataUtil.parseSchemaVersionFromBytes(message.getSchemaVersion()));
         } else {
             record.put(METADATA_SCHEMA_VERSION_KEY, ByteBuffer.wrap(message.getSchemaVersion()));
         }
@@ -80,7 +80,8 @@ public class MetadataUtil {
         final Message<GenericRecord> message = next.getMessage().get();
         metadata.put(METADATA_PROPERTIES_KEY, message.getProperties());
         if (useHumanReadableSchemaVersion) {
-            metadata.put(METADATA_SCHEMA_VERSION_KEY, new String(message.getSchemaVersion(), StandardCharsets.UTF_8));
+            metadata.put(METADATA_SCHEMA_VERSION_KEY,
+                    MetadataUtil.parseSchemaVersionFromBytes(message.getSchemaVersion()));
         } else {
             metadata.put(METADATA_SCHEMA_VERSION_KEY, message.getSchemaVersion());
         }
@@ -139,7 +140,7 @@ public class MetadataUtil {
                 ))
         );
         if (useHumanReadableSchemaVersion) {
-            fields.add(new Schema.Field(METADATA_SCHEMA_VERSION_KEY, Schema.create(Schema.Type.STRING)));
+            fields.add(new Schema.Field(METADATA_SCHEMA_VERSION_KEY, Schema.create(Schema.Type.LONG)));
         } else {
             fields.add(new Schema.Field(METADATA_SCHEMA_VERSION_KEY, Schema.create(Schema.Type.BYTES)));
         }
@@ -154,5 +155,10 @@ public class MetadataUtil {
                 false,
                 fields
         );
+    }
+
+    public static long parseSchemaVersionFromBytes(byte[] schemaVersion) {
+        ByteBuffer bb = ByteBuffer.wrap(schemaVersion);
+        return bb.getLong();
     }
 }
