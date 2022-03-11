@@ -31,17 +31,22 @@ import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.apache.parquet.io.OutputFile;
 import org.apache.parquet.io.PositionOutputStream;
 import org.apache.pulsar.client.api.schema.GenericRecord;
+import org.apache.pulsar.common.schema.SchemaInfo;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 import org.apache.pulsar.io.jcloud.BytesOutputStream;
 import org.apache.pulsar.io.jcloud.util.AvroRecordUtil;
 import org.apache.pulsar.io.jcloud.util.MetadataUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
  * parquet format.
  */
 public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<BlobStoreAbstractConfig> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ParquetFormat.class);
+
     private Schema rootAvroSchema;
 
     private boolean useMetadata;
@@ -67,6 +72,8 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
             rootAvroSchema = MetadataUtil.setMetadataSchema(rootAvroSchema,
                     useHumanReadableMessageId, useHumanReadableSchemaVersion);
         }
+
+        LOGGER.debug("Using avro schema: {}", rootAvroSchema);
     }
 
     @Override
@@ -75,13 +82,18 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
         ParquetWriter<Object> parquetWriter = null;
         S3ParquetOutputFile file = new S3ParquetOutputFile();
         try {
-            parquetWriter = AvroParquetWriter
+            AvroParquetWriter.Builder<Object> builder = AvroParquetWriter
                     .builder(file)
                     .withPageSize(pageSize)
                     .withWriteMode(ParquetFileWriter.Mode.OVERWRITE)
                     .withCompressionCodec(CompressionCodecName.GZIP)
-                    .withSchema(rootAvroSchema)
-                    .build();
+                    .withSchema(rootAvroSchema);
+//
+//            if (schemaType == SchemaType.PROTOBUF_NATIVE) {
+//                builder.withDataModel(ProtobufData.get());
+//            }
+
+            parquetWriter = builder.build();
 
             while (records.hasNext()) {
                 final Record<GenericRecord> next = records.next();
