@@ -81,18 +81,12 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
         ParquetWriter<Object> parquetWriter = null;
         S3ParquetOutputFile file = new S3ParquetOutputFile();
         try {
-            AvroParquetWriter.Builder<Object> builder = AvroParquetWriter
+            parquetWriter = AvroParquetWriter
                     .builder(file)
                     .withPageSize(pageSize)
                     .withWriteMode(ParquetFileWriter.Mode.OVERWRITE)
                     .withCompressionCodec(CompressionCodecName.GZIP)
-                    .withSchema(rootAvroSchema);
-//
-//            if (schemaType == SchemaType.PROTOBUF_NATIVE) {
-//                builder.withDataModel(ProtobufData.get());
-//            }
-
-            parquetWriter = builder.build();
+                    .withSchema(rootAvroSchema).build();
 
             while (records.hasNext()) {
                 final Record<GenericRecord> next = records.next();
