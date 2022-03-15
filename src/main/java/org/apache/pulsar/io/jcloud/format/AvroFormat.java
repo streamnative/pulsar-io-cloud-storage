@@ -82,6 +82,8 @@ public class AvroFormat implements Format<GenericRecord> , InitConfiguration<Blo
             rootAvroSchema = MetadataUtil.setMetadataSchema(rootAvroSchema,
                     useHumanReadableMessageId, useHumanReadableSchemaVersion);
         }
+
+        LOGGER.debug("Using avro schema: {}", rootAvroSchema);
     }
 
     @Override
