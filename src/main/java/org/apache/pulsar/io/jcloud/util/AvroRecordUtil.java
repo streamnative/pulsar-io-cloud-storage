@@ -18,16 +18,19 @@
  */
 package org.apache.pulsar.io.jcloud.util;
 
+import com.google.protobuf.Descriptors;
 import java.lang.reflect.Method;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
+import org.apache.avro.protobuf.ProtobufData;
 import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.client.api.schema.GenericRecord;
+import org.apache.pulsar.client.impl.schema.ProtobufNativeSchemaUtils;
 import org.apache.pulsar.common.schema.SchemaInfo;
+import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.functions.api.Record;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,8 +102,16 @@ public class AvroRecordUtil {
 
     public static Schema convertToAvroSchema(org.apache.pulsar.client.api.Schema<?> pulsarSchema) {
         SchemaInfo schemaInfo = pulsarSchema.getSchemaInfo();
-        String rootAvroSchemaString = new String(schemaInfo.getSchema(), StandardCharsets.UTF_8);
-        return new Schema.Parser().parse(rootAvroSchemaString);
+        if (schemaInfo.getType() == SchemaType.PROTOBUF_NATIVE) {
+            Descriptors.Descriptor descriptor = ProtobufNativeSchemaUtils.deserialize(schemaInfo.getSchema());
+            ProtobufData model = ProtobufData.get();
+            return model.getSchema(descriptor);
+        } else {
+            String rootAvroSchemaString = schemaInfo.getSchemaDefinition();
+            final Schema.Parser parser = new Schema.Parser();
+            parser.setValidateDefaults(false);
+            return parser.parse(rootAvroSchemaString);
+        }
     }
 
     public static org.apache.avro.generic.GenericRecord convertGenericRecord(GenericRecord recordValue,
