@@ -36,12 +36,16 @@ import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 import org.apache.pulsar.io.jcloud.BytesOutputStream;
 import org.apache.pulsar.io.jcloud.util.AvroRecordUtil;
 import org.apache.pulsar.io.jcloud.util.MetadataUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
  * parquet format.
  */
 public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<BlobStoreAbstractConfig> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ParquetFormat.class);
+
     private Schema rootAvroSchema;
 
     private boolean useMetadata;
@@ -67,6 +71,8 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
             rootAvroSchema = MetadataUtil.setMetadataSchema(rootAvroSchema,
                     useHumanReadableMessageId, useHumanReadableSchemaVersion);
         }
+
+        LOGGER.debug("Using avro schema: {}", rootAvroSchema);
     }
 
     @Override
@@ -80,8 +86,7 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
                     .withPageSize(pageSize)
                     .withWriteMode(ParquetFileWriter.Mode.OVERWRITE)
                     .withCompressionCodec(CompressionCodecName.GZIP)
-                    .withSchema(rootAvroSchema)
-                    .build();
+                    .withSchema(rootAvroSchema).build();
 
             while (records.hasNext()) {
                 final Record<GenericRecord> next = records.next();
