@@ -121,6 +121,7 @@ Before using the Cloud Storage sink connector, you need to create a configuratio
       batchSize: 10
       batchTimeMs: 1000
     ```
+
 ### Data format types
 
 Cloud Storage Sink Connector provides multiple options of output format, which are JSON, Avro, Bytes, or Parquet. The default format is JSON.
