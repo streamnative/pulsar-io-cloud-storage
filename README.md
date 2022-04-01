@@ -124,7 +124,7 @@ Before using the Cloud Storage sink connector, you need to create a configuratio
 
 ### Data format types
 
-Cloud Storage Sink Connector provides multiple options of output format, which are JSON, Avro, Bytes, or Parquet. The default format is JSON.
+Cloud Storage Sink Connector provides multiple output format options, including JSON, Avro, Bytes, or Parquet. The default format is JSON.
 With current implementation, there are some limitations for different formats:
 
 - JSON: only support structured Pulsar schema types, including `JSON`, `PROTOBUF`, `AVRO`, and `PROTOBUF_NATIVE`, will try to convert the data to JSON from `String` and `Bytes` message.
