@@ -226,7 +226,16 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
         Record<GenericRecord> firstRecord = recordsToInsert.get(0);
         Schema<GenericRecord> schema = getPulsarSchema(firstRecord);
-        format.initSchema(schema);
+        try {
+            format.initSchema(schema);
+        } catch (Exception e) {
+            log.error("Failed to init pulsar schema {}", schema, e);
+            recordsToInsert.forEach(Record::fail);
+            if (sinkContext != null) {
+                sinkContext.recordMetric(METRICS_TOTAL_FAILURE, recordsToInsert.size());
+            }
+            return;
+        }
 
         final Iterator<Record<GenericRecord>> iter = recordsToInsert.iterator();
         String filepath = buildPartitionPath(firstRecord, partitioner, format);

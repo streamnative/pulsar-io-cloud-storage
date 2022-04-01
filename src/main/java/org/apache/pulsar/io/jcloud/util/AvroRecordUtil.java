@@ -26,9 +26,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.protobuf.ProtobufData;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.client.api.schema.GenericRecord;
+import org.apache.pulsar.client.impl.MessageImpl;
+import org.apache.pulsar.client.impl.TopicMessageImpl;
 import org.apache.pulsar.client.impl.schema.ProtobufNativeSchemaUtils;
+import org.apache.pulsar.client.impl.schema.generic.GenericProtobufNativeSchema;
 import org.apache.pulsar.common.schema.SchemaInfo;
 import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.functions.api.Record;
@@ -58,14 +62,45 @@ public class AvroRecordUtil {
     public static org.apache.pulsar.client.api.Schema<GenericRecord> getPulsarSchema(
             Record<GenericRecord> record) {
 
-        if (record.getSchema() != null) {
-            return record.getSchema();
+        org.apache.pulsar.client.api.Schema<GenericRecord> schema = record.getSchema();
+        if (record.getValue().getSchemaVersion() == null) {
+            org.apache.pulsar.client.api.Schema<GenericRecord> internalSchema =
+                    getPulsarInternalSchema(record.getMessage().orElse(null));
+            if (internalSchema != null) {
+                schema = recoverGenericProtobufNativeSchemaFromInternalSchema(internalSchema);
+            }
+        }
+        if (schema != null) {
+            return schema;
         }
         // Pulsar version < 2.7.0
         final Message<GenericRecord> message = record.getMessage()
                 .orElseThrow(() -> new RuntimeException("Message not exist in record, Please check if Source is "
                         + "PulsarSource."));
         return extractPulsarSchema(message);
+    }
+
+    public static org.apache.pulsar.client.api.Schema<GenericRecord>
+    recoverGenericProtobufNativeSchemaFromInternalSchema(org.apache.pulsar.client.api.Schema<GenericRecord> schema) {
+        if (schema.getSchemaInfo().getType() == SchemaType.PROTOBUF_NATIVE) {
+            return (GenericProtobufNativeSchema) GenericProtobufNativeSchema.of(schema.getSchemaInfo());
+        }
+        return null;
+    }
+
+    public static org.apache.pulsar.client.api.Schema<GenericRecord> getPulsarInternalSchema(
+            Message<GenericRecord> message) {
+        org.apache.pulsar.client.api.Schema<GenericRecord> schema = null;
+        if (message != null) {
+            if (message instanceof MessageImpl) {
+                MessageImpl impl = (MessageImpl) message;
+                schema = impl.getSchemaInternal();
+            } else if (message instanceof TopicMessageImpl) {
+                TopicMessageImpl impl = (TopicMessageImpl) message;
+                schema = impl.getSchemaInternal();
+            }
+        }
+        return schema;
     }
 
     public static org.apache.pulsar.client.api.Schema<GenericRecord> extractPulsarSchema(
@@ -107,9 +142,15 @@ public class AvroRecordUtil {
             ProtobufData model = ProtobufData.get();
             return model.getSchema(descriptor);
         } else {
+            if (SchemaType.isPrimitiveType(schemaInfo.getType())){
+                throw new UnsupportedOperationException("do not support non-structured schema type" + schemaInfo.getType());
+            }
             String rootAvroSchemaString = schemaInfo.getSchemaDefinition();
             final Schema.Parser parser = new Schema.Parser();
             parser.setValidateDefaults(false);
+            if (StringUtils.isEmpty(rootAvroSchemaString)) {
+                throw new IllegalArgumentException("schema definition is empty");
+            }
             return parser.parse(rootAvroSchemaString);
         }
     }
