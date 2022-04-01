@@ -226,20 +226,11 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
         Record<GenericRecord> firstRecord = recordsToInsert.get(0);
         Schema<GenericRecord> schema = getPulsarSchema(firstRecord);
+        String filepath = "";
         try {
             format.initSchema(schema);
-        } catch (Exception e) {
-            log.error("Failed to init pulsar schema {}", schema, e);
-            recordsToInsert.forEach(Record::fail);
-            if (sinkContext != null) {
-                sinkContext.recordMetric(METRICS_TOTAL_FAILURE, recordsToInsert.size());
-            }
-            return;
-        }
-
-        final Iterator<Record<GenericRecord>> iter = recordsToInsert.iterator();
-        String filepath = buildPartitionPath(firstRecord, partitioner, format);
-        try {
+            final Iterator<Record<GenericRecord>> iter = recordsToInsert.iterator();
+            filepath = buildPartitionPath(firstRecord, partitioner, format);
             ByteBuffer payload = bindValue(iter, format);
             log.info("Uploading blob {} currentBatchSize {}", filepath, currentBatchSize.get());
             long elapsedMs = System.currentTimeMillis();
@@ -258,13 +249,23 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                 log.error("Blob {} is not found", filepath, e);
             } else if (e instanceof IOException) {
                 log.error("Failed to write to blob {}", filepath, e);
+            } else if (e instanceof UnsupportedOperationException || e instanceof IllegalArgumentException) {
+                log.error("Failed to handle message schema {}", schema, e);
             } else {
                 log.error("Encountered unknown error writing to blob {}", filepath, e);
             }
-            recordsToInsert.forEach(Record::fail);
-            if (sinkContext != null) {
-                sinkContext.recordMetric(METRICS_TOTAL_FAILURE, recordsToInsert.size());
-            }
+            bulkHandleFailedRecords(recordsToInsert);
+        }
+    }
+
+    private void bulkHandleFailedRecords(List<Record<GenericRecord>> failedRecords) {
+        if (sinkConfig.isSkipFailedMessages()) {
+            failedRecords.forEach(Record::ack);
+        } else {
+            failedRecords.forEach(Record::fail);
+        }
+        if (sinkContext != null) {
+            sinkContext.recordMetric(METRICS_TOTAL_FAILURE, failedRecords.size());
         }
     }
 

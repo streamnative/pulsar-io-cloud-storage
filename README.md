@@ -56,7 +56,8 @@ The Cloud Storage sink connector supports the following properties.
 | `gcsServiceAccountKeyFilePath` | String | False | "" | Path to the GCS credentials file. If empty, the credentials file will be read from the `GOOGLE_APPLICATION_CREDENTIALS` environment variable.                                                                    |
 | `gcsServiceAccountKeyFileContent` | String | False | "" | The contents of the JSON service key file. If empty, credentials are read from `gcsServiceAccountKeyFilePath` file.                                                                                              |
 | `pendingQueueSize` | int | False | 100 | The number of records buffered in queue, by default it will always be `batchSize * 10`, and it can be set manually.                                                                                              |
-| `useHumanReadableSchemaVersion` | Boolean | False |false | Use a human-readable format string for schema version in the message metadata. If it is set to `true`, the schema version is in plain string format. Otherwise, the schema version is in hex-encoded string.                         |
+| `useHumanReadableSchemaVersion` | Boolean | False |false | Use a human-readable format string for schema version in the message metadata. If it is set to `true`, the schema version is in plain string format. Otherwise, the schema version is in hex-encoded string.     |
+| `skipFailedMessages` | Boolean | False |false | When message is failed to process, the connector will skip the message by `ack` it if the flag is set to `true`, otherwise the connector will `fail` the message.                                                  |
 
 ### Configure Cloud Storage sink connector
 
@@ -128,6 +129,13 @@ With current implementation, there are some limitations for different formats:
 - JSON: only support structured Pulsar schema types, including `JSON`, `PROTOBUF`, `AVRO`, and `PROTOBUF_NATIVE`, will try to convert the data to JSON from `String` and `Bytes` message.
 - Avro / Parquet: only support structured Pulsar schema types, including `JSON`, `PROTOBUF`, `AVRO`, and `PROTOBUF_NATIVE`.
 - Bytes: support all Pulsar schema types.
+
+When the connector receiving a message with a schema type that is not supported by the connector, the connector will `fail` the message by default, if you want to skip the non-supported messages, you can set `skipFailedMessages` to `true`.
+
+### Dead letter topic
+
+To use dead-letter-topic, you need to set `skipFailedMessages` to `false`, and set `--max-redeliver-count` and `--dead-letter-topic` when submit the connector with `pulsar-admin`. For more info about dead letter topic, please refer to the [Pulsar documentation](https://pulsar.apache.org/docs/en/concepts-messaging/#dead-letter-topic).
+When dead-letter-topic is enabled, the connector will send the message to the dead-letter-topic when the message is failed to be sent to the Cloud Storage.
 
 ## Usage
 
