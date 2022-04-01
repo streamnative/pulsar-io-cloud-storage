@@ -57,7 +57,7 @@ The Cloud Storage sink connector supports the following properties.
 | `gcsServiceAccountKeyFileContent` | String | False | "" | The contents of the JSON service key file. If empty, credentials are read from `gcsServiceAccountKeyFilePath` file.                                                                                              |
 | `pendingQueueSize` | int | False | 100 | The number of records buffered in queue, by default it will always be `batchSize * 10`, and it can be set manually.                                                                                              |
 | `useHumanReadableSchemaVersion` | Boolean | False |false | Use a human-readable format string for schema version in the message metadata. If it is set to `true`, the schema version is in plain string format. Otherwise, the schema version is in hex-encoded string.     |
-| `skipFailedMessages` | Boolean | False |false | When message is failed to process, the connector will skip the message by `ack` it if the flag is set to `true`, otherwise the connector will `fail` the message.                                                  |
+| `skipFailedMessages` | Boolean | False |false | Configure whether to skip a message which it fails to be processed. If it is set to `true`, the connector will skip the failed messages by `ack` it. Otherwise, the connector will `fail` the message.  |
 
 ### Configure Cloud Storage sink connector
 
