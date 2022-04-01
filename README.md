@@ -131,7 +131,7 @@ With current implementation, there are some limitations for different formats:
 - Avro / Parquet: only support structured Pulsar schema types, including `JSON`, `PROTOBUF`, `AVRO`, and `PROTOBUF_NATIVE`.
 - Bytes: support all Pulsar schema types.
 
-When the connector receiving a message with a schema type that is not supported by the connector, the connector will `fail` the message by default, if you want to skip the non-supported messages, you can set `skipFailedMessages` to `true`.
+By default, when the connector receives a message with a non-supported schema type, the connector will `fail` the message. If you want to skip the non-supported messages, you can set `skipFailedMessages` to `true`.
 
 ### Dead letter topic
 
