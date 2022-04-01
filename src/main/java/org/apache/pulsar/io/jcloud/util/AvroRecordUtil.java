@@ -143,7 +143,8 @@ public class AvroRecordUtil {
             return model.getSchema(descriptor);
         } else {
             if (SchemaType.isPrimitiveType(schemaInfo.getType())){
-                throw new UnsupportedOperationException("do not support non-structured schema type" + schemaInfo.getType());
+                throw new UnsupportedOperationException(
+                        "do not support non-structured schema type" + schemaInfo.getType());
             }
             String rootAvroSchemaString = schemaInfo.getSchemaDefinition();
             final Schema.Parser parser = new Schema.Parser();
