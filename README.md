@@ -136,7 +136,7 @@ By default, when the connector receives a message with a non-supported schema ty
 ### Dead-letter topics
 
 To use a dead-letter topic, you need to set `skipFailedMessages` to `false`, and set `--max-redeliver-count` and `--dead-letter-topic` when submit the connector with the `pulsar-admin` CLI tool. For more info about dead-letter topics, see the [Pulsar documentation](https://pulsar.apache.org/docs/en/concepts-messaging/#dead-letter-topic).
-When dead-letter-topic is enabled, the connector will send the message to the dead-letter-topic when the message is failed to be sent to the Cloud Storage.
+If a message fails to be sent to the Cloud Storage and there is a dead-letter topic, the connector will send the message to the dead-letter topic.
 
 ## Usage
 
