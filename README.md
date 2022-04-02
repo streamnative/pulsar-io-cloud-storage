@@ -56,7 +56,8 @@ The Cloud Storage sink connector supports the following properties.
 | `gcsServiceAccountKeyFilePath` | String | False | "" | Path to the GCS credentials file. If empty, the credentials file will be read from the `GOOGLE_APPLICATION_CREDENTIALS` environment variable.                                                                    |
 | `gcsServiceAccountKeyFileContent` | String | False | "" | The contents of the JSON service key file. If empty, credentials are read from `gcsServiceAccountKeyFilePath` file.                                                                                              |
 | `pendingQueueSize` | int | False | 100 | The number of records buffered in queue, by default it will always be `batchSize * 10`, and it can be set manually.                                                                                              |
-| `useHumanReadableSchemaVersion` | Boolean | False |false | Use a human-readable format string for schema version in the message metadata. If it is set to `true`, the schema version is in plain string format. Otherwise, the schema version is in hex-encoded string.                         |
+| `useHumanReadableSchemaVersion` | Boolean | False |false | Use a human-readable format string for schema version in the message metadata. If it is set to `true`, the schema version is in plain string format. Otherwise, the schema version is in hex-encoded string.     |
+| `skipFailedMessages` | Boolean | False |false | Configure whether to skip a message which it fails to be processed. If it is set to `true`, the connector will skip the failed messages by `ack` it. Otherwise, the connector will `fail` the message.  |
 
 ### Configure Cloud Storage sink connector
 
@@ -120,6 +121,22 @@ Before using the Cloud Storage sink connector, you need to create a configuratio
       batchSize: 10
       batchTimeMs: 1000
     ```
+
+### Data format types
+
+Cloud Storage Sink Connector provides multiple output format options, including JSON, Avro, Bytes, or Parquet. The default format is JSON.
+With current implementation, there are some limitations for different formats:
+
+- JSON: only support structured Pulsar schema types, including `JSON`, `PROTOBUF`, `AVRO`, and `PROTOBUF_NATIVE`. The connector will try to convert the data with a `String` or `Bytes` format to JSON-format data.
+- Avro / Parquet: only support structured Pulsar schema types, including `JSON`, `PROTOBUF`, `AVRO`, and `PROTOBUF_NATIVE`.
+- Bytes: support all Pulsar schema types.
+
+By default, when the connector receives a message with a non-supported schema type, the connector will `fail` the message. If you want to skip the non-supported messages, you can set `skipFailedMessages` to `true`.
+
+### Dead-letter topics
+
+To use a dead-letter topic, you need to set `skipFailedMessages` to `false`, and set `--max-redeliver-count` and `--dead-letter-topic` when submit the connector with the `pulsar-admin` CLI tool. For more info about dead-letter topics, see the [Pulsar documentation](https://pulsar.apache.org/docs/en/concepts-messaging/#dead-letter-topic).
+If a message fails to be sent to the Cloud Storage and there is a dead-letter topic, the connector will send the message to the dead-letter topic.
 
 ## Usage
 
