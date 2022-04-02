@@ -102,6 +102,7 @@ public class BlobStoreAbstractConfig implements Serializable {
     private boolean useHumanReadableSchemaVersion;
     private boolean withTopicPartitionNumber = true;
     private String bytesFormatTypeSeparator = "0x10";
+    private boolean skipFailedMessages = false;
 
     public void validate() {
         checkNotNull(provider, "provider not set.");
