@@ -31,6 +31,7 @@ import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.apache.parquet.io.OutputFile;
 import org.apache.parquet.io.PositionOutputStream;
 import org.apache.pulsar.client.api.schema.GenericRecord;
+import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 import org.apache.pulsar.io.jcloud.BytesOutputStream;
@@ -47,6 +48,7 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
     private static final Logger LOGGER = LoggerFactory.getLogger(ParquetFormat.class);
 
     private Schema rootAvroSchema;
+    private org.apache.pulsar.client.api.Schema<GenericRecord> internalSchema;
 
     private boolean useMetadata;
     private boolean useHumanReadableMessageId;
@@ -66,6 +68,7 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
 
     @Override
     public void initSchema(org.apache.pulsar.client.api.Schema<GenericRecord> schema) {
+        internalSchema = schema;
         rootAvroSchema = AvroRecordUtil.convertToAvroSchema(schema);
         if (useMetadata){
             rootAvroSchema = MetadataUtil.setMetadataSchema(rootAvroSchema,
@@ -90,8 +93,13 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
 
             while (records.hasNext()) {
                 final Record<GenericRecord> next = records.next();
+                GenericRecord genericRecord = next.getValue();
+                if (genericRecord.getSchemaType() == SchemaType.BYTES
+                        && internalSchema.getSchemaInfo().getType() == SchemaType.PROTOBUF_NATIVE) {
+                    genericRecord = internalSchema.decode((byte[]) next.getValue().getNativeObject());
+                }
                 org.apache.avro.generic.GenericRecord writeRecord = AvroRecordUtil
-                        .convertGenericRecord(next.getValue(), rootAvroSchema);
+                        .convertGenericRecord(genericRecord, rootAvroSchema);
                 if (useMetadata) {
                     org.apache.avro.generic.GenericRecord metadataRecord =
                             MetadataUtil.extractedMetadataRecord(next,
