@@ -30,7 +30,7 @@
 
   <groupId>io.streamnative.ecosystem</groupId>
   <artifactId>pulsar-io-cloud-storage</artifactId>
-  <version>2.9.0-rc-202110221101</version>
+  <version>2.9.2.16</version>
   <name>Pulsar Ecosystem :: IO Connector :: Cloud Storage Project</name>
   <description>Cloud Storage Connector integrates Apache Pulsar with Cloud Storage.</description>
 
@@ -46,7 +46,7 @@
     <jackson.version>2.13.2</jackson.version>
     <jackson-databind.version>2.13.2.1</jackson-databind.version>
     <lombok.version>1.16.22</lombok.version>
-    <pulsar.version>2.9.0-rc-202110221101</pulsar.version>
+    <pulsar.version>2.9.2.16</pulsar.version>
     <parquet.version>1.12.2</parquet.version>
     <awsjavasdk.version>1.12.148</awsjavasdk.version>
     <aws.java.sdk2.version>2.16.1</aws.java.sdk2.version>
