@@ -87,11 +87,13 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
             }
             if (internalSchema.getSchemaInfo().getType() == SchemaType.PROTOBUF_NATIVE) {
                 if (useMetadata) {
+                    // Very hacky way to append metadata schema into protobuf message's descriptor.
                     try {
                         ProtobufNativeSchemaData schemaData =
                                 new ObjectMapper().readValue(internalSchema.getSchemaInfo().getSchema(),
                                 ProtobufNativeSchemaData.class);
 
+                        // Get the descriptor from the pulsar schema.
                         Map<String, DescriptorProtos.FileDescriptorProto> fileDescriptorProtoCache = new HashMap<>();
                         Map<String, Descriptors.FileDescriptor> fileDescriptorCache = new HashMap<>();
                         DescriptorProtos.FileDescriptorSet fileDescriptorSet =
@@ -99,14 +101,23 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
                         fileDescriptorSet.getFileList().forEach(fileDescriptorProto ->
                                 fileDescriptorProtoCache.put(fileDescriptorProto.getName(), fileDescriptorProto));
 
+                        // rootFileDescriptorProto is the targeting file descriptor.
                         DescriptorProtos.FileDescriptorProto rootFileDescriptorProto =
                                 fileDescriptorProtoCache.get(schemaData.getRootFileDescriptorName());
 
+                        // get metadata descriptor.
                         Descriptors.Descriptor metadataDescriptor =
                                 Metadata.PulsarIOCSCProtobufMessageMetadata.getDescriptor();
+
+                        // put the metadata ile descriptor into the file descriptor cache
+                        // so it can be used in the next step.
                         fileDescriptorCache.put(metadataDescriptor.getFile().getName(), metadataDescriptor.getFile());
+
+                        // get the root descriptor builder
                         DescriptorProtos.FileDescriptorProto.Builder rootFileDescriptorProtoBuilder =
                                 rootFileDescriptorProto.toBuilder();
+
+                        // add the metadata descriptor to the root file descriptor.
                         rootFileDescriptorProtoBuilder.addDependency(metadataDescriptor.getFile().getName());
 
                         String[] paths = StringUtils.removeFirst(schemaData.getRootMessageTypeName(),
@@ -114,27 +125,30 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
                                 .replaceFirst("\\.", "").split("\\.");
 
                         //extract root message
-                        String[] finalPaths1 = paths;
+                        final String[] finalPaths = paths;
                         DescriptorProtos.DescriptorProto.Builder descriptorBuilder = rootFileDescriptorProtoBuilder
                                 .getMessageTypeBuilderList().stream()
                                 .filter(descriptorProto ->
-                                        descriptorProto.getName().equals(finalPaths1[0])).findFirst()
+                                        descriptorProto.getName().equals(finalPaths[0])).findFirst()
                                 .orElseThrow(() -> new RuntimeException("Root message not found"));
                         //extract nested message
                         for (int i = 1; i < paths.length; i++) {
-                            int finalI = i;
-                            String[] finalPaths = paths;
+                            final int finalI = i;
                             descriptorBuilder = descriptorBuilder.getNestedTypeBuilderList().stream().filter(
                                     v -> v.getName().equals(finalPaths[finalI])).findFirst()
                                     .orElseThrow(() -> new RuntimeException("Root message not found"));
                         }
 
+                        // find the message's descriptor, convert to builder, and try to add the metadata field.
                         DescriptorProtos.FieldDescriptorProto.Builder metadataField =
                                 DescriptorProtos.FieldDescriptorProto.newBuilder();
+
+                        // find the number position of the metadata field.
+                        int maxNumber = descriptorBuilder.getFieldList().stream().map(v -> v.getNumber()).max(Integer::compareTo).orElse(descriptorBuilder.getFieldCount());
                         metadataField.setName(MESSAGE_METADATA_KEY)
                                 .setLabel(DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL)
                                 .setType(DescriptorProtos.FieldDescriptorProto.Type.TYPE_MESSAGE)
-                                .setNumber(descriptorBuilder.getFieldCount() + 1)
+                                .setNumber(maxNumber + 1)
                                 .setTypeName(metadataDescriptor.getName());
                         descriptorBuilder.addField(metadataField);
 
