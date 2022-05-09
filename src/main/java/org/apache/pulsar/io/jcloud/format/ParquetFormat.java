@@ -144,7 +144,9 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
                                 DescriptorProtos.FieldDescriptorProto.newBuilder();
 
                         // find the number position of the metadata field.
-                        int maxNumber = descriptorBuilder.getFieldList().stream().map(v -> v.getNumber()).max(Integer::compareTo).orElse(descriptorBuilder.getFieldCount());
+                        int maxNumber = descriptorBuilder.getFieldList().stream()
+                                .map(v -> v.getNumber()).max(Integer::compareTo)
+                                .orElse(descriptorBuilder.getFieldCount());
                         metadataField.setName(MESSAGE_METADATA_KEY)
                                 .setLabel(DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL)
                                 .setType(DescriptorProtos.FieldDescriptorProto.Type.TYPE_MESSAGE)
