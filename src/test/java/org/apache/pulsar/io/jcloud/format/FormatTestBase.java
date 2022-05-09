@@ -18,6 +18,7 @@
  */
 package org.apache.pulsar.io.jcloud.format;
 
+import com.google.protobuf.DynamicMessage;
 import java.nio.ByteBuffer;
 import java.text.MessageFormat;
 import java.util.Arrays;
@@ -54,8 +55,12 @@ public abstract class FormatTestBase extends PulsarTestBase {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FormatTestBase.class);
 
-    private static TopicName avroTopicName = TopicName.get("test-parquet-avro" + RandomStringUtils.randomAlphabetic(5));
-    private static TopicName jsonTopicName = TopicName.get("test-parquet-json" + RandomStringUtils.randomAlphabetic(5));
+    private static final TopicName avroTopicName =
+            TopicName.get("test-parquet-avro" + RandomStringUtils.randomAlphabetic(5));
+    private static final TopicName jsonTopicName =
+            TopicName.get("test-parquet-json" + RandomStringUtils.randomAlphabetic(5));
+    private static final TopicName protobufNativeTopicName =
+            TopicName.get("test-parquet-protobuf-native" + RandomStringUtils.randomAlphabetic(5));
 
     @BeforeClass
     public static void setUp() throws Exception {
@@ -66,6 +71,8 @@ public abstract class FormatTestBase extends PulsarTestBase {
         pulsarAdmin.topics().createSubscription(jsonTopicName.toString(), "test", MessageId.earliest);
         pulsarAdmin.topics().createPartitionedTopic(avroTopicName.toString(), 1);
         pulsarAdmin.topics().createSubscription(avroTopicName.toString(), "test", MessageId.earliest);
+        pulsarAdmin.topics().createPartitionedTopic(protobufNativeTopicName.toString(), 1);
+        pulsarAdmin.topics().createSubscription(protobufNativeTopicName.toString(), "test", MessageId.earliest);
     }
 
     public abstract Format<GenericRecord> getFormat();
@@ -101,8 +108,25 @@ public abstract class FormatTestBase extends PulsarTestBase {
         sendTypedMessages(jsonTopicName.toString(), SchemaType.JSON, testRecords, Optional.empty(), TestRecord.class);
 
         Consumer<Message<GenericRecord>>
-                handle = getMessageConsumer(jsonTopicName);
+                handle = getJSONMessageConsumer(jsonTopicName);
         consumerMessages(jsonTopicName.toString(), Schema.AUTO_CONSUME(), handle, testRecords.size(), 2000);
+    }
+
+    @Test
+    public void testProtobufNativeRecordWriter() throws Exception {
+        List<org.apache.pulsar.io.jcloud.schema.proto.Test.TestMessage> testRecords = Arrays.asList(
+                org.apache.pulsar.io.jcloud.schema.proto.Test.TestMessage.newBuilder()
+                        .setStringField("key1").setIntField(1).build(),
+                org.apache.pulsar.io.jcloud.schema.proto.Test.TestMessage.newBuilder()
+                        .setStringField("key2").setIntField(2).build()
+        );
+
+        sendProtobufNativeMessages(protobufNativeTopicName.toString(), SchemaType.PROTOBUF_NATIVE,
+                testRecords, Optional.empty(), org.apache.pulsar.io.jcloud.schema.proto.Test.TestMessage.class);
+
+        Consumer<Message<GenericRecord>>
+                handle = getProtobufNativeMessageConsumer(protobufNativeTopicName);
+        consumerMessages(protobufNativeTopicName.toString(), Schema.AUTO_CONSUME(), handle, testRecords.size(), 2000);
     }
 
     protected abstract boolean supportMetadata();
@@ -124,8 +148,43 @@ public abstract class FormatTestBase extends PulsarTestBase {
         };
     }
 
+    protected Consumer<Message<GenericRecord>> getJSONMessageConsumer(TopicName topic) {
+        return msg -> {
+            try {
+                Schema<GenericRecord> schema = (Schema<GenericRecord>) msg.getReaderSchema().get();
+                initSchema(schema);
+                Map<String, Object> message = getJSONMessage(topic, msg);
+            } catch (Exception e) {
+                LOGGER.error("formatter handle message is fail", e);
+                Assert.fail();
+            }
+        };
+    }
+
+    protected Consumer<Message<GenericRecord>> getProtobufNativeMessageConsumer(TopicName topic) {
+        return msg -> {
+            try {
+                Schema<GenericRecord> schema = (Schema<GenericRecord>) msg.getReaderSchema().get();
+                initSchema(schema);
+                DynamicMessage dynamicMessage = getDynamicMessage(topic, msg);
+                Assert.assertEquals(msg.getValue().getNativeObject().toString(), dynamicMessage.toString());
+            } catch (Exception e) {
+                LOGGER.error("formatter handle message is fail", e);
+                Assert.fail();
+            }
+        };
+    }
+
     public abstract org.apache.avro.generic.GenericRecord getFormatGeneratedRecord(TopicName topicName,
                                                                                    Message<GenericRecord> msg)
+            throws Exception;
+
+    public abstract DynamicMessage getDynamicMessage(TopicName topicName,
+                                                            Message<GenericRecord> msg)
+            throws Exception;
+
+    public abstract Map<String, Object> getJSONMessage(TopicName topicName,
+                                                     Message<GenericRecord> msg)
             throws Exception;
 
     protected void assertEquals(GenericRecord msgValue, org.apache.avro.generic.GenericRecord record) {

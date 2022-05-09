@@ -18,36 +18,46 @@
  */
 package org.apache.pulsar.io.jcloud.format;
 
-
+import static org.apache.pulsar.io.jcloud.util.MetadataUtil.MESSAGE_METADATA_KEY;
+import static org.apache.pulsar.io.jcloud.util.MetadataUtil.getMetadataFromMessage;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.protobuf.DescriptorProtos;
+import com.google.protobuf.Descriptors;
+import com.google.protobuf.DynamicMessage;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.Schema;
 import org.apache.commons.compress.utils.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.parquet.avro.AvroParquetWriter;
 import org.apache.parquet.hadoop.ParquetFileWriter;
 import org.apache.parquet.hadoop.ParquetWriter;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.apache.parquet.io.OutputFile;
 import org.apache.parquet.io.PositionOutputStream;
+import org.apache.pulsar.client.api.SchemaSerializationException;
 import org.apache.pulsar.client.api.schema.GenericRecord;
+import org.apache.pulsar.common.protocol.schema.ProtobufNativeSchemaData;
 import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 import org.apache.pulsar.io.jcloud.BytesOutputStream;
+import org.apache.pulsar.io.jcloud.format.parquet.ProtobufParquetWriter;
+import org.apache.pulsar.io.jcloud.format.parquet.proto.Metadata;
 import org.apache.pulsar.io.jcloud.util.AvroRecordUtil;
 import org.apache.pulsar.io.jcloud.util.MetadataUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 
 /**
  * parquet format.
  */
+@Slf4j
 public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<BlobStoreAbstractConfig> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ParquetFormat.class);
-
-    private Schema rootAvroSchema;
+    private Schema rootAvroSchema = null;
+    private Descriptors.Descriptor descriptor = null;
     private org.apache.pulsar.client.api.Schema<GenericRecord> internalSchema;
 
     private boolean useMetadata;
@@ -68,14 +78,102 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
 
     @Override
     public void initSchema(org.apache.pulsar.client.api.Schema<GenericRecord> schema) {
-        internalSchema = schema;
-        rootAvroSchema = AvroRecordUtil.convertToAvroSchema(schema);
-        if (useMetadata){
-            rootAvroSchema = MetadataUtil.setMetadataSchema(rootAvroSchema,
-                    useHumanReadableMessageId, useHumanReadableSchemaVersion);
-        }
+        if (!schema.equals(internalSchema)) {
+            internalSchema = schema;
+            if (internalSchema.getSchemaInfo().getType().isPrimitive()) {
+                throw new UnsupportedOperationException(
+                        "Parquet format do not support primitive record (schemaType=" + internalSchema.getSchemaInfo()
+                                .getType() + ")");
+            }
+            if (internalSchema.getSchemaInfo().getType() == SchemaType.PROTOBUF_NATIVE) {
+                if (useMetadata) {
+                    try {
+                        ProtobufNativeSchemaData schemaData =
+                                new ObjectMapper().readValue(internalSchema.getSchemaInfo().getSchema(),
+                                ProtobufNativeSchemaData.class);
 
-        LOGGER.debug("Using avro schema: {}", rootAvroSchema);
+                        Map<String, DescriptorProtos.FileDescriptorProto> fileDescriptorProtoCache = new HashMap<>();
+                        Map<String, Descriptors.FileDescriptor> fileDescriptorCache = new HashMap<>();
+                        DescriptorProtos.FileDescriptorSet fileDescriptorSet =
+                                DescriptorProtos.FileDescriptorSet.parseFrom(schemaData.getFileDescriptorSet());
+                        fileDescriptorSet.getFileList().forEach(fileDescriptorProto ->
+                                fileDescriptorProtoCache.put(fileDescriptorProto.getName(), fileDescriptorProto));
+
+                        DescriptorProtos.FileDescriptorProto rootFileDescriptorProto =
+                                fileDescriptorProtoCache.get(schemaData.getRootFileDescriptorName());
+
+                        Descriptors.Descriptor metadataDescriptor =
+                                Metadata.PulsarIOCSCProtobufMessageMetadata.getDescriptor();
+                        fileDescriptorCache.put(metadataDescriptor.getFile().getName(), metadataDescriptor.getFile());
+                        DescriptorProtos.FileDescriptorProto.Builder rootFileDescriptorProtoBuilder =
+                                rootFileDescriptorProto.toBuilder();
+                        rootFileDescriptorProtoBuilder.addDependency(metadataDescriptor.getFile().getName());
+
+                        String[] paths = StringUtils.removeFirst(schemaData.getRootMessageTypeName(),
+                                        rootFileDescriptorProtoBuilder.getPackage())
+                                .replaceFirst("\\.", "").split("\\.");
+
+                        //extract root message
+                        String[] finalPaths1 = paths;
+                        DescriptorProtos.DescriptorProto.Builder descriptorBuilder = rootFileDescriptorProtoBuilder
+                                .getMessageTypeBuilderList().stream()
+                                .filter(descriptorProto ->
+                                        descriptorProto.getName().equals(finalPaths1[0])).findFirst()
+                                .orElseThrow(() -> new RuntimeException("Root message not found"));
+                        //extract nested message
+                        for (int i = 1; i < paths.length; i++) {
+                            int finalI = i;
+                            String[] finalPaths = paths;
+                            descriptorBuilder = descriptorBuilder.getNestedTypeBuilderList().stream().filter(
+                                    v -> v.getName().equals(finalPaths[finalI])).findFirst()
+                                    .orElseThrow(() -> new RuntimeException("Root message not found"));
+                        }
+
+                        DescriptorProtos.FieldDescriptorProto.Builder metadataField =
+                                DescriptorProtos.FieldDescriptorProto.newBuilder();
+                        metadataField.setName(MESSAGE_METADATA_KEY)
+                                .setLabel(DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL)
+                                .setType(DescriptorProtos.FieldDescriptorProto.Type.TYPE_MESSAGE)
+                                .setNumber(descriptorBuilder.getFieldCount() + 1)
+                                .setTypeName(metadataDescriptor.getName());
+                        descriptorBuilder.addField(metadataField);
+
+                        rootFileDescriptorProto = rootFileDescriptorProtoBuilder.build();
+                        //recursively build FileDescriptor
+                        deserializeFileDescriptor(rootFileDescriptorProto,
+                                fileDescriptorCache, fileDescriptorProtoCache);
+                        //extract root fileDescriptor
+                        Descriptors.FileDescriptor fileDescriptor =
+                                fileDescriptorCache.get(schemaData.getRootFileDescriptorName());
+                        //trim package
+                        paths = StringUtils.removeFirst(schemaData.getRootMessageTypeName(),
+                                        fileDescriptor.getPackage())
+                                .replaceFirst("\\.", "").split("\\.");
+                        //extract root message
+                        descriptor = fileDescriptor.findMessageTypeByName(paths[0]);
+                        //extract nested message
+                        for (int i = 1; i < paths.length; i++) {
+                            descriptor = descriptor.findNestedTypeByName(paths[i]);
+                        }
+                    } catch (IOException e) {
+                        throw new UnsupportedOperationException("Cannot extract schema from record", e);
+                    }
+                } else {
+                    descriptor = (Descriptors.Descriptor) internalSchema.getNativeSchema().orElse(null);
+                }
+                log.info("Using protobuf descriptor: {}", descriptor.toProto().getFieldList());
+            } else {
+                rootAvroSchema = AvroRecordUtil.convertToAvroSchema(schema);
+                if (useMetadata) {
+                    rootAvroSchema = MetadataUtil.setMetadataSchema(rootAvroSchema,
+                            useHumanReadableMessageId, useHumanReadableSchemaVersion);
+                }
+                log.info("Using avro schema: {}", rootAvroSchema);
+            }
+            if (descriptor == null && rootAvroSchema == null) {
+                throw new UnsupportedOperationException("Cannot extract schema from record");
+            }
+        }
     }
 
     @Override
@@ -83,14 +181,25 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
         int pageSize = 64 * 1024;
         ParquetWriter<Object> parquetWriter = null;
         S3ParquetOutputFile file = new S3ParquetOutputFile();
-        try {
-            parquetWriter = AvroParquetWriter
-                    .builder(file)
-                    .withPageSize(pageSize)
-                    .withWriteMode(ParquetFileWriter.Mode.OVERWRITE)
-                    .withCompressionCodec(CompressionCodecName.GZIP)
-                    .withSchema(rootAvroSchema).build();
 
+        try {
+            if (descriptor != null) {
+                parquetWriter = ProtobufParquetWriter.builder(file)
+                        .withPageSize(pageSize)
+                        .withWriteMode(ParquetFileWriter.Mode.OVERWRITE)
+                        .withCompressionCodec(CompressionCodecName.GZIP)
+                        .withDescriptor(descriptor)
+                        .build();
+            } else if (rootAvroSchema != null) {
+                parquetWriter = AvroParquetWriter
+                        .builder(file)
+                        .withPageSize(pageSize)
+                        .withWriteMode(ParquetFileWriter.Mode.OVERWRITE)
+                        .withCompressionCodec(CompressionCodecName.GZIP)
+                        .withSchema(rootAvroSchema).build();
+            } else {
+                throw new UnsupportedOperationException("Cannot init parquet writer");
+            }
             while (records.hasNext()) {
                 final Record<GenericRecord> next = records.next();
                 GenericRecord genericRecord = next.getValue();
@@ -98,20 +207,79 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
                         && internalSchema.getSchemaInfo().getType() == SchemaType.PROTOBUF_NATIVE) {
                     genericRecord = internalSchema.decode((byte[]) next.getValue().getNativeObject());
                 }
-                org.apache.avro.generic.GenericRecord writeRecord = AvroRecordUtil
-                        .convertGenericRecord(genericRecord, rootAvroSchema);
-                if (useMetadata) {
-                    org.apache.avro.generic.GenericRecord metadataRecord =
-                            MetadataUtil.extractedMetadataRecord(next,
-                                    useHumanReadableMessageId, useHumanReadableSchemaVersion);
-                    writeRecord.put(MetadataUtil.MESSAGE_METADATA_KEY, metadataRecord);
+
+                if (genericRecord.getNativeObject() instanceof DynamicMessage) {
+                    DynamicMessage protoRecord = (DynamicMessage) genericRecord.getNativeObject();
+                    if (useMetadata) {
+                        // Add metadata to the record
+                        DynamicMessage.Builder messageBuilder = DynamicMessage.newBuilder(descriptor);
+                        Metadata.PulsarIOCSCProtobufMessageMetadata metadata = getMetadataFromMessage(next,
+                                useHumanReadableMessageId, useHumanReadableSchemaVersion);
+                        for (Descriptors.FieldDescriptor field : descriptor.getFields()) {
+                            if (field.getName().equals(MESSAGE_METADATA_KEY)) {
+                                messageBuilder.setField(field, metadata);
+                            } else {
+                                messageBuilder.setField(field, protoRecord.getField(
+                                        protoRecord.getDescriptorForType().findFieldByName(field.getName())));
+                            }
+                        }
+
+                        protoRecord = messageBuilder.build();
+                    }
+                    if (parquetWriter != null) {
+                        parquetWriter.write(protoRecord);
+                    }
+                } else {
+                    org.apache.avro.generic.GenericRecord writeRecord = AvroRecordUtil
+                            .convertGenericRecord(genericRecord, rootAvroSchema);
+                    if (useMetadata) {
+                        org.apache.avro.generic.GenericRecord metadataRecord =
+                                MetadataUtil.extractedMetadataRecord(next,
+                                        useHumanReadableMessageId, useHumanReadableSchemaVersion);
+                        writeRecord.put(MESSAGE_METADATA_KEY, metadataRecord);
+                    }
+                    if (parquetWriter != null) {
+                        parquetWriter.write(writeRecord);
+                    }
                 }
-                parquetWriter.write(writeRecord);
             }
         } finally {
             IOUtils.closeQuietly(parquetWriter);
         }
         return ByteBuffer.wrap(file.toByteArray());
+    }
+
+    private static void deserializeFileDescriptor(DescriptorProtos.FileDescriptorProto fileDescriptorProto,
+                                                  Map<String, Descriptors.FileDescriptor> fileDescriptorCache,
+                                                  Map<String, DescriptorProtos.FileDescriptorProto>
+                                                          fileDescriptorProtoCache) {
+        fileDescriptorProto.getDependencyList().forEach(dependencyFileDescriptorName -> {
+            log.info("Deserializing dependency file descriptor: {}", dependencyFileDescriptorName);
+            if (!fileDescriptorCache.containsKey(dependencyFileDescriptorName)) {
+                DescriptorProtos.FileDescriptorProto dependencyFileDescriptor =
+                        fileDescriptorProtoCache.get(dependencyFileDescriptorName);
+                deserializeFileDescriptor(dependencyFileDescriptor, fileDescriptorCache, fileDescriptorProtoCache);
+            }
+        });
+
+        Descriptors.FileDescriptor[] dependencyFileDescriptors =
+                fileDescriptorProto.getDependencyList().stream().map(dependency -> {
+            if (fileDescriptorCache.containsKey(dependency)) {
+                return fileDescriptorCache.get(dependency);
+            } else {
+                throw new SchemaSerializationException("'" + fileDescriptorProto.getName()
+                        + "' can't resolve  dependency '" + dependency + "'.");
+            }
+        }).toArray(Descriptors.FileDescriptor[]::new);
+
+        try {
+            Descriptors.FileDescriptor fileDescriptor = Descriptors.FileDescriptor.buildFrom(fileDescriptorProto,
+                    dependencyFileDescriptors);
+            fileDescriptorCache.put(fileDescriptor.getFullName(), fileDescriptor);
+        } catch (Descriptors.DescriptorValidationException e) {
+            e.printStackTrace();
+            throw new SchemaSerializationException(e);
+        }
     }
 
     private static class S3ParquetOutputFile implements OutputFile {

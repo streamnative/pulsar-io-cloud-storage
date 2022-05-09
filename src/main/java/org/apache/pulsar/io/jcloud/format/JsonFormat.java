@@ -18,7 +18,9 @@
  */
 package org.apache.pulsar.io.jcloud.format;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -42,7 +44,12 @@ import org.apache.pulsar.io.jcloud.util.MetadataUtil;
 @Slf4j
 public class JsonFormat implements Format<GenericRecord>, InitConfiguration<BlobStoreAbstractConfig> {
 
-    private ObjectMapper objectMapper;
+    private static final ThreadLocal<ObjectMapper> JSON_MAPPER = ThreadLocal.withInitial(() -> {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        return mapper;
+    });
 
     private boolean useMetadata;
     private boolean useHumanReadableMessageId;
@@ -61,9 +68,7 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
     }
 
     @Override
-    public void initSchema(Schema<GenericRecord> schema) {
-        objectMapper = new ObjectMapper();
-    }
+    public void initSchema(Schema<GenericRecord> schema) {}
 
     @Override
     public ByteBuffer recordWriterBuf(Iterator<Record<GenericRecord>> record) throws Exception {
@@ -77,7 +82,7 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
                 writeValue.put(MetadataUtil.MESSAGE_METADATA_KEY,
                         MetadataUtil.extractedMetadata(next, useHumanReadableMessageId, useHumanReadableSchemaVersion));
             }
-            String recordAsString = objectMapper.writeValueAsString(writeValue);
+            String recordAsString = JSON_MAPPER.get().writeValueAsString(writeValue);
             stringBuilder.append(recordAsString).append("\n");
         }
         return ByteBuffer.wrap(stringBuilder.toString().getBytes(StandardCharsets.UTF_8));
@@ -99,11 +104,11 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
         } else if (record.getSchemaType() == SchemaType.STRING) {
             TypeReference<Map<String, Object>> typeRef = new TypeReference<Map<String, Object>>() {
             };
-            return objectMapper.readValue((String) record.getNativeObject(), typeRef);
+            return JSON_MAPPER.get().readValue((String) record.getNativeObject(), typeRef);
         } else if (record.getSchemaType() == SchemaType.BYTES) {
             TypeReference<Map<String, Object>> typeRef = new TypeReference<Map<String, Object>>() {
             };
-            return objectMapper.readValue((byte[]) record.getNativeObject(), typeRef);
+            return JSON_MAPPER.get().readValue((byte[]) record.getNativeObject(), typeRef);
         } else {
             throw new UnsupportedOperationException("Unsupported value schemaType=" + record.getSchemaType());
         }

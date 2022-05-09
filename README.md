@@ -127,9 +127,12 @@ Before using the Cloud Storage sink connector, you need to create a configuratio
 Cloud Storage Sink Connector provides multiple output format options, including JSON, Avro, Bytes, or Parquet. The default format is JSON.
 With current implementation, there are some limitations for different formats:
 
-- JSON: only support structured Pulsar schema types, including `JSON`, `PROTOBUF`, `AVRO`, and `PROTOBUF_NATIVE`. The connector will try to convert the data with a `String` or `Bytes` format to JSON-format data.
-- Avro / Parquet: only support structured Pulsar schema types, including `JSON`, `PROTOBUF`, `AVRO`, and `PROTOBUF_NATIVE`.
+- JSON: only support structured Pulsar schema types, including `JSON`, `PROTOBUF`, `AVRO`. The connector will try to convert the data with a `String` or `Bytes` format to JSON-format data.
+- Avro: only support structured Pulsar schema types, including `JSON`, `PROTOBUF`, `AVRO`. 
+- Parquet: only support structured Pulsar schema types, including `JSON`, `PROTOBUF`, `AVRO`, and `PROTOBUF_NATIVE`. 
 - Bytes: support all Pulsar schema types.
+
+> Note: When using `Parquet` with `PROTOBUF_NATIVE` format, the connector will write the messages with `DynamicMessage` format, when `withMetadata` is set to `true`, the connector will add `__message_metadata__` to the messages with `PulsarIOCSCProtobufMessageMetadata` format. 
 
 By default, when the connector receives a message with a non-supported schema type, the connector will `fail` the message. If you want to skip the non-supported messages, you can set `skipFailedMessages` to `true`.
 

@@ -20,8 +20,10 @@ package org.apache.pulsar.io.jcloud.format;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import com.google.protobuf.DynamicMessage;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.apache.avro.file.DataFileReader;
 import org.apache.avro.file.SeekableByteArrayInput;
@@ -84,5 +86,19 @@ public class AvroFormatTest extends FormatTestBase {
         final SeekableByteArrayInput input = new SeekableByteArrayInput(byteSource.read());
         final DataFileReader<Object> objects = new DataFileReader<>(input, datumReader);
         return (org.apache.avro.generic.GenericRecord) objects.next();
+    }
+
+    @Override
+    public DynamicMessage getDynamicMessage(TopicName topicName, Message<GenericRecord> msg) throws Exception {
+        return null;
+    }
+
+    @Override
+    public Map<String, Object> getJSONMessage(TopicName topicName, Message<GenericRecord> msg) throws Exception {
+        return null;
+    }
+
+    @Override
+    public void testProtobufNativeRecordWriter() throws Exception {
     }
 }

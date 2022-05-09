@@ -23,6 +23,7 @@ import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.protobuf.ProtobufData;
@@ -39,9 +40,11 @@ import org.apache.pulsar.functions.api.Record;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 /**
  * avro util.
  */
+@Slf4j
 public class AvroRecordUtil {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AvroRecordUtil.class);
@@ -160,6 +163,30 @@ public class AvroRecordUtil {
                                                                              Schema rootAvroSchema) {
         return convertGenericRecord(recordValue, rootAvroSchema, false);
     }
+//    public static org.apache.avro.generic.GenericRecord convertGenericRecord(DynamicMessage recordValue,
+//                                                                             Schema rootAvroSchema) {
+//        org.apache.avro.generic.GenericRecord recordHolder = new GenericData.Record(rootAvroSchema);
+//        for (Schema.Field field : rootAvroSchema.getFields()) {
+//            String fieldName = field.name();
+//            Object valueField = recordValue.getField(recordValue.getDescriptorForType().findFieldByName(fieldName));
+//            log.info("field: {}, schema: {}, value: {}, value type: {}",
+//                    field, recordValue.getDescriptorForType().findFieldByName(fieldName),
+//                    valueField, valueField.getClass().getName());
+//            if (valueField instanceof DynamicMessage) {
+//                Schema subSchema = field.schema();
+//                if (field.schema().isUnion()) {
+//                    subSchema = field.schema().getTypes().stream()
+//                            .filter(schema -> schema.getType().equals(Schema.Type.RECORD))
+//                            .findFirst()
+//                            .get();
+//                }
+//                valueField = convertGenericRecord((DynamicMessage) valueField, subSchema);
+//            }
+//            recordHolder.put(fieldName, valueField);
+//        }
+//        log.info("convert DynamicMessage to GenericRecord: {}", recordHolder);
+//        return recordHolder;
+//    }
     public static org.apache.avro.generic.GenericRecord convertGenericRecord(GenericRecord recordValue,
                                                                              Schema rootAvroSchema,
                                                                              boolean useMetadata) {
@@ -168,7 +195,6 @@ public class AvroRecordUtil {
             Schema.Field field1 = rootAvroSchema.getField(field.getName());
             Object valueField = readValue(recordValue, field);
             if (valueField instanceof GenericRecord) {
-
                 Schema subSchema = field1.schema();
                 if (field1.schema().isUnion()) {
                     subSchema = field1.schema().getTypes().stream()
@@ -178,6 +204,16 @@ public class AvroRecordUtil {
                 }
                 valueField = convertGenericRecord((GenericRecord) valueField, subSchema);
             }
+//            else if (valueField instanceof DynamicMessage) {
+//                Schema subSchema = field1.schema();
+//                if (field1.schema().isUnion()) {
+//                    subSchema = field1.schema().getTypes().stream()
+//                            .filter(schema -> schema.getType().equals(Schema.Type.RECORD))
+//                            .findFirst()
+//                            .get();
+//                }
+//                valueField = convertGenericRecord((DynamicMessage) valueField, subSchema);
+//            }
             recordHolder.put(field.getName(), valueField);
         }
         return recordHolder;
