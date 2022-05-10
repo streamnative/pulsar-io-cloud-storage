@@ -18,6 +18,7 @@
  */
 package org.apache.pulsar.io.jcloud.format;
 
+import com.google.protobuf.Descriptors;
 import com.google.protobuf.DynamicMessage;
 import java.nio.ByteBuffer;
 import java.text.MessageFormat;
@@ -190,6 +191,25 @@ public abstract class FormatTestBase extends PulsarTestBase {
                                                      Message<GenericRecord> msg)
             throws Exception;
 
+    protected void assertEquals(DynamicMessage msgValue, org.apache.avro.generic.GenericRecord record) {
+        Descriptors.Descriptor descriptor = msgValue.getDescriptorForType();
+        for (org.apache.avro.Schema.Field field : record.getSchema().getFields()) {
+            Object sourceValue = msgValue.getField(descriptor.findFieldByName(field.name()));
+            Object newValue = record.get(field.name());
+            Assert.assertEquals(
+                MessageFormat.format(
+                        "field[{0} sourceValue [{1}:{2}] not equal newValue [{3}:{4}]",
+                        field.name(),
+                        sourceValue,
+                        sourceValue != null ? sourceValue.getClass().getName() : "null",
+                        newValue,
+                        newValue != null ? newValue.getClass().getName() : "null"
+                ),
+                sourceValue,
+                newValue);
+        }
+    }
+
     protected void assertEquals(GenericRecord msgValue, org.apache.avro.generic.GenericRecord record) {
         for (Field field : msgValue.getFields()) {
             Object sourceValue = getField(msgValue, field);
@@ -199,13 +219,23 @@ public abstract class FormatTestBase extends PulsarTestBase {
             }
             if (sourceValue instanceof GenericRecord && newValue instanceof org.apache.avro.generic.GenericRecord) {
                 assertEquals((GenericRecord) sourceValue, (org.apache.avro.generic.GenericRecord) newValue);
+            } else if (record.getSchema().getField(field.getName()).schema().getType()
+                    == org.apache.avro.Schema.Type.ENUM) {
+                Assert.assertNotNull(sourceValue);
+                Assert.assertNotNull(newValue);
+                Assert.assertEquals(sourceValue.toString(), newValue.toString());
+            } else if (sourceValue instanceof DynamicMessage
+                    && newValue instanceof org.apache.avro.generic.GenericRecord) {
+                assertEquals((DynamicMessage) sourceValue, (org.apache.avro.generic.GenericRecord) newValue);
             } else {
                 Assert.assertEquals(
                         MessageFormat.format(
-                                "field[{0} sourceValue [{1}] not equal newValue [{2}]",
+                                "field[{0} sourceValue [{1}:{2}] not equal newValue [{3}:{4}]",
                                 field.getName(),
                                 sourceValue,
-                                newValue
+                                sourceValue != null ? sourceValue.getClass().getName() : "null",
+                                newValue,
+                                newValue != null ? newValue.getClass().getName() : "null"
                         ),
                         sourceValue,
                         newValue);
