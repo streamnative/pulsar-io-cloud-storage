@@ -230,7 +230,7 @@ public class ProtobufDescriptorWriteSupport<T extends MessageOrBuilder> extends 
          * Used for writing repeated fields.
          */
         void writeRawValue(Object value) {
-
+            // noop
         }
 
         /**
@@ -296,9 +296,9 @@ public class ProtobufDescriptorWriteSupport<T extends MessageOrBuilder> extends 
                     return new BooleanWriter();
                 case BYTE_STRING:
                     return new BinaryWriter();
+                default:
+                    return unknownType(fieldDescriptor); //should not be executed, always throws exception.
             }
-
-            return unknownType(fieldDescriptor); //should not be executed, always throws exception.
         }
 
         private FieldWriter createMessageWriter(FieldDescriptor fieldDescriptor, Type type) {

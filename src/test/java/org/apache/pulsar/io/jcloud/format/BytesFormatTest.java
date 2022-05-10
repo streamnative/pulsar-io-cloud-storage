@@ -38,6 +38,7 @@ import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
+import org.apache.pulsar.io.jcloud.schema.proto.Test.TestMessage;
 import org.apache.pulsar.io.jcloud.util.AvroRecordUtil;
 import org.apache.pulsar.io.jcloud.util.HexStringUtils;
 import org.apache.pulsar.jcloud.shade.com.google.common.io.ByteSource;
@@ -124,8 +125,7 @@ public class BytesFormatTest extends FormatTestBase {
                 ArrayUtils.addAll(msg.getData(), HexStringUtils.convertHexStringToBytes(SEPARATOR));
         Assert.assertArrayEquals(expecteds, byteSource.read());
 
-        return DynamicMessage.parseFrom(
-                org.apache.pulsar.io.jcloud.schema.proto.Test.TestMessage.getDescriptor(), msg.getData());
+        return DynamicMessage.parseFrom(TestMessage.getDescriptor(), msg.getData());
     }
 
     @Override

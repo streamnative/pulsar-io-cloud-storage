@@ -41,6 +41,7 @@ import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 import org.apache.pulsar.io.jcloud.PulsarTestBase;
 import org.apache.pulsar.io.jcloud.bo.TestRecord;
+import org.apache.pulsar.io.jcloud.schema.proto.Test.TestMessage;
 import org.apache.pulsar.io.jcloud.util.MetadataUtil;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -114,15 +115,13 @@ public abstract class FormatTestBase extends PulsarTestBase {
 
     @Test
     public void testProtobufNativeRecordWriter() throws Exception {
-        List<org.apache.pulsar.io.jcloud.schema.proto.Test.TestMessage> testRecords = Arrays.asList(
-                org.apache.pulsar.io.jcloud.schema.proto.Test.TestMessage.newBuilder()
-                        .setStringField("key1").setIntField(1).build(),
-                org.apache.pulsar.io.jcloud.schema.proto.Test.TestMessage.newBuilder()
-                        .setStringField("key2").setIntField(2).build()
+        List<TestMessage> testRecords = Arrays.asList(
+                TestMessage.newBuilder().setStringField("key1").setIntField(1).build(),
+                TestMessage.newBuilder().setStringField("key2").setIntField(2).build()
         );
 
         sendProtobufNativeMessages(protobufNativeTopicName.toString(), SchemaType.PROTOBUF_NATIVE,
-                testRecords, Optional.empty(), org.apache.pulsar.io.jcloud.schema.proto.Test.TestMessage.class);
+                testRecords, Optional.empty(), TestMessage.class);
 
         Consumer<Message<GenericRecord>>
                 handle = getProtobufNativeMessageConsumer(protobufNativeTopicName);
@@ -154,6 +153,8 @@ public abstract class FormatTestBase extends PulsarTestBase {
                 Schema<GenericRecord> schema = (Schema<GenericRecord>) msg.getReaderSchema().get();
                 initSchema(schema);
                 Map<String, Object> message = getJSONMessage(topic, msg);
+                Assert.assertFalse(message.isEmpty());
+                // TODO: do more check
             } catch (Exception e) {
                 LOGGER.error("formatter handle message is fail", e);
                 Assert.fail();

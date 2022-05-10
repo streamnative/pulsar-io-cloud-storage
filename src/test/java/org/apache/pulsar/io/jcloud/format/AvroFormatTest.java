@@ -100,5 +100,6 @@ public class AvroFormatTest extends FormatTestBase {
 
     @Override
     public void testProtobufNativeRecordWriter() throws Exception {
+        // not supported
     }
 }

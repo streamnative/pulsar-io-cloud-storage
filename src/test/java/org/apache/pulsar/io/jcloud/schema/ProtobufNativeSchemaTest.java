@@ -39,6 +39,7 @@ import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 import org.apache.pulsar.io.jcloud.format.ParquetFormat;
+import org.apache.pulsar.io.jcloud.schema.proto.Test.TestMessage;
 import org.junit.Test;
 
 /**
@@ -51,9 +52,8 @@ public class ProtobufNativeSchemaTest {
         GenericProtobufNativeRecord record = mock(GenericProtobufNativeRecord.class);
         org.apache.pulsar.client.api.Schema<GenericRecord> schema = mock(ProtobufNativeSchema.class);
         SchemaInfo schemaInfo = mock(SchemaInfoImpl.class);
-        Descriptors.Descriptor descriptor = org.apache.pulsar.io.jcloud.schema.proto.Test.TestMessage.getDescriptor();
-        org.apache.pulsar.io.jcloud.schema.proto.Test.TestMessage.Builder msg =
-                org.apache.pulsar.io.jcloud.schema.proto.Test.TestMessage.newBuilder();
+        Descriptors.Descriptor descriptor = TestMessage.getDescriptor();
+        TestMessage.Builder msg = TestMessage.newBuilder();
         msg.setStringField("test");
         DynamicMessage dynamicMessage = DynamicMessage.newBuilder(msg.build()).build();
         when(record.getNativeObject()).thenReturn(dynamicMessage);
@@ -80,10 +80,8 @@ public class ProtobufNativeSchemaTest {
         GenericProtobufNativeRecord record = mock(GenericProtobufNativeRecord.class);
         org.apache.pulsar.client.api.Schema<GenericRecord> schema = mock(ProtobufNativeSchema.class);
         SchemaInfo schemaInfo = mock(SchemaInfoImpl.class);
-        Descriptors.Descriptor descriptor =
-                org.apache.pulsar.io.jcloud.schema.proto.Test.TestMessage.getDescriptor();
-        org.apache.pulsar.io.jcloud.schema.proto.Test.TestMessage.Builder msg =
-                org.apache.pulsar.io.jcloud.schema.proto.Test.TestMessage.newBuilder();
+        Descriptors.Descriptor descriptor = TestMessage.getDescriptor();
+        TestMessage.Builder msg = TestMessage.newBuilder();
         msg.setStringField("test");
         DynamicMessage dynamicMessage = DynamicMessage.newBuilder(msg.build()).build();
         when(record.getNativeObject()).thenReturn(dynamicMessage);

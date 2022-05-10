@@ -68,7 +68,9 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
     }
 
     @Override
-    public void initSchema(Schema<GenericRecord> schema) {}
+    public void initSchema(Schema<GenericRecord> schema) {
+        // noop
+    }
 
     @Override
     public ByteBuffer recordWriterBuf(Iterator<Record<GenericRecord>> record) throws Exception {

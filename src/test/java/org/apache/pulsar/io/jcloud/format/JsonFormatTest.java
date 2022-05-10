@@ -131,6 +131,7 @@ public class JsonFormatTest extends FormatTestBase {
 
     @Override
     public void testProtobufNativeRecordWriter() throws Exception {
+        // not supported
     }
 
     private void assertEquals(GenericRecord msgValue, Map<String, Object> record) {
