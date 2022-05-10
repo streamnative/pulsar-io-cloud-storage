@@ -153,7 +153,9 @@ public abstract class FormatTestBase extends PulsarTestBase {
                 Schema<GenericRecord> schema = (Schema<GenericRecord>) msg.getReaderSchema().get();
                 initSchema(schema);
                 Map<String, Object> message = getJSONMessage(topic, msg);
-                Assert.assertFalse(message.isEmpty());
+                if (message != null) {
+                    Assert.assertFalse(message.isEmpty());
+                }
                 // TODO: do more check
             } catch (Exception e) {
                 LOGGER.error("formatter handle message is fail", e);
