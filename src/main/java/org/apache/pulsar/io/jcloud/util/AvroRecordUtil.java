@@ -18,13 +18,16 @@
  */
 package org.apache.pulsar.io.jcloud.util;
 
+import static org.apache.avro.Schema.Type.ARRAY;
 import static org.apache.avro.Schema.Type.ENUM;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.DynamicMessage;
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
@@ -216,6 +219,17 @@ public class AvroRecordUtil {
             }
             if (field1.schema().getType().equals(ENUM)) {
                 valueField = new GenericData.EnumSymbol(field1.schema(), valueField.toString());
+            } else if (field1.schema().getType().equals(ARRAY) && valueField instanceof List) {
+                List<Object> list = ((List<?>) valueField).stream().map(v -> {
+                    if (v instanceof GenericRecord) {
+                        return convertGenericRecord((GenericRecord) v, field1.schema().getElementType());
+                    } else if (v instanceof DynamicMessage) {
+                        return convertGenericRecord((DynamicMessage) v, field1.schema().getElementType());
+                    } else {
+                        return v;
+                    }
+                }).collect(Collectors.toList());
+                valueField = new GenericData.Array<>(field1.schema(), list);
             }
             recordHolder.put(field.getName(), valueField);
         }

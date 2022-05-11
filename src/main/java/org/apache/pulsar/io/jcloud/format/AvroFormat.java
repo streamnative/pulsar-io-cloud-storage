@@ -23,6 +23,7 @@ import com.google.common.annotations.VisibleForTesting;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.Schema;
 import org.apache.avro.file.CodecFactory;
 import org.apache.avro.file.DataFileWriter;
@@ -39,6 +40,7 @@ import org.slf4j.LoggerFactory;
 /**
  * avro format.
  */
+@Slf4j
 public class AvroFormat implements Format<GenericRecord> , InitConfiguration<BlobStoreAbstractConfig>{
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AvroFormat.class);

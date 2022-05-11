@@ -118,7 +118,7 @@ public abstract class FormatTestBase extends PulsarTestBase {
     public void testProtobufNativeRecordWriter() throws Exception {
         List<TestMessage> testRecords = Arrays.asList(
                 TestMessage.newBuilder().setStringField("key1").setIntField(1).build(),
-                TestMessage.newBuilder().setStringField("key2").setIntField(2).build()
+                TestMessage.newBuilder().setStringField("key2").setIntField(2).putStringMap("foo", "bar").build()
         );
 
         sendProtobufNativeMessages(protobufNativeTopicName.toString(), SchemaType.PROTOBUF_NATIVE,
@@ -227,6 +227,11 @@ public abstract class FormatTestBase extends PulsarTestBase {
             } else if (sourceValue instanceof DynamicMessage
                     && newValue instanceof org.apache.avro.generic.GenericRecord) {
                 assertEquals((DynamicMessage) sourceValue, (org.apache.avro.generic.GenericRecord) newValue);
+            } else if (record.getSchema().getField(field.getName()).schema().getType()
+                    == org.apache.avro.Schema.Type.ARRAY) {
+                if (sourceValue instanceof List && newValue instanceof List) {
+                    Assert.assertEquals(((List<?>) sourceValue).size(), ((List<?>) newValue).size());
+                }
             } else {
                 Assert.assertEquals(
                         MessageFormat.format(
