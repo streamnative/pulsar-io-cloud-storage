@@ -18,11 +18,17 @@
  */
 package org.apache.pulsar.io.jcloud.util;
 
+import static org.apache.avro.Schema.Type.ARRAY;
+import static org.apache.avro.Schema.Type.ENUM;
 import com.google.protobuf.Descriptors;
+import com.google.protobuf.DynamicMessage;
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.protobuf.ProtobufData;
@@ -39,9 +45,11 @@ import org.apache.pulsar.functions.api.Record;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 /**
  * avro util.
  */
+@Slf4j
 public class AvroRecordUtil {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AvroRecordUtil.class);
@@ -160,6 +168,29 @@ public class AvroRecordUtil {
                                                                              Schema rootAvroSchema) {
         return convertGenericRecord(recordValue, rootAvroSchema, false);
     }
+
+    public static org.apache.avro.generic.GenericRecord convertGenericRecord(DynamicMessage recordValue,
+                                                                             Schema rootAvroSchema) {
+        org.apache.avro.generic.GenericRecord recordHolder = new GenericData.Record(rootAvroSchema);
+        for (Schema.Field field : rootAvroSchema.getFields()) {
+            String fieldName = field.name();
+            Object valueField = recordValue.getField(recordValue.getDescriptorForType().findFieldByName(fieldName));
+            if (valueField instanceof DynamicMessage) {
+                Schema subSchema = field.schema();
+                if (field.schema().isUnion()) {
+                    subSchema = field.schema().getTypes().stream()
+                            .filter(schema -> schema.getType().equals(Schema.Type.RECORD))
+                            .findFirst()
+                            .get();
+                }
+                valueField = convertGenericRecord((DynamicMessage) valueField, subSchema);
+            }
+            recordHolder.put(fieldName, valueField);
+        }
+        log.debug("convert DynamicMessage to GenericRecord: {}", recordHolder);
+        return recordHolder;
+    }
+
     public static org.apache.avro.generic.GenericRecord convertGenericRecord(GenericRecord recordValue,
                                                                              Schema rootAvroSchema,
                                                                              boolean useMetadata) {
@@ -168,7 +199,6 @@ public class AvroRecordUtil {
             Schema.Field field1 = rootAvroSchema.getField(field.getName());
             Object valueField = readValue(recordValue, field);
             if (valueField instanceof GenericRecord) {
-
                 Schema subSchema = field1.schema();
                 if (field1.schema().isUnion()) {
                     subSchema = field1.schema().getTypes().stream()
@@ -177,6 +207,29 @@ public class AvroRecordUtil {
                             .get();
                 }
                 valueField = convertGenericRecord((GenericRecord) valueField, subSchema);
+            } else if (valueField instanceof DynamicMessage) {
+                Schema subSchema = field1.schema();
+                if (field1.schema().isUnion()) {
+                    subSchema = field1.schema().getTypes().stream()
+                            .filter(schema -> schema.getType().equals(Schema.Type.RECORD))
+                            .findFirst()
+                            .get();
+                }
+                valueField = convertGenericRecord((DynamicMessage) valueField, subSchema);
+            }
+            if (field1.schema().getType().equals(ENUM)) {
+                valueField = new GenericData.EnumSymbol(field1.schema(), valueField.toString());
+            } else if (field1.schema().getType().equals(ARRAY) && valueField instanceof List) {
+                List<Object> list = ((List<?>) valueField).stream().map(v -> {
+                    if (v instanceof GenericRecord) {
+                        return convertGenericRecord((GenericRecord) v, field1.schema().getElementType());
+                    } else if (v instanceof DynamicMessage) {
+                        return convertGenericRecord((DynamicMessage) v, field1.schema().getElementType());
+                    } else {
+                        return v;
+                    }
+                }).collect(Collectors.toList());
+                valueField = new GenericData.Array<>(field1.schema(), list);
             }
             recordHolder.put(field.getName(), valueField);
         }
