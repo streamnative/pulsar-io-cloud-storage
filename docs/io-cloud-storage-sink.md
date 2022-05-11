@@ -181,7 +181,7 @@ This table lists the support of `withMetadata` configurations for different writ
 > }
 > ```
 >
-> When `withMetadata` is set to `true`, the connector will write the message `DynamicMessage` with following schema:
+> When `withMetadata` is set to `true`, the connector will write the message `DynamicMessage` with the following schema:
 > ```protobuf
 > syntax = "proto3";
 > message PulsarIOCSCProtobufMessageMetadata {
