@@ -18,8 +18,12 @@
  */
 package org.apache.pulsar.io.jcloud.format;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.protobuf.DynamicMessage;
+import com.google.protobuf.util.JsonFormat.Printer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -42,7 +46,14 @@ import org.apache.pulsar.io.jcloud.util.MetadataUtil;
 @Slf4j
 public class JsonFormat implements Format<GenericRecord>, InitConfiguration<BlobStoreAbstractConfig> {
 
-    private ObjectMapper objectMapper;
+    private static final ThreadLocal<ObjectMapper> JSON_MAPPER = ThreadLocal.withInitial(() -> {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        return mapper;
+    });
+
+    public static final TypeReference<Map<String, Object>> TYPEREF = new TypeReference<Map<String, Object>>() {};
 
     private boolean useMetadata;
     private boolean useHumanReadableMessageId;
@@ -62,7 +73,22 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
 
     @Override
     public void initSchema(Schema<GenericRecord> schema) {
-        objectMapper = new ObjectMapper();
+        // noop
+    }
+
+    @Override
+    public boolean doSupportPulsarSchemaType(SchemaType schemaType) {
+        switch (schemaType) {
+            case AVRO:
+            case JSON:
+            case PROTOBUF:
+            case PROTOBUF_NATIVE:
+            case BYTES:
+            case STRING:
+                return true;
+            default:
+                return false;
+        }
     }
 
     @Override
@@ -77,7 +103,7 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
                 writeValue.put(MetadataUtil.MESSAGE_METADATA_KEY,
                         MetadataUtil.extractedMetadata(next, useHumanReadableMessageId, useHumanReadableSchemaVersion));
             }
-            String recordAsString = objectMapper.writeValueAsString(writeValue);
+            String recordAsString = JSON_MAPPER.get().writeValueAsString(writeValue);
             stringBuilder.append(recordAsString).append("\n");
         }
         return ByteBuffer.wrap(stringBuilder.toString().getBytes(StandardCharsets.UTF_8));
@@ -85,27 +111,38 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
 
     private Map<String, Object> convertRecordToObject(GenericRecord record) throws IOException {
         if (record.getSchemaType().isStruct()) {
-            List<Field> fields = record.getFields();
-            Map<String, Object> result = new LinkedHashMap<>(fields.size());
-            for (Field field : fields) {
-                String name = field.getName();
-                Object value = record.getField(field);
-                if (value instanceof GenericRecord) {
-                    value = convertRecordToObject((GenericRecord) value);
+            switch (record.getSchemaType()) {
+                case AVRO:
+                case JSON:
+                case PROTOBUF:
+                {
+                    List<Field> fields = record.getFields();
+                    Map<String, Object> result = new LinkedHashMap<>(fields.size());
+                    for (Field field : fields) {
+                        String name = field.getName();
+                        Object value = record.getField(field);
+                        if (value instanceof GenericRecord) {
+                            value = convertRecordToObject((GenericRecord) value);
+                        }
+                        result.put(name, value);
+                    }
+                    return result;
                 }
-                result.put(name, value);
+                case PROTOBUF_NATIVE:
+                    if (record.getNativeObject() instanceof DynamicMessage) {
+                        Printer printer = com.google.protobuf.util.JsonFormat.printer();
+                        String json = printer.print((DynamicMessage) record.getNativeObject());
+                        return JSON_MAPPER.get().readValue(json, TYPEREF);
+                    }
+                    break;
+                default:
+                    throw new UnsupportedOperationException("Unsupported value schemaType=" + record.getSchemaType());
             }
-            return result;
         } else if (record.getSchemaType() == SchemaType.STRING) {
-            TypeReference<Map<String, Object>> typeRef = new TypeReference<Map<String, Object>>() {
-            };
-            return objectMapper.readValue((String) record.getNativeObject(), typeRef);
+            return JSON_MAPPER.get().readValue((String) record.getNativeObject(), TYPEREF);
         } else if (record.getSchemaType() == SchemaType.BYTES) {
-            TypeReference<Map<String, Object>> typeRef = new TypeReference<Map<String, Object>>() {
-            };
-            return objectMapper.readValue((byte[]) record.getNativeObject(), typeRef);
-        } else {
-            throw new UnsupportedOperationException("Unsupported value schemaType=" + record.getSchemaType());
+            return JSON_MAPPER.get().readValue((byte[]) record.getNativeObject(), TYPEREF);
         }
+        throw new UnsupportedOperationException("Unsupported value schemaType=" + record.getSchemaType());
     }
 }

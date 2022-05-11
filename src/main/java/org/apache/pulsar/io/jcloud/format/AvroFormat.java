@@ -18,10 +18,12 @@
  */
 package org.apache.pulsar.io.jcloud.format;
 
+import static org.apache.pulsar.common.schema.SchemaType.PROTOBUF_NATIVE;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.Schema;
 import org.apache.avro.file.CodecFactory;
 import org.apache.avro.file.DataFileWriter;
@@ -38,6 +40,7 @@ import org.slf4j.LoggerFactory;
 /**
  * avro format.
  */
+@Slf4j
 public class AvroFormat implements Format<GenericRecord> , InitConfiguration<BlobStoreAbstractConfig>{
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AvroFormat.class);
@@ -90,6 +93,19 @@ public class AvroFormat implements Format<GenericRecord> , InitConfiguration<Blo
     }
 
     @Override
+    public boolean doSupportPulsarSchemaType(SchemaType schemaType) {
+        switch (schemaType) {
+            case AVRO:
+            case JSON:
+            case PROTOBUF:
+            case PROTOBUF_NATIVE:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    @Override
     public ByteBuffer recordWriterBuf(Iterator<Record<GenericRecord>> records) throws Exception {
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         writer.setCodec(codecFactory);
@@ -98,7 +114,7 @@ public class AvroFormat implements Format<GenericRecord> , InitConfiguration<Blo
                 final Record<GenericRecord> next = records.next();
                 GenericRecord genericRecord = next.getValue();
                 if (genericRecord.getSchemaType() == SchemaType.BYTES
-                        && internalSchema.getSchemaInfo().getType() == SchemaType.PROTOBUF_NATIVE) {
+                        && internalSchema.getSchemaInfo().getType() == PROTOBUF_NATIVE) {
                     genericRecord = internalSchema.decode((byte[]) next.getValue().getNativeObject());
                 }
                 org.apache.avro.generic.GenericRecord writeRecord = AvroRecordUtil
