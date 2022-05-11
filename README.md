@@ -127,7 +127,9 @@ Before using the Cloud Storage sink connector, you need to create a configuratio
 Cloud Storage Sink Connector provides multiple output format options, including JSON, Avro, Bytes, or Parquet. The default format is JSON.
 With current implementation, there are some limitations for different formats:
 
-| Pulsar Schema  | writer: Avro | writer: JSON | writer: Parquet | writer: Bytes |
+This table lists the Pulsar Schema types supported by the writers.
+
+| Pulsar Schema  | Writer: Avro | Writer: JSON | Writer: Parquet | Writer: Bytes |
 |----------------|--------------|--------------|-----------------|---------------|
 | Primitive      | ✗            | ✔ *          | ✗               | ✔             |
 | Avro           | ✔            | ✔            | ✔               | ✔             |
@@ -136,11 +138,11 @@ With current implementation, there are some limitations for different formats:
 | ProtobufNative | ✔ ***        | ✗            | ✔               | ✔             |
 > *: The JSON writer will try to convert the data with a `String` or `Bytes` schema to JSON-format data if convertable.
 >
-> **: The Protobuf schema is based on Avro schema, it will use Avro as an intermediate format, so it may not provide the best effort conversion.
+> **: The Protobuf schema is based on the Avro schema. It uses Avro as an intermediate format, so it may not provide the best effort conversion.
 >
-> ***: The ProtobufNative record holds the Protobuf descriptor and the message, when write to Avro format, the connector will use [avro-protobuf](https://github.com/apache/avro/tree/master/lang/java/protobuf) to do the conversion.
+> ***: The ProtobufNative record holds the Protobuf descriptor and the message. When writing to Avro format, the connector uses [avro-protobuf](https://github.com/apache/avro/tree/master/lang/java/protobuf) to do the conversion.
 
-Support of `withMetadata` config of different formats:
+This table lists the support of `withMetadata` configurations for different writer formats:
 
 | Writer Format | `withMetadata` |
 |---------------|----------------|
@@ -149,9 +151,9 @@ Support of `withMetadata` config of different formats:
 | Parquet       | ✔ *            |
 | Bytes         | ✗              |
 
-> *: When using `Parquet` with `PROTOBUF_NATIVE` format, the connector will write the messages with `DynamicMessage` format, when `withMetadata` is set to `true`, the connector will add `__message_metadata__` to the messages with `PulsarIOCSCProtobufMessageMetadata` format.
+> *: When using `Parquet` with `PROTOBUF_NATIVE` format, the connector will write the messages with `DynamicMessage` format. When `withMetadata` is set to `true`, the connector will add `__message_metadata__` to the messages with `PulsarIOCSCProtobufMessageMetadata` format.
 >
-> For example, if a message `User` is from following schema:
+> For example, if a message `User` has the following schema:
 > ```protobuf
 > syntax = "proto3";
 > message User {
@@ -160,7 +162,7 @@ Support of `withMetadata` config of different formats:
 > }
 > ```
 >
-> When `withMetadata` is set to `true`, the connector will write the message `DynamicMessage` with following schema:
+> When `withMetadata` is set to `true`, the connector will write the message `DynamicMessage` with the following schema:
 > ```protobuf
 > syntax = "proto3";
 > message PulsarIOCSCProtobufMessageMetadata {
