@@ -134,6 +134,8 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
                         String json = printer.print((DynamicMessage) record.getNativeObject());
                         return JSON_MAPPER.get().readValue(json, TYPEREF);
                     }
+                default:
+                    throw new UnsupportedOperationException("Unsupported value schemaType=" + record.getSchemaType());
             }
         } else if (record.getSchemaType() == SchemaType.STRING) {
             return JSON_MAPPER.get().readValue((String) record.getNativeObject(), TYPEREF);

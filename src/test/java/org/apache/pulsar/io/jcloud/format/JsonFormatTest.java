@@ -135,7 +135,7 @@ public class JsonFormatTest extends FormatTestBase {
         switch (msgValue.getSchemaType()) {
             case PROTOBUF_NATIVE:
                 assertEquals((DynamicMessage) msgValue.getNativeObject(), record);
-                return;
+                break;
             default:
             {
                 for (String fieldName : record.keySet()) {
@@ -148,9 +148,9 @@ public class JsonFormatTest extends FormatTestBase {
                         }
                     }
                 }
+                break;
             }
         }
-
     }
 
     @Override
