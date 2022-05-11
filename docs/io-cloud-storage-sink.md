@@ -155,7 +155,7 @@ With current implementation, there are some limitations for different formats:
 | ProtobufNative | ✔ ***        | ✗            | ✔               | ✔             |
 > *: The JSON writer will try to convert the data with a `String` or `Bytes` schema to JSON-format data if convertable.
 >
-> **: The Protobuf schema is based on Avro schema, it will use Avro as an intermediate format, so it may not provide the best effort conversion.
+> **: The Protobuf schema is based on the Avro schema. It uses Avro as an intermediate format, so it may not provide the best effort conversion.
 >
 > ***: The ProtobufNative record holds the Protobuf descriptor and the message, when write to Avro format, the connector will use [avro-protobuf](https://github.com/apache/avro/tree/master/lang/java/protobuf) to do the conversion.
 
