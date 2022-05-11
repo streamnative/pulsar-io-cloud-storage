@@ -170,7 +170,7 @@ This table lists the support of `withMetadata` configurations for different writ
 | Parquet       | ✔ *            |
 | Bytes         | ✗              |
 
-> *: When using `Parquet` with `PROTOBUF_NATIVE` format, the connector will write the messages with `DynamicMessage` format, when `withMetadata` is set to `true`, the connector will add `__message_metadata__` to the messages with `PulsarIOCSCProtobufMessageMetadata` format.
+> *: When using `Parquet` with `PROTOBUF_NATIVE` format, the connector will write the messages with `DynamicMessage` format. When `withMetadata` is set to `true`, the connector will add `__message_metadata__` to the messages with `PulsarIOCSCProtobufMessageMetadata` format.
 >
 > For example, if a message `User` is from following schema:
 > ```protobuf
