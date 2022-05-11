@@ -146,7 +146,9 @@ Before using the Cloud Storage sink connector, you need to create a configuratio
 Cloud Storage Sink Connector provides multiple output format options, including JSON, Avro, Bytes, or Parquet. The default format is JSON.
 With current implementation, there are some limitations for different formats:
 
-| Pulsar Schema  | writer: Avro | writer: JSON | writer: Parquet | writer: Bytes |
+This table lists the Pulsar Schema types supported by the writers.
+
+| Pulsar Schema  | Writer: Avro | Writer: JSON | Writer: Parquet | Writer: Bytes |
 |----------------|--------------|--------------|-----------------|---------------|
 | Primitive      | ✗            | ✔ *          | ✗               | ✔             |
 | Avro           | ✔            | ✔            | ✔               | ✔             |
