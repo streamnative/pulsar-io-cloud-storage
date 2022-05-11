@@ -93,6 +93,19 @@ public class AvroFormat implements Format<GenericRecord> , InitConfiguration<Blo
     }
 
     @Override
+    public boolean doSupportPulsarSchemaType(SchemaType schemaType) {
+        switch (schemaType) {
+            case AVRO:
+            case JSON:
+            case PROTOBUF:
+            case PROTOBUF_NATIVE:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    @Override
     public ByteBuffer recordWriterBuf(Iterator<Record<GenericRecord>> records) throws Exception {
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         writer.setCodec(codecFactory);

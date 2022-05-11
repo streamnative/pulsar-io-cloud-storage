@@ -18,6 +18,7 @@
  */
 package org.apache.pulsar.io.jcloud.format;
 
+import static org.junit.Assert.fail;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.DynamicMessage;
 import java.nio.ByteBuffer;
@@ -118,7 +119,8 @@ public abstract class FormatTestBase extends PulsarTestBase {
     public void testProtobufNativeRecordWriter() throws Exception {
         List<TestMessage> testRecords = Arrays.asList(
                 TestMessage.newBuilder().setStringField("key1").setIntField(1).build(),
-                TestMessage.newBuilder().setStringField("key2").setIntField(2).putStringMap("foo", "bar").build()
+                TestMessage.newBuilder().setStringField("key2").setIntField(2)
+                        .putStringMap("foo", "bar").putStringMap("a", "b").build()
         );
 
         sendProtobufNativeMessages(protobufNativeTopicName.toString(), SchemaType.PROTOBUF_NATIVE,
@@ -143,7 +145,7 @@ public abstract class FormatTestBase extends PulsarTestBase {
                 }
             } catch (Exception e) {
                 LOGGER.error("formatter handle message is fail", e);
-                Assert.fail();
+                fail();
             }
         };
     }
@@ -160,7 +162,7 @@ public abstract class FormatTestBase extends PulsarTestBase {
                 // TODO: do more check
             } catch (Exception e) {
                 LOGGER.error("formatter handle message is fail", e);
-                Assert.fail();
+                fail();
             }
         };
     }
@@ -174,7 +176,7 @@ public abstract class FormatTestBase extends PulsarTestBase {
                 Assert.assertEquals(msg.getValue().getNativeObject().toString(), dynamicMessage.toString());
             } catch (Exception e) {
                 LOGGER.error("formatter handle message is fail", e);
-                Assert.fail();
+                fail();
             }
         };
     }
@@ -270,6 +272,7 @@ public abstract class FormatTestBase extends PulsarTestBase {
     protected void initSchema(Schema<GenericRecord> schema) {
         final BlobStoreAbstractConfig config = getBlobStoreAbstractConfig();
         ((InitConfiguration<BlobStoreAbstractConfig>) getFormat()).configure(config);
+        Assert.assertTrue(getFormat().doSupportPulsarSchemaType(schema.getSchemaInfo().getType()));
         getFormat().initSchema(schema);
     }
 
@@ -325,5 +328,29 @@ public abstract class FormatTestBase extends PulsarTestBase {
             return false;
         }
         return true;
+    }
+
+    protected void assertEquals(DynamicMessage msgValue, Map<String, Object> record) {
+        Descriptors.Descriptor descriptor = msgValue.getDescriptorForType();
+        for (String fieldName : record.keySet()) {
+            Descriptors.FieldDescriptor fieldDescriptor = descriptor.findFieldByName(fieldName);
+            if (fieldDescriptor != null) {
+                Object sourceValue = msgValue.getField(fieldDescriptor);
+                Object newValue = record.get(fieldName);
+                if (!fieldDescriptor.isRepeated()) {
+                    Assert.assertEquals(
+                        MessageFormat.format(
+                                "field[{0} sourceValue [{1}:{2}] not equal newValue [{3}:{4}]",
+                                fieldName,
+                                sourceValue,
+                                sourceValue != null ? sourceValue.getClass().getName() : "null",
+                                newValue,
+                                newValue != null ? newValue.getClass().getName() : "null"
+                        ),
+                        sourceValue,
+                        newValue);
+                }
+            }
+        }
     }
 }

@@ -193,6 +193,19 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
     }
 
     @Override
+    public boolean doSupportPulsarSchemaType(SchemaType schemaType) {
+        switch (schemaType) {
+            case AVRO:
+            case JSON:
+            case PROTOBUF:
+            case PROTOBUF_NATIVE:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    @Override
     public ByteBuffer recordWriterBuf(Iterator<Record<GenericRecord>> records) throws Exception {
         int pageSize = 64 * 1024;
         ParquetWriter<Object> parquetWriter = null;

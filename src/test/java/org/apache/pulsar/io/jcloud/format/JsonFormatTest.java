@@ -18,6 +18,7 @@
  */
 package org.apache.pulsar.io.jcloud.format;
 
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -89,7 +90,7 @@ public class JsonFormatTest extends FormatTestBase {
                 assertEquals(msg.getValue(), formatGeneratedRecord);
             } catch (Exception e) {
                 log.error("formatter handle message is fail", e);
-                Assert.fail();
+                fail();
             }
         };
     }
@@ -104,7 +105,7 @@ public class JsonFormatTest extends FormatTestBase {
                 assertEquals(msg.getValue(), message);
             } catch (Exception e) {
                 log.error("formatter handle message is fail", e);
-                Assert.fail();
+                fail();
             }
         };
     }
@@ -129,19 +130,41 @@ public class JsonFormatTest extends FormatTestBase {
         return record;
     }
 
-    @Override
-    public void testProtobufNativeRecordWriter() throws Exception {
-        // not supported
-    }
-
     private void assertEquals(GenericRecord msgValue, Map<String, Object> record) {
         List<Field> fields = msgValue.getFields();
-        for (Field field : fields) {
-            String name = field.getName();
-            Object value = msgValue.getField(field);
-            if (!(value instanceof GenericRecord)) {
-                Assert.assertEquals(record.get(name), value);
+        switch (msgValue.getSchemaType()) {
+            case PROTOBUF_NATIVE:
+                assertEquals((DynamicMessage) msgValue.getNativeObject(), record);
+                return;
+            default:
+            {
+                for (String fieldName : record.keySet()) {
+                    Field genericField = fields.stream().filter(field ->
+                            field.getName().equals(fieldName)).findFirst().orElse(null);
+                    if (genericField != null) {
+                        Object value = msgValue.getField(genericField);
+                        if (!(value instanceof GenericRecord)) {
+                            Assert.assertEquals(record.get(fieldName), value);
+                        }
+                    }
+                }
             }
         }
+
+    }
+
+    @Override
+    public Consumer<Message<GenericRecord>> getProtobufNativeMessageConsumer(TopicName topic) {
+        return msg -> {
+            try {
+                Schema<GenericRecord> schema = (Schema<GenericRecord>) msg.getReaderSchema().get();
+                initSchema(schema);
+                Map<String, Object> message = getJSONMessage(topic, msg);
+                assertEquals(msg.getValue(), message);
+            } catch (Exception e) {
+                log.error("formatter handle message is fail", e);
+                fail();
+            }
+        };
     }
 }
