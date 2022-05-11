@@ -20,9 +20,12 @@ package org.apache.pulsar.io.jcloud.format;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import com.google.protobuf.DynamicMessage;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 import org.apache.avro.file.DataFileReader;
 import org.apache.avro.file.SeekableByteArrayInput;
 import org.apache.avro.generic.GenericDatumReader;
@@ -34,6 +37,7 @@ import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.jcloud.util.AvroRecordUtil;
 import org.apache.pulsar.io.jcloud.util.MetadataUtil;
 import org.apache.pulsar.jcloud.shade.com.google.common.io.ByteSource;
+import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,5 +88,33 @@ public class AvroFormatTest extends FormatTestBase {
         final SeekableByteArrayInput input = new SeekableByteArrayInput(byteSource.read());
         final DataFileReader<Object> objects = new DataFileReader<>(input, datumReader);
         return (org.apache.avro.generic.GenericRecord) objects.next();
+    }
+
+    @Override
+    public DynamicMessage getDynamicMessage(TopicName topicName, Message<GenericRecord> msg) throws Exception {
+        return null;
+    }
+
+    @Override
+    public Map<String, Object> getJSONMessage(TopicName topicName, Message<GenericRecord> msg) throws Exception {
+        return null;
+    }
+
+    @Override
+    public Consumer<Message<GenericRecord>> getProtobufNativeMessageConsumer(TopicName topic) {
+        return msg -> {
+            try {
+                Schema<GenericRecord> schema = (Schema<GenericRecord>) msg.getReaderSchema().get();
+                initSchema(schema);
+                org.apache.avro.generic.GenericRecord formatGeneratedRecord = getFormatGeneratedRecord(topic, msg);
+                assertEquals(msg.getValue(), formatGeneratedRecord);
+                if (supportMetadata()) {
+                    validMetadata(formatGeneratedRecord, msg);
+                }
+            } catch (Exception e) {
+                log.error("formatter handle message is fail", e);
+                Assert.fail();
+            }
+        };
     }
 }

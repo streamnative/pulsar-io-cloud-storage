@@ -18,20 +18,24 @@
  */
 package org.apache.pulsar.io.jcloud.util;
 
+import com.google.protobuf.ByteString;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.functions.api.Record;
+import org.apache.pulsar.io.jcloud.format.parquet.proto.Metadata;
 
 /**
  * metadata util.
  */
+@Slf4j
 public class MetadataUtil {
 
     public static final String METADATA_PROPERTIES_KEY = "properties";
@@ -51,7 +55,7 @@ public class MetadataUtil {
         GenericData.Record record = new GenericData.Record(buildMetadataSchema(
                 useHumanReadableMessageId, useHumanReadableSchemaVersion));
         record.put(METADATA_PROPERTIES_KEY, message.getProperties());
-        if (useHumanReadableMessageId) {
+        if (useHumanReadableSchemaVersion) {
             record.put(METADATA_SCHEMA_VERSION_KEY,
                     MetadataUtil.parseSchemaVersionFromBytes(message.getSchemaVersion()));
         } else {
@@ -160,5 +164,27 @@ public class MetadataUtil {
     public static long parseSchemaVersionFromBytes(byte[] schemaVersion) {
         ByteBuffer bb = ByteBuffer.wrap(schemaVersion);
         return bb.getLong();
+    }
+
+    public static Metadata.PulsarIOCSCProtobufMessageMetadata getMetadataFromMessage(Record<GenericRecord> next,
+                                                                          boolean useHumanReadableMessageId,
+                                                                          boolean useHumanReadableSchemaVersion) {
+        Metadata.PulsarIOCSCProtobufMessageMetadata.Builder metadataBuilder =
+                Metadata.PulsarIOCSCProtobufMessageMetadata.newBuilder();
+        final Message<GenericRecord> message = next.getMessage().get();
+
+        message.getProperties().forEach(metadataBuilder::putProperties);
+        if (useHumanReadableSchemaVersion) {
+            metadataBuilder.setSchemaVersion(
+                    Long.toString(MetadataUtil.parseSchemaVersionFromBytes(message.getSchemaVersion())));
+        } else {
+            metadataBuilder.setSchemaVersionBytes(ByteString.copyFrom(message.getSchemaVersion()));
+        }
+        if (useHumanReadableMessageId) {
+            metadataBuilder.setMessageId(message.getMessageId().toString());
+        } else {
+            metadataBuilder.setMessageIdBytes(ByteString.copyFrom(message.getMessageId().toByteArray()));
+        }
+        return metadataBuilder.build();
     }
 }

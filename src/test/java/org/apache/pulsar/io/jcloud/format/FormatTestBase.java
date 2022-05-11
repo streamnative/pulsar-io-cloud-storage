@@ -18,6 +18,9 @@
  */
 package org.apache.pulsar.io.jcloud.format;
 
+import static org.junit.Assert.fail;
+import com.google.protobuf.Descriptors;
+import com.google.protobuf.DynamicMessage;
 import java.nio.ByteBuffer;
 import java.text.MessageFormat;
 import java.util.Arrays;
@@ -40,6 +43,7 @@ import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 import org.apache.pulsar.io.jcloud.PulsarTestBase;
 import org.apache.pulsar.io.jcloud.bo.TestRecord;
+import org.apache.pulsar.io.jcloud.schema.proto.Test.TestMessage;
 import org.apache.pulsar.io.jcloud.util.MetadataUtil;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -54,8 +58,12 @@ public abstract class FormatTestBase extends PulsarTestBase {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FormatTestBase.class);
 
-    private static TopicName avroTopicName = TopicName.get("test-parquet-avro" + RandomStringUtils.randomAlphabetic(5));
-    private static TopicName jsonTopicName = TopicName.get("test-parquet-json" + RandomStringUtils.randomAlphabetic(5));
+    private static final TopicName avroTopicName =
+            TopicName.get("test-parquet-avro" + RandomStringUtils.randomAlphabetic(5));
+    private static final TopicName jsonTopicName =
+            TopicName.get("test-parquet-json" + RandomStringUtils.randomAlphabetic(5));
+    private static final TopicName protobufNativeTopicName =
+            TopicName.get("test-parquet-protobuf-native" + RandomStringUtils.randomAlphabetic(5));
 
     @BeforeClass
     public static void setUp() throws Exception {
@@ -66,6 +74,8 @@ public abstract class FormatTestBase extends PulsarTestBase {
         pulsarAdmin.topics().createSubscription(jsonTopicName.toString(), "test", MessageId.earliest);
         pulsarAdmin.topics().createPartitionedTopic(avroTopicName.toString(), 1);
         pulsarAdmin.topics().createSubscription(avroTopicName.toString(), "test", MessageId.earliest);
+        pulsarAdmin.topics().createPartitionedTopic(protobufNativeTopicName.toString(), 1);
+        pulsarAdmin.topics().createSubscription(protobufNativeTopicName.toString(), "test", MessageId.earliest);
     }
 
     public abstract Format<GenericRecord> getFormat();
@@ -101,8 +111,24 @@ public abstract class FormatTestBase extends PulsarTestBase {
         sendTypedMessages(jsonTopicName.toString(), SchemaType.JSON, testRecords, Optional.empty(), TestRecord.class);
 
         Consumer<Message<GenericRecord>>
-                handle = getMessageConsumer(jsonTopicName);
+                handle = getJSONMessageConsumer(jsonTopicName);
         consumerMessages(jsonTopicName.toString(), Schema.AUTO_CONSUME(), handle, testRecords.size(), 2000);
+    }
+
+    @Test
+    public void testProtobufNativeRecordWriter() throws Exception {
+        List<TestMessage> testRecords = Arrays.asList(
+                TestMessage.newBuilder().setStringField("key1").setIntField(1).build(),
+                TestMessage.newBuilder().setStringField("key2").setIntField(2)
+                        .putStringMap("foo", "bar").putStringMap("a", "b").build()
+        );
+
+        sendProtobufNativeMessages(protobufNativeTopicName.toString(), SchemaType.PROTOBUF_NATIVE,
+                testRecords, Optional.empty(), TestMessage.class);
+
+        Consumer<Message<GenericRecord>>
+                handle = getProtobufNativeMessageConsumer(protobufNativeTopicName);
+        consumerMessages(protobufNativeTopicName.toString(), Schema.AUTO_CONSUME(), handle, testRecords.size(), 2000);
     }
 
     protected abstract boolean supportMetadata();
@@ -119,7 +145,38 @@ public abstract class FormatTestBase extends PulsarTestBase {
                 }
             } catch (Exception e) {
                 LOGGER.error("formatter handle message is fail", e);
-                Assert.fail();
+                fail();
+            }
+        };
+    }
+
+    protected Consumer<Message<GenericRecord>> getJSONMessageConsumer(TopicName topic) {
+        return msg -> {
+            try {
+                Schema<GenericRecord> schema = (Schema<GenericRecord>) msg.getReaderSchema().get();
+                initSchema(schema);
+                Map<String, Object> message = getJSONMessage(topic, msg);
+                if (message != null) {
+                    Assert.assertFalse(message.isEmpty());
+                }
+                // TODO: do more check
+            } catch (Exception e) {
+                LOGGER.error("formatter handle message is fail", e);
+                fail();
+            }
+        };
+    }
+
+    protected Consumer<Message<GenericRecord>> getProtobufNativeMessageConsumer(TopicName topic) {
+        return msg -> {
+            try {
+                Schema<GenericRecord> schema = (Schema<GenericRecord>) msg.getReaderSchema().get();
+                initSchema(schema);
+                DynamicMessage dynamicMessage = getDynamicMessage(topic, msg);
+                Assert.assertEquals(msg.getValue().getNativeObject().toString(), dynamicMessage.toString());
+            } catch (Exception e) {
+                LOGGER.error("formatter handle message is fail", e);
+                fail();
             }
         };
     }
@@ -127,6 +184,33 @@ public abstract class FormatTestBase extends PulsarTestBase {
     public abstract org.apache.avro.generic.GenericRecord getFormatGeneratedRecord(TopicName topicName,
                                                                                    Message<GenericRecord> msg)
             throws Exception;
+
+    public abstract DynamicMessage getDynamicMessage(TopicName topicName,
+                                                            Message<GenericRecord> msg)
+            throws Exception;
+
+    public abstract Map<String, Object> getJSONMessage(TopicName topicName,
+                                                     Message<GenericRecord> msg)
+            throws Exception;
+
+    protected void assertEquals(DynamicMessage msgValue, org.apache.avro.generic.GenericRecord record) {
+        Descriptors.Descriptor descriptor = msgValue.getDescriptorForType();
+        for (org.apache.avro.Schema.Field field : record.getSchema().getFields()) {
+            Object sourceValue = msgValue.getField(descriptor.findFieldByName(field.name()));
+            Object newValue = record.get(field.name());
+            Assert.assertEquals(
+                MessageFormat.format(
+                        "field[{0} sourceValue [{1}:{2}] not equal newValue [{3}:{4}]",
+                        field.name(),
+                        sourceValue,
+                        sourceValue != null ? sourceValue.getClass().getName() : "null",
+                        newValue,
+                        newValue != null ? newValue.getClass().getName() : "null"
+                ),
+                sourceValue,
+                newValue);
+        }
+    }
 
     protected void assertEquals(GenericRecord msgValue, org.apache.avro.generic.GenericRecord record) {
         for (Field field : msgValue.getFields()) {
@@ -137,13 +221,28 @@ public abstract class FormatTestBase extends PulsarTestBase {
             }
             if (sourceValue instanceof GenericRecord && newValue instanceof org.apache.avro.generic.GenericRecord) {
                 assertEquals((GenericRecord) sourceValue, (org.apache.avro.generic.GenericRecord) newValue);
+            } else if (record.getSchema().getField(field.getName()).schema().getType()
+                    == org.apache.avro.Schema.Type.ENUM) {
+                Assert.assertNotNull(sourceValue);
+                Assert.assertNotNull(newValue);
+                Assert.assertEquals(sourceValue.toString(), newValue.toString());
+            } else if (sourceValue instanceof DynamicMessage
+                    && newValue instanceof org.apache.avro.generic.GenericRecord) {
+                assertEquals((DynamicMessage) sourceValue, (org.apache.avro.generic.GenericRecord) newValue);
+            } else if (record.getSchema().getField(field.getName()).schema().getType()
+                    == org.apache.avro.Schema.Type.ARRAY) {
+                if (sourceValue instanceof List && newValue instanceof List) {
+                    Assert.assertEquals(((List<?>) sourceValue).size(), ((List<?>) newValue).size());
+                }
             } else {
                 Assert.assertEquals(
                         MessageFormat.format(
-                                "field[{0} sourceValue [{1}] not equal newValue [{2}]",
+                                "field[{0} sourceValue [{1}:{2}] not equal newValue [{3}:{4}]",
                                 field.getName(),
                                 sourceValue,
-                                newValue
+                                sourceValue != null ? sourceValue.getClass().getName() : "null",
+                                newValue,
+                                newValue != null ? newValue.getClass().getName() : "null"
                         ),
                         sourceValue,
                         newValue);
@@ -173,6 +272,7 @@ public abstract class FormatTestBase extends PulsarTestBase {
     protected void initSchema(Schema<GenericRecord> schema) {
         final BlobStoreAbstractConfig config = getBlobStoreAbstractConfig();
         ((InitConfiguration<BlobStoreAbstractConfig>) getFormat()).configure(config);
+        Assert.assertTrue(getFormat().doSupportPulsarSchemaType(schema.getSchemaInfo().getType()));
         getFormat().initSchema(schema);
     }
 
@@ -228,5 +328,29 @@ public abstract class FormatTestBase extends PulsarTestBase {
             return false;
         }
         return true;
+    }
+
+    protected void assertEquals(DynamicMessage msgValue, Map<String, Object> record) {
+        Descriptors.Descriptor descriptor = msgValue.getDescriptorForType();
+        for (String fieldName : record.keySet()) {
+            Descriptors.FieldDescriptor fieldDescriptor = descriptor.findFieldByName(fieldName);
+            if (fieldDescriptor != null) {
+                Object sourceValue = msgValue.getField(fieldDescriptor);
+                Object newValue = record.get(fieldName);
+                if (!fieldDescriptor.isRepeated()) {
+                    Assert.assertEquals(
+                        MessageFormat.format(
+                                "field[{0} sourceValue [{1}:{2}] not equal newValue [{3}:{4}]",
+                                fieldName,
+                                sourceValue,
+                                sourceValue != null ? sourceValue.getClass().getName() : "null",
+                                newValue,
+                                newValue != null ? newValue.getClass().getName() : "null"
+                        ),
+                        sourceValue,
+                        newValue);
+                }
+            }
+        }
     }
 }
