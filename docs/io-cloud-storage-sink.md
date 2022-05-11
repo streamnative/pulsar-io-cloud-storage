@@ -172,7 +172,7 @@ This table lists the support of `withMetadata` configurations for different writ
 
 > *: When using `Parquet` with `PROTOBUF_NATIVE` format, the connector will write the messages with `DynamicMessage` format. When `withMetadata` is set to `true`, the connector will add `__message_metadata__` to the messages with `PulsarIOCSCProtobufMessageMetadata` format.
 >
-> For example, if a message `User` is from following schema:
+> For example, if a message `User` has the following schema:
 > ```protobuf
 > syntax = "proto3";
 > message User {
