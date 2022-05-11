@@ -161,7 +161,7 @@ This table lists the Pulsar Schema types supported by the writers.
 >
 > ***: The ProtobufNative record holds the Protobuf descriptor and the message. When writing to Avro format, the connector uses [avro-protobuf](https://github.com/apache/avro/tree/master/lang/java/protobuf) to do the conversion.
 
-Support of `withMetadata` config of different formats:
+This table lists the support of `withMetadata` configurations for different writer formats:
 
 | Writer Format | `withMetadata` |
 |---------------|----------------|
