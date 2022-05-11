@@ -20,6 +20,7 @@ package org.apache.pulsar.io.jcloud;
 
 import static java.time.temporal.ChronoUnit.SECONDS;
 import static org.testcontainers.containers.PulsarContainer.BROKER_HTTP_PORT;
+import com.google.protobuf.GeneratedMessageV3;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -73,7 +74,7 @@ public abstract class PulsarTestBase {
         log.info("-------------------------------------------------------------------------");
 
 
-        final String pulsarImage = System.getProperty("pulsar.systemtest.image", "streamnative/pulsar:2.8.1.6");
+        final String pulsarImage = System.getProperty("pulsar.systemtest.image", "streamnative/pulsar:2.9.2.13");
         pulsarService = new PulsarContainer(DockerImageName.parse(pulsarImage));
         pulsarService.waitingFor(new HttpWaitStrategy()
                 .forPort(BROKER_HTTP_PORT)
@@ -176,6 +177,53 @@ public abstract class PulsarTestBase {
                     break;
                 case JSON:
                     producer = (Producer<T>) client.newProducer(Schema.JSON(tClass)).topic(topicName).create();
+                    break;
+
+                default:
+                    throw new NotImplementedException("Unsupported type " + type);
+            }
+
+            for (T message : messages) {
+                MessageId mid = producer.send(message);
+                log.info("Sent {} of mid: {}", message.toString(), mid.toString());
+                mids.add(mid);
+            }
+
+        } catch (Exception e) {
+            log.error("send message failed", e);
+        } finally {
+            producer.flush();
+            producer.close();
+            client.close();
+        }
+        return mids;
+    }
+
+    public static <T extends GeneratedMessageV3> List<MessageId> sendProtobufNativeMessages(
+            String topic,
+            SchemaType type,
+            List<T> messages,
+            Optional<Integer> partition,
+            Class<T> tClass) throws PulsarClientException {
+
+        String topicName;
+        if (partition.isPresent()) {
+            topicName = topic + TopicName.PARTITIONED_TOPIC_SUFFIX + partition.get();
+        } else {
+            topicName = topic;
+        }
+
+        Producer<T> producer = null;
+        PulsarClient client = null;
+        List<MessageId> mids = new ArrayList<>();
+
+        try {
+            client = PulsarClient.builder().serviceUrl(getServiceUrl()).build();
+
+            switch (type) {
+                case PROTOBUF_NATIVE:
+                    producer = (Producer<T>) client.newProducer(
+                            Schema.PROTOBUF_NATIVE(tClass)).topic(topicName).create();
                     break;
 
                 default:

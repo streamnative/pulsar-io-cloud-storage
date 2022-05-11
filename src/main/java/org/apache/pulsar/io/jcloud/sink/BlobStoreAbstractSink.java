@@ -226,6 +226,12 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
         Record<GenericRecord> firstRecord = recordsToInsert.get(0);
         Schema<GenericRecord> schema = getPulsarSchema(firstRecord);
+        if (!format.doSupportPulsarSchemaType(schema.getSchemaInfo().getType())) {
+            log.warn("sink does not support schema type {}", schema.getSchemaInfo().getType());
+            bulkHandleFailedRecords(recordsToInsert);
+            return;
+        }
+
         String filepath = "";
         try {
             format.initSchema(schema);

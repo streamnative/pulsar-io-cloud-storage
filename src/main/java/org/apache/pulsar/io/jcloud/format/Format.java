@@ -21,6 +21,7 @@ package org.apache.pulsar.io.jcloud.format;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import org.apache.pulsar.client.api.Schema;
+import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.jcloud.shade.com.google.common.io.ByteSource;
 
@@ -36,6 +37,8 @@ public interface Format<T> {
     String getExtension();
 
     void initSchema(Schema<T> schema);
+
+    boolean doSupportPulsarSchemaType(SchemaType schemaType);
 
     /**
      * format record to bytes.

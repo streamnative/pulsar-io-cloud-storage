@@ -23,6 +23,7 @@ import java.util.Iterator;
 import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.client.api.Schema;
 import org.apache.pulsar.client.api.schema.GenericRecord;
+import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 import org.apache.pulsar.io.jcloud.util.HexStringUtils;
@@ -48,6 +49,11 @@ public class BytesFormat implements Format<GenericRecord>, InitConfiguration<Blo
 
     @Override
     public void initSchema(Schema<GenericRecord> schema) {
+    }
+
+    @Override
+    public boolean doSupportPulsarSchemaType(SchemaType schemaType) {
+        return true;
     }
 
     @Override
