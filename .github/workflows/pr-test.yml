@@ -1,10 +1,10 @@
 name: Cloud Storage Unit tests
 
 on:
-  pull_request:
+  pull_request: null
   push:
     branches:
-      - master
+    - master
 
 jobs:
   build:
@@ -19,9 +19,15 @@ jobs:
     - name: Code check
       run: mvn license:check checkstyle:check spotbugs:check
 
+      env:
+        CLOUDSMITH_USERNAME: ${{ secrets.CLOUDSMITH_USERNAME }}
+        CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
     - name: Build with Maven
       run: mvn install test -DfailIfNoTests=false
 
+      env:
+        CLOUDSMITH_USERNAME: ${{ secrets.CLOUDSMITH_USERNAME }}
+        CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
     - name: package surefire artifacts
       if: failure()
       run: |
@@ -30,6 +36,9 @@ jobs:
         find . -type d -name "*surefire*" -exec cp --parents -R {} artifacts/ \;
         zip -r artifacts.zip artifacts
 
+      env:
+        CLOUDSMITH_USERNAME: ${{ secrets.CLOUDSMITH_USERNAME }}
+        CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
     - uses: actions/upload-artifact@master
       name: upload surefire-artifacts
       if: failure()
