@@ -222,7 +222,10 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                 recordsToInsert.add(r);
             }
         }
-        log.info("Flushing {} buffered records to blob store", recordsToInsert);
+        log.info("Flushing {} buffered records to blob store", recordsToInsert.size());
+        if (log.isDebugEnabled()) {
+            log.debug("buffered records {}", recordsToInsert);
+        }
 
         Record<GenericRecord> firstRecord = recordsToInsert.get(0);
         Schema<GenericRecord> schema = getPulsarSchema(firstRecord);
