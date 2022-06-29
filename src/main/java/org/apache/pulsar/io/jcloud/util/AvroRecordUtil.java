@@ -77,7 +77,8 @@ public class AvroRecordUtil {
             org.apache.pulsar.client.api.Schema<GenericRecord> internalSchema =
                     getPulsarInternalSchema(record.getMessage().orElse(null));
             if (internalSchema != null) {
-                schema = recoverGenericProtobufNativeSchemaFromInternalSchema(internalSchema);
+                schema = recoverGenericSchemaFromInternalSchema(internalSchema);
+                log.debug("Recover generic schema from internal schema: {}", schema);
             }
         }
         if (schema != null) {
@@ -91,7 +92,7 @@ public class AvroRecordUtil {
     }
 
     public static org.apache.pulsar.client.api.Schema<GenericRecord>
-    recoverGenericProtobufNativeSchemaFromInternalSchema(org.apache.pulsar.client.api.Schema<GenericRecord> schema) {
+    recoverGenericSchemaFromInternalSchema(org.apache.pulsar.client.api.Schema<GenericRecord> schema) {
         switch (schema.getSchemaInfo().getType()) {
             case PROTOBUF_NATIVE:
                 return (GenericProtobufNativeSchema) GenericProtobufNativeSchema.of(schema.getSchemaInfo());
