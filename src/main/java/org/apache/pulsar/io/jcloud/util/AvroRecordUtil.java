@@ -38,6 +38,8 @@ import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.client.impl.MessageImpl;
 import org.apache.pulsar.client.impl.TopicMessageImpl;
 import org.apache.pulsar.client.impl.schema.ProtobufNativeSchemaUtils;
+import org.apache.pulsar.client.impl.schema.generic.GenericAvroSchema;
+import org.apache.pulsar.client.impl.schema.generic.GenericJsonSchema;
 import org.apache.pulsar.client.impl.schema.generic.GenericProtobufNativeSchema;
 import org.apache.pulsar.common.schema.SchemaInfo;
 import org.apache.pulsar.common.schema.SchemaType;
@@ -90,10 +92,16 @@ public class AvroRecordUtil {
 
     public static org.apache.pulsar.client.api.Schema<GenericRecord>
     recoverGenericProtobufNativeSchemaFromInternalSchema(org.apache.pulsar.client.api.Schema<GenericRecord> schema) {
-        if (schema.getSchemaInfo().getType() == SchemaType.PROTOBUF_NATIVE) {
-            return (GenericProtobufNativeSchema) GenericProtobufNativeSchema.of(schema.getSchemaInfo());
+        switch (schema.getSchemaInfo().getType()) {
+            case PROTOBUF_NATIVE:
+                return (GenericProtobufNativeSchema) GenericProtobufNativeSchema.of(schema.getSchemaInfo());
+            case AVRO:
+                return (GenericAvroSchema) GenericAvroSchema.of(schema.getSchemaInfo());
+            case JSON:
+                return (GenericJsonSchema) GenericJsonSchema.of(schema.getSchemaInfo());
+            default:
+                return null;
         }
-        return null;
     }
 
     public static org.apache.pulsar.client.api.Schema<GenericRecord> getPulsarInternalSchema(
