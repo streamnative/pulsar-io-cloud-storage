@@ -144,14 +144,18 @@ public class MetadataUtil {
                 ))
         );
         if (useHumanReadableSchemaVersion) {
-            fields.add(new Schema.Field(METADATA_SCHEMA_VERSION_KEY, Schema.create(Schema.Type.LONG)));
+            fields.add(new Schema.Field(METADATA_SCHEMA_VERSION_KEY, Schema.createUnion(
+                    Schema.create(Schema.Type.NULL), Schema.create(Schema.Type.LONG))));
         } else {
-            fields.add(new Schema.Field(METADATA_SCHEMA_VERSION_KEY, Schema.create(Schema.Type.BYTES)));
+            fields.add(new Schema.Field(METADATA_SCHEMA_VERSION_KEY, Schema.createUnion(
+                    Schema.create(Schema.Type.NULL), Schema.create(Schema.Type.BYTES))));
         }
         if (useHumanReadableMessageId) {
-            fields.add(new Schema.Field(METADATA_MESSAGE_ID_KEY, Schema.create(Schema.Type.STRING)));
+            fields.add(new Schema.Field(METADATA_MESSAGE_ID_KEY, Schema.createUnion(
+                    Schema.create(Schema.Type.NULL), Schema.create(Schema.Type.STRING))));
         } else {
-            fields.add(new Schema.Field(METADATA_MESSAGE_ID_KEY, Schema.create(Schema.Type.BYTES)));
+            fields.add(new Schema.Field(METADATA_MESSAGE_ID_KEY, Schema.createUnion(
+                    Schema.create(Schema.Type.NULL), Schema.create(Schema.Type.BYTES))));
         }
         return Schema.createRecord(MESSAGE_METADATA_NAME,
                 null,
