@@ -33,6 +33,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -227,43 +228,50 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
             log.debug("buffered records {}", recordsToInsert);
         }
 
-        Record<GenericRecord> firstRecord = recordsToInsert.get(0);
-        Schema<GenericRecord> schema = getPulsarSchema(firstRecord);
-        if (!format.doSupportPulsarSchemaType(schema.getSchemaInfo().getType())) {
-            log.warn("sink does not support schema type {}", schema.getSchemaInfo().getType());
-            bulkHandleFailedRecords(recordsToInsert);
-            return;
-        }
+        // all output blobs of the same batch should have the same partitioning timestamp
+        final long timeStampForPartitioning = System.currentTimeMillis();
+        final Map<String, List<Record<GenericRecord>>> recordsToInsertByTopic =
+                recordsToInsert.stream().collect(Collectors.groupingBy(record -> record.getTopicName().get()));
 
-        String filepath = "";
-        try {
-            format.initSchema(schema);
-            final Iterator<Record<GenericRecord>> iter = recordsToInsert.iterator();
-            filepath = buildPartitionPath(firstRecord, partitioner, format);
-            ByteBuffer payload = bindValue(iter, format);
-            log.info("Uploading blob {} currentBatchSize {}", filepath, currentBatchSize.get());
-            long elapsedMs = System.currentTimeMillis();
-            uploadPayload(payload, filepath);
-            elapsedMs = System.currentTimeMillis() - elapsedMs;
-            log.debug("Uploading blob elapsed time in ms: {}", elapsedMs);
-            recordsToInsert.forEach(Record::ack);
-            currentBatchSize.addAndGet(-1 * recordsToInsert.size());
-            if (sinkContext != null) {
-                sinkContext.recordMetric(METRICS_TOTAL_SUCCESS, recordsToInsert.size());
-                sinkContext.recordMetric(METRICS_LATEST_UPLOAD_ELAPSED_TIME, elapsedMs);
+        for (List<Record<GenericRecord>> singleTopicRecordsToInsert : recordsToInsertByTopic.values()) {
+            Record<GenericRecord> firstRecord = singleTopicRecordsToInsert.get(0);
+            Schema<GenericRecord> schema = getPulsarSchema(firstRecord);
+            if (!format.doSupportPulsarSchemaType(schema.getSchemaInfo().getType())) {
+                log.warn("sink does not support schema type {}", schema.getSchemaInfo().getType());
+                bulkHandleFailedRecords(singleTopicRecordsToInsert);
+                return;
             }
-            log.info("Successfully uploaded blob {} currentBatchSize {}", filepath, currentBatchSize.get());
-        } catch (Exception e) {
-            if (e instanceof ContainerNotFoundException) {
-                log.error("Blob {} is not found", filepath, e);
-            } else if (e instanceof IOException) {
-                log.error("Failed to write to blob {}", filepath, e);
-            } else if (e instanceof UnsupportedOperationException || e instanceof IllegalArgumentException) {
-                log.error("Failed to handle message schema {}", schema, e);
-            } else {
-                log.error("Encountered unknown error writing to blob {}", filepath, e);
+
+            String filepath = "";
+            try {
+                format.initSchema(schema);
+                final Iterator<Record<GenericRecord>> iter = singleTopicRecordsToInsert.iterator();
+                filepath = buildPartitionPath(firstRecord, partitioner, format, timeStampForPartitioning);
+                ByteBuffer payload = bindValue(iter, format);
+                log.info("Uploading blob {} currentBatchSize {}", filepath, currentBatchSize.get());
+                long elapsedMs = System.currentTimeMillis();
+                uploadPayload(payload, filepath);
+                elapsedMs = System.currentTimeMillis() - elapsedMs;
+                log.debug("Uploading blob {} elapsed time in ms: {}", filepath, elapsedMs);
+                singleTopicRecordsToInsert.forEach(Record::ack);
+                currentBatchSize.addAndGet(-1 * singleTopicRecordsToInsert.size());
+                if (sinkContext != null) {
+                    sinkContext.recordMetric(METRICS_TOTAL_SUCCESS, singleTopicRecordsToInsert.size());
+                    sinkContext.recordMetric(METRICS_LATEST_UPLOAD_ELAPSED_TIME, elapsedMs);
+                }
+                log.info("Successfully uploaded blob {} currentBatchSize {}", filepath, currentBatchSize.get());
+            } catch (Exception e) {
+                if (e instanceof ContainerNotFoundException) {
+                    log.error("Blob {} is not found", filepath, e);
+                } else if (e instanceof IOException) {
+                    log.error("Failed to write to blob {}", filepath, e);
+                } else if (e instanceof UnsupportedOperationException || e instanceof IllegalArgumentException) {
+                    log.error("Failed to handle message schema {}", schema, e);
+                } else {
+                    log.error("Encountered unknown error writing to blob {}", filepath, e);
+                }
+                bulkHandleFailedRecords(singleTopicRecordsToInsert);
             }
-            bulkHandleFailedRecords(recordsToInsert);
         }
     }
 
@@ -285,9 +293,10 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
     public String buildPartitionPath(Record<GenericRecord> message,
                                      Partitioner<GenericRecord> partitioner,
-                                     Format<?> format) {
+                                     Format<?> format,
+                                     long partitioningTimestamp) {
 
-        String encodePartition = partitioner.encodePartition(message, System.currentTimeMillis());
+        String encodePartition = partitioner.encodePartition(message, partitioningTimestamp);
         String partitionedPath = partitioner.generatePartitionedPath(message.getTopicName().get(), encodePartition);
         String path = pathPrefix + partitionedPath + format.getExtension();
         log.info("generate message[recordSequence={}] savePath: {}", message.getRecordSequence().get(), path);
