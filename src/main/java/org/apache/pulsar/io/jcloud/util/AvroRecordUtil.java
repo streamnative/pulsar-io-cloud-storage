@@ -35,7 +35,6 @@ import org.apache.avro.generic.GenericData;
 import org.apache.avro.protobuf.ProtobufData;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.client.api.Message;
-import org.apache.pulsar.client.api.schema.GenericObject;
 import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.client.api.schema.KeyValueSchema;
 import org.apache.pulsar.client.impl.MessageImpl;
@@ -217,21 +216,6 @@ public class AvroRecordUtil {
     public static org.apache.avro.generic.GenericRecord convertGenericRecord(GenericRecord recordValue,
                                                                              Schema rootAvroSchema) {
         org.apache.avro.generic.GenericRecord recordHolder = new GenericData.Record(rootAvroSchema);
-        if (recordValue.getSchemaType() == SchemaType.KEY_VALUE) {
-            org.apache.pulsar.common.schema.KeyValue<GenericObject, GenericObject> keyValue =
-                    (org.apache.pulsar.common.schema.KeyValue<GenericObject, GenericObject>)
-                            recordValue.getNativeObject();
-            if (keyValue.getKey() != null) {
-                final GenericRecord recordKeyRecord = (GenericRecord) keyValue.getKey();
-                recordHolder.put("key", convertGenericRecord(recordKeyRecord,
-                        rootAvroSchema.getField("key").schema()));
-            }
-            if (keyValue.getValue() != null) {
-                final GenericRecord recordValueRecord = (GenericRecord) keyValue.getValue();
-                recordHolder.put("key", convertGenericRecord(recordValueRecord,
-                        rootAvroSchema.getField("value").schema()));
-            }
-        }
         for (org.apache.pulsar.client.api.schema.Field field : recordValue.getFields()) {
             Schema.Field field1 = rootAvroSchema.getField(field.getName());
             Object valueField = readValue(recordValue, field);
