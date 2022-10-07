@@ -39,6 +39,7 @@ import org.apache.pulsar.client.api.schema.Field;
 import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.client.impl.schema.generic.GenericJsonRecord;
 import org.apache.pulsar.common.naming.TopicName;
+import org.apache.pulsar.common.schema.KeyValue;
 import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 import org.apache.pulsar.io.jcloud.PulsarTestBase;
@@ -109,6 +110,30 @@ public abstract class FormatTestBase extends PulsarTestBase {
         );
 
         sendTypedMessages(jsonTopicName.toString(), SchemaType.JSON, testRecords, Optional.empty(), TestRecord.class);
+
+        Consumer<Message<GenericRecord>>
+                handle = getJSONMessageConsumer(jsonTopicName);
+        consumerMessages(jsonTopicName.toString(), Schema.AUTO_CONSUME(), handle, testRecords.size(), 2000);
+    }
+
+
+    @Test
+    public void testKeyValueRecordWriter() throws Exception {
+        KeyValue<TestRecord, TestRecord> kv1 = new KeyValue<>(
+                new TestRecord("key1", 1, null),
+                new TestRecord("value1", 1, null)
+        );
+        KeyValue<TestRecord, TestRecord> kv2 = new KeyValue<>(
+                new TestRecord("key1", 1, new TestRecord.TestSubRecord("aaa")),
+                new TestRecord("value1", 1, new TestRecord.TestSubRecord("aaa"))
+        );
+        List<KeyValue> testRecords = Arrays.asList(
+                kv1,
+                kv2
+        );
+
+        sendTypedMessages(jsonTopicName.toString(), SchemaType.KEY_VALUE,
+                testRecords, Optional.empty(), KeyValue.class);
 
         Consumer<Message<GenericRecord>>
                 handle = getJSONMessageConsumer(jsonTopicName);

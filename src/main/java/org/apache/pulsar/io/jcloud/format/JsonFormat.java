@@ -34,7 +34,9 @@ import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pulsar.client.api.Schema;
 import org.apache.pulsar.client.api.schema.Field;
+import org.apache.pulsar.client.api.schema.GenericObject;
 import org.apache.pulsar.client.api.schema.GenericRecord;
+import org.apache.pulsar.client.api.schema.KeyValueSchema;
 import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
@@ -85,6 +87,7 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
             case PROTOBUF_NATIVE:
             case BYTES:
             case STRING:
+            case KEY_VALUE:
                 return true;
             default:
                 return false;
@@ -97,8 +100,9 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
         while (record.hasNext()) {
             Record<GenericRecord> next = record.next();
             GenericRecord val = next.getValue();
-            log.debug("next record {} schema {} val {}", next, next.getSchema(), val);
-            Map<String, Object> writeValue = convertRecordToObject(next.getValue());
+            final Schema<GenericRecord> schema = next.getSchema();
+            log.debug("next record {} schema {} val {}", next, schema, val);
+            Map<String, Object> writeValue = convertRecordToObject(next.getValue(), schema);
             if (useMetadata) {
                 writeValue.put(MetadataUtil.MESSAGE_METADATA_KEY,
                         MetadataUtil.extractedMetadata(next, useHumanReadableMessageId, useHumanReadableSchemaVersion));
@@ -109,7 +113,7 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
         return ByteBuffer.wrap(stringBuilder.toString().getBytes(StandardCharsets.UTF_8));
     }
 
-    private Map<String, Object> convertRecordToObject(GenericRecord record) throws IOException {
+    private Map<String, Object> convertRecordToObject(GenericRecord record, Schema<?> schema) throws IOException {
         if (record.getSchemaType().isStruct()) {
             switch (record.getSchemaType()) {
                 case AVRO:
@@ -122,7 +126,7 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
                         String name = field.getName();
                         Object value = record.getField(field);
                         if (value instanceof GenericRecord) {
-                            value = convertRecordToObject((GenericRecord) value);
+                            value = convertRecordToObject((GenericRecord) value, schema);
                         }
                         result.put(name, value);
                     }
@@ -142,6 +146,20 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
             return JSON_MAPPER.get().readValue((String) record.getNativeObject(), TYPEREF);
         } else if (record.getSchemaType() == SchemaType.BYTES) {
             return JSON_MAPPER.get().readValue((byte[]) record.getNativeObject(), TYPEREF);
+        } else if (record.getSchemaType() == SchemaType.KEY_VALUE) {
+            Map<String, Object> jsonKeyValue = new LinkedHashMap<>(2);
+            KeyValueSchema<GenericObject, GenericObject> keyValueSchema = (KeyValueSchema) schema;
+            org.apache.pulsar.common.schema.KeyValue<GenericObject, GenericObject> keyValue =
+                    (org.apache.pulsar.common.schema.KeyValue<GenericObject, GenericObject>) record.getNativeObject();
+            if (keyValue.getKey() != null) {
+                jsonKeyValue.put("key", convertRecordToObject((GenericRecord) keyValue.getKey(),
+                        keyValueSchema.getKeySchema()));
+            }
+            if (keyValue.getValue() != null) {
+                jsonKeyValue.put("value", convertRecordToObject((GenericRecord) keyValue.getValue(),
+                        keyValueSchema.getValueSchema()));
+            }
+            return jsonKeyValue;
         }
         throw new UnsupportedOperationException("Unsupported value schemaType=" + record.getSchemaType());
     }
