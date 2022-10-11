@@ -26,7 +26,7 @@ import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.jcloud.shade.com.google.common.io.ByteSource;
 
 /**
- * record format.
+ * output record format.
  */
 public interface Format<T> {
     /**
