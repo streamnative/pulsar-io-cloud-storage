@@ -233,7 +233,6 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
             while (records.hasNext()) {
                 final Record<GenericRecord> next = records.next();
                 GenericRecord genericRecord = next.getValue();
-                final org.apache.pulsar.client.api.Schema<GenericRecord> schema = next.getSchema();
                 if (genericRecord.getSchemaType() == SchemaType.BYTES
                         && internalSchema.getSchemaInfo().getType() == SchemaType.PROTOBUF_NATIVE) {
                     genericRecord = internalSchema.decode((byte[]) next.getValue().getNativeObject());
