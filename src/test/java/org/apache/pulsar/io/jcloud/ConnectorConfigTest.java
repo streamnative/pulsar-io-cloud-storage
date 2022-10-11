@@ -42,7 +42,7 @@ public class ConnectorConfigTest {
         config.put("secretAccessKey", "aws-s3");
         config.put("bucket", "testbucket");
         config.put("region", "localhost");
-        config.put("endpoint", "us-standard");
+        config.put("endpoint", "https://us-standard");
         config.put("pathPrefix", "pulsar/");
         config.put("formatType", "avro");
         config.put("partitionerType", "default");
@@ -73,7 +73,7 @@ public class ConnectorConfigTest {
         config.put("secretAccessKey", "aws-s3");
         config.put("bucket", "testbucket");
         config.put("region", "localhost");
-        config.put("endpoint", "us-standard");
+        config.put("endpoint", "https://us-standard");
         config.put("formatType", "avro");
         config.put("partitionerType", "time");
         config.put("timePartitionPattern", "yyyy-MM-dd");
@@ -133,7 +133,7 @@ public class ConnectorConfigTest {
         config.put("secretAccessKey", "aws-s3");
         config.put("bucket", "testbucket");
         config.put("region", "localhost");
-        config.put("endpoint", "us-standard");
+        config.put("endpoint", "https://us-standard");
         config.put("formatType", "avro");
         config.put("partitionerType", "default");
         config.put("timePartitionPattern", "yyyy-MM-dd");
@@ -177,12 +177,32 @@ public class ConnectorConfigTest {
     }
 
     @Test
+    public final void throwOnMalformedEndpointTest() {
+        Map<String, Object> config = new HashMap<>();
+        config.put("provider", PROVIDER_AWSS3);
+        config.put("accessKeyId", "aws-s3");
+        config.put("secretAccessKey", "aws-s3");
+        config.put("bucket", "testbucket");
+        config.put("region", "us-east-1");
+        config.put("endpoint", "s3.us-east-1.amazonaws.com"); // no URI scheme
+        config.put("pathPrefix", "pulsar/");
+        config.put("formatType", "avro");
+        config.put("partitionerType", "default");
+        config.put("timePartitionPattern", "yyyy-MM-dd");
+        config.put("timePartitionDuration", "2d");
+        config.put("batchSize", 10);
+
+        Assert.assertThrows(IllegalArgumentException.class,
+                () -> CloudStorageSinkConfig.load(config).validate());
+    }
+
+    @Test
     public final void loadFromMapCredentialFromSecretTest() throws IOException {
         Map<String, Object> config = new HashMap<>();
         config.put("provider", "aws-s3");
         config.put("bucket", "testbucket");
         config.put("region", "localhost");
-        config.put("endpoint", "us-standard");
+        config.put("endpoint", "https://us-standard");
         config.put("formatType", "avro");
         config.put("partitionerType", "default");
         config.put("timePartitionPattern", "yyyy-MM-dd");
@@ -212,7 +232,7 @@ public class ConnectorConfigTest {
         config.put("secretAccessKey", "aws-s3");
         config.put("bucket", "testbucket");
         config.put("region", "localhost");
-        config.put("endpoint", "us-standard");
+        config.put("endpoint", "https://us-standard");
         config.put("pathPrefix", "pulsar/");
         config.put("formatType", "bytes");
         config.put("partitionerType", "default");
