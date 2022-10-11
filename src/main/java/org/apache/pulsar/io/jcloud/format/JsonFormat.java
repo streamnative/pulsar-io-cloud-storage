@@ -37,6 +37,7 @@ import org.apache.pulsar.client.api.schema.Field;
 import org.apache.pulsar.client.api.schema.GenericObject;
 import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.client.api.schema.KeyValueSchema;
+import org.apache.pulsar.common.schema.KeyValue;
 import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
@@ -147,20 +148,23 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
         } else if (record.getSchemaType() == SchemaType.BYTES) {
             return JSON_MAPPER.get().readValue((byte[]) record.getNativeObject(), TYPEREF);
         } else if (record.getSchemaType() == SchemaType.KEY_VALUE) {
-            Map<String, Object> jsonKeyValue = new LinkedHashMap<>(2);
+            Map<String, Object> jsonKeyValue = new LinkedHashMap<>();
             KeyValueSchema<GenericObject, GenericObject> keyValueSchema = (KeyValueSchema) schema;
-            org.apache.pulsar.common.schema.KeyValue<GenericObject, GenericObject> keyValue =
-                    (org.apache.pulsar.common.schema.KeyValue<GenericObject, GenericObject>) record.getNativeObject();
-            if (keyValue.getKey() != null) {
-                jsonKeyValue.put("key", convertRecordToObject((GenericRecord) keyValue.getKey(),
-                        keyValueSchema.getKeySchema()));
-            }
-            if (keyValue.getValue() != null) {
-                jsonKeyValue.put("value", convertRecordToObject((GenericRecord) keyValue.getValue(),
-                        keyValueSchema.getValueSchema()));
+            KeyValue<GenericObject, GenericObject> keyValue =
+                    (KeyValue<GenericObject, GenericObject>) record.getNativeObject();
+            if (keyValue != null) {
+                putRecordEntry(jsonKeyValue, "key", keyValue.getKey(), keyValueSchema.getKeySchema());
+                putRecordEntry(jsonKeyValue, "value", keyValue.getValue(), keyValueSchema.getValueSchema());
             }
             return jsonKeyValue;
         }
         throw new UnsupportedOperationException("Unsupported value schemaType=" + record.getSchemaType());
+    }
+
+    private void putRecordEntry(Map<String, Object> jsonKeyValue, String key,
+                                GenericObject record, Schema<?> schema) throws IOException {
+        if (record != null) {
+            jsonKeyValue.put(key, convertRecordToObject((GenericRecord) record, schema));
+        }
     }
 }

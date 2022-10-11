@@ -63,6 +63,8 @@ public abstract class FormatTestBase extends PulsarTestBase {
             TopicName.get("test-parquet-avro" + RandomStringUtils.randomAlphabetic(5));
     private static final TopicName jsonTopicName =
             TopicName.get("test-parquet-json" + RandomStringUtils.randomAlphabetic(5));
+    private static final TopicName kvTopicName =
+            TopicName.get("test-parquet-kv" + RandomStringUtils.randomAlphabetic(5));
     private static final TopicName protobufNativeTopicName =
             TopicName.get("test-parquet-protobuf-native" + RandomStringUtils.randomAlphabetic(5));
 
@@ -73,6 +75,8 @@ public abstract class FormatTestBase extends PulsarTestBase {
                 .build();
         pulsarAdmin.topics().createPartitionedTopic(jsonTopicName.toString(), 1);
         pulsarAdmin.topics().createSubscription(jsonTopicName.toString(), "test", MessageId.earliest);
+        pulsarAdmin.topics().createPartitionedTopic(kvTopicName.toString(), 1);
+        pulsarAdmin.topics().createSubscription(kvTopicName.toString(), "test", MessageId.earliest);
         pulsarAdmin.topics().createPartitionedTopic(avroTopicName.toString(), 1);
         pulsarAdmin.topics().createSubscription(avroTopicName.toString(), "test", MessageId.earliest);
         pulsarAdmin.topics().createPartitionedTopic(protobufNativeTopicName.toString(), 1);
@@ -132,12 +136,12 @@ public abstract class FormatTestBase extends PulsarTestBase {
                 kv2
         );
 
-        sendTypedMessages(jsonTopicName.toString(), SchemaType.KEY_VALUE,
+        sendTypedMessages(kvTopicName.toString(), SchemaType.KEY_VALUE,
                 testRecords, Optional.empty(), KeyValue.class);
 
         Consumer<Message<GenericRecord>>
-                handle = getJSONMessageConsumer(jsonTopicName);
-        consumerMessages(jsonTopicName.toString(), Schema.AUTO_CONSUME(), handle, testRecords.size(), 2000);
+                handle = getJSONMessageConsumer(kvTopicName);
+        consumerMessages(kvTopicName.toString(), Schema.AUTO_CONSUME(), handle, testRecords.size(), 2000);
     }
 
     @Test
