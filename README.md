@@ -59,6 +59,7 @@ The Cloud Storage sink connector supports the following properties.
 | `pendingQueueSize`              | int     | False    | 100          | The number of records buffered in queue. By default, it is `batchSize * 10`. You can set it manually.                                                                                                                   |
 | `useHumanReadableSchemaVersion` | Boolean | False    | false        | Use a human-readable format string for the schema version in the message metadata. If it is set to `true`, the schema version is in plain string format. Otherwise, the schema version is in hex-encoded string format. |
 | `skipFailedMessages`            | Boolean | False    | false        | Configure whether to skip a message which it fails to be processed. If it is set to `true`, the connector will skip the failed messages by `ack` it. Otherwise, the connector will `fail` the message.                  |
+| `pathPrefix`                    | String  | False    | false        | If it is set, the output files are stored in a folder under the given bucket path. The `pathPrefix` must be in the format of `xx/xxx/`.                                                                                 |
 
 #### Storage Provider: Google Cloud Storage
 
@@ -83,6 +84,7 @@ The Cloud Storage sink connector supports the following properties.
 | `pendingQueueSize`                | int     | False    | 100          | The number of records buffered in queue. By default, it is `batchSize * 10`. You can set it manually.                                                                                                                   |
 | `useHumanReadableSchemaVersion`   | Boolean | False    | false        | Use a human-readable format string for the schema version in the message metadata. If it is set to `true`, the schema version is in plain string format. Otherwise, the schema version is in hex-encoded string format. |
 | `skipFailedMessages`              | Boolean | False    | false        | Configure whether to skip a message which it fails to be processed. If it is set to `true`, the connector will skip the failed messages by `ack` it. Otherwise, the connector will `fail` the message.                  |
+| `pathPrefix`                      | String  | False    | false        | If it is set, the output files are stored in a folder under the given bucket path. The `pathPrefix` must be in the format of `xx/xxx/`.                                                                                 |
 
 ### Configure Cloud Storage sink connector
 
