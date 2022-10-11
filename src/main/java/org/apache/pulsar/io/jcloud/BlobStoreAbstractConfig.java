@@ -141,6 +141,7 @@ public class BlobStoreAbstractConfig implements Serializable {
         }
         checkArgument(batchSize > 0, "batchSize must be a positive integer.");
         checkArgument(batchTimeMs > 0, "batchTimeMs must be a positive long.");
+        checkArgument(maxBatchBytes > 0, "maxBatchBytes must be a positive long.");
         if (StringUtils.isNoneBlank(pathPrefix)) {
             checkArgument(!StringUtils.startsWith(pathPrefix, "/"),
                     "pathPrefix cannot start with '/',the style is 'xx/xxx/'.");
