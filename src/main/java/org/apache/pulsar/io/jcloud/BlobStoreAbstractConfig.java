@@ -23,6 +23,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import com.google.common.collect.ImmutableMap;
 import java.io.Serializable;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -62,7 +64,6 @@ public class BlobStoreAbstractConfig implements Serializable {
 
     public static final String PROVIDER_AWSS3 = "aws-s3";
     public static final String PROVIDER_AWSS3V2 = "s3v2";
-    public static final String PROVIDER_S3 = "s3";
     public static final String PROVIDER_GCS = "google-cloud-storage";
 
     private String provider;
@@ -107,9 +108,12 @@ public class BlobStoreAbstractConfig implements Serializable {
     public void validate() {
         checkNotNull(provider, "provider not set.");
         checkNotNull(bucket, "bucket property not set.");
-        if (provider.equalsIgnoreCase(PROVIDER_AWSS3)) {
+        if (provider.equalsIgnoreCase(PROVIDER_AWSS3) || provider.equalsIgnoreCase(PROVIDER_AWSS3V2)) {
             checkArgument(isNotBlank(region) || isNotBlank(endpoint),
-                    "Either the aws-end-point or aws-region must be set");
+                    "Either the aws-end-point or aws-region must be set.");
+            if (isNotBlank(endpoint)) {
+                checkArgument(hasURIScheme(endpoint), "endpoint property needs to specify URI scheme.");
+            }
         }
 
         if (!formatMap.containsKey(StringUtils.lowerCase(formatType))) {
@@ -120,7 +124,7 @@ public class BlobStoreAbstractConfig implements Serializable {
                 && !partitionerType.equalsIgnoreCase("default")) {
             // `default` option is for backward compatibility
             throw new IllegalArgumentException(
-                    "partitionerType property not set properly, available options: partition / time");
+                    "partitionerType property not set properly, available options: partition / time.");
         }
         if (PartitionerType.TIME.name().equalsIgnoreCase(partitionerType)) {
             if (StringUtils.isNoneBlank(timePartitionPattern)) {
@@ -145,16 +149,25 @@ public class BlobStoreAbstractConfig implements Serializable {
 
         if ("bytes".equalsIgnoreCase(formatType)) {
             checkArgument(StringUtils.isNotEmpty(bytesFormatTypeSeparator),
-                    "bytesFormatTypeSeparator cannot be empty when formatType is 'bytes'");
+                    "bytesFormatTypeSeparator cannot be empty when formatType is 'bytes'.");
             checkArgument(StringUtils.startsWith(bytesFormatTypeSeparator, "0x"),
-                    "bytesFormatTypeSeparator should be a hex encoded string, which starts with '0x'");
+                    "bytesFormatTypeSeparator should be a hex encoded string, which starts with '0x'.");
         }
 
         if (pendingQueueSize <= 0) {
             pendingQueueSize = batchSize * 10;
         }
         checkArgument(pendingQueueSize > 0, "pendingQueueSize must be a positive integer.");
-        checkArgument(pendingQueueSize > batchSize, "pendingQueueSize must be large than batchSize");
+        checkArgument(pendingQueueSize > batchSize, "pendingQueueSize must be large than batchSize.");
+    }
+
+    private static boolean hasURIScheme(String endpoint) {
+        try {
+            URI uri = new URI(endpoint);
+            return isNotBlank(uri.getScheme());
+        } catch (URISyntaxException e) {
+            return false;
+        }
     }
 
 }
