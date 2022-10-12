@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -37,6 +38,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.client.api.Schema;
 import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.functions.api.Record;
@@ -77,7 +79,9 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
     private String pathPrefix;
 
     private long maxBatchSize;
+    private long maxBatchBytes;
     private final AtomicLong currentBatchSize = new AtomicLong(0L);
+    private final AtomicLong currentBatchBytes = new AtomicLong(0L);
     private ArrayBlockingQueue<Record<GenericRecord>> pendingFlushQueue;
     private final AtomicBoolean isFlushRunning = new AtomicBoolean(false);
     private SinkContext sinkContext;
@@ -104,6 +108,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         pathPrefix = StringUtils.trimToEmpty(sinkConfig.getPathPrefix());
         long batchTimeMs = sinkConfig.getBatchTimeMs();
         maxBatchSize = sinkConfig.getBatchSize();
+        maxBatchBytes = sinkConfig.getMaxBatchBytes();
         flushExecutor.scheduleWithFixedDelay(this::flush, batchTimeMs, batchTimeMs, TimeUnit.MILLISECONDS);
         isRunning = true;
         this.sinkContext = sinkContext;
@@ -114,7 +119,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         if (isFlushRunning.get()) {
             return;
         }
-        if (force || currentBatchSize.get() >= maxBatchSize) {
+        if (force || currentBatchSize.get() >= maxBatchSize || currentBatchBytes.get() >= maxBatchBytes) {
             flushExecutor.submit(this::flush);
         }
     }
@@ -186,14 +191,15 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         checkArgument(record.getMessage().isPresent());
         pendingFlushQueue.put(record);
         currentBatchSize.addAndGet(1);
+        currentBatchBytes.addAndGet(record.getMessage().get().size());
         flushIfNeeded(false);
     }
 
 
     private void flush() {
         if (log.isDebugEnabled()) {
-            log.debug("flush requested, pending: {}, batchSize: {}",
-                currentBatchSize.get(), maxBatchSize);
+            log.debug("flush requested, pending: {} ({} bytes}, batchSize: {}, maxBatchBytes: {}",
+                currentBatchSize.get(), currentBatchBytes.get(), maxBatchSize, maxBatchBytes);
         }
 
         if (pendingFlushQueue.isEmpty()) {
@@ -217,9 +223,15 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
     private void unsafeFlush() {
         final List<Record<GenericRecord>> recordsToInsert = Lists.newArrayList();
-        while (!pendingFlushQueue.isEmpty() && recordsToInsert.size() < maxBatchSize) {
+        long recordsToInsertBytes = 0;
+        while (!pendingFlushQueue.isEmpty() && recordsToInsert.size() < maxBatchSize
+                && recordsToInsertBytes < maxBatchBytes) {
             Record<GenericRecord> r = pendingFlushQueue.poll();
             if (r != null) {
+                if (r.getMessage().isPresent()) {
+                    long recordBytes = r.getMessage().get().size();
+                    recordsToInsertBytes += recordBytes;
+                }
                 recordsToInsert.add(r);
             }
         }
@@ -248,18 +260,27 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                 final Iterator<Record<GenericRecord>> iter = singleTopicRecordsToInsert.iterator();
                 filepath = buildPartitionPath(firstRecord, partitioner, format, timeStampForPartitioning);
                 ByteBuffer payload = bindValue(iter, format);
-                log.info("Uploading blob {} currentBatchSize {}", filepath, currentBatchSize.get());
+                log.info("Uploading blob {} currentBatchSize {} currentBatchBytes {}", filepath, currentBatchSize.get(),
+                        currentBatchBytes.get());
                 long elapsedMs = System.currentTimeMillis();
                 uploadPayload(payload, filepath);
                 elapsedMs = System.currentTimeMillis() - elapsedMs;
                 log.debug("Uploading blob {} elapsed time in ms: {}", filepath, elapsedMs);
                 singleTopicRecordsToInsert.forEach(Record::ack);
+                long singleTopicRecordsToInsertBytes = singleTopicRecordsToInsert.stream()
+                        .map(Record::getMessage)
+                        .filter(Optional::isPresent)
+                        .map(Optional::get)
+                        .mapToLong(Message::size)
+                        .sum();
+                currentBatchBytes.addAndGet(-1 * singleTopicRecordsToInsertBytes);
                 currentBatchSize.addAndGet(-1 * singleTopicRecordsToInsert.size());
                 if (sinkContext != null) {
                     sinkContext.recordMetric(METRICS_TOTAL_SUCCESS, singleTopicRecordsToInsert.size());
                     sinkContext.recordMetric(METRICS_LATEST_UPLOAD_ELAPSED_TIME, elapsedMs);
                 }
-                log.info("Successfully uploaded blob {} currentBatchSize {}", filepath, currentBatchSize.get());
+                log.info("Successfully uploaded blob {} currentBatchSize {} currentBatchBytes {}", filepath,
+                        currentBatchSize.get(), currentBatchBytes.get());
             } catch (Exception e) {
                 if (e instanceof ContainerNotFoundException) {
                     log.error("Blob {} is not found", filepath, e);
