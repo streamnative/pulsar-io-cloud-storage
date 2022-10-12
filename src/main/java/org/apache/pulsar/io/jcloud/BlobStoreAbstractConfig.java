@@ -90,6 +90,7 @@ public class BlobStoreAbstractConfig implements Serializable {
 
     private boolean sliceTopicPartitionPath;
 
+    private long maxBatchBytes = 10_000;
     private int batchSize = 10;
     private int pendingQueueSize = -1;
 
@@ -140,6 +141,7 @@ public class BlobStoreAbstractConfig implements Serializable {
         }
         checkArgument(batchSize > 0, "batchSize must be a positive integer.");
         checkArgument(batchTimeMs > 0, "batchTimeMs must be a positive long.");
+        checkArgument(maxBatchBytes > 0, "maxBatchBytes must be a positive long.");
         if (StringUtils.isNoneBlank(pathPrefix)) {
             checkArgument(!StringUtils.startsWith(pathPrefix, "/"),
                     "pathPrefix cannot start with '/',the style is 'xx/xxx/'.");

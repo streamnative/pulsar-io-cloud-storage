@@ -44,6 +44,7 @@ public class GoogleCloudStorageProviderTest {
         config.put("timePartitionPattern", "yyyy-MM-dd");
         config.put("timePartitionDuration", "2d");
         config.put("batchSize", 10);
+        config.put("maxBatchBytes", 10000L);
         CloudStorageSinkConfig cloudStorageSinkConfig = CloudStorageSinkConfig.load(config);
         cloudStorageSinkConfig.validate();
 
@@ -57,6 +58,7 @@ public class GoogleCloudStorageProviderTest {
         Assert.assertEquals(config.get("timePartitionPattern"), cloudStorageSinkConfig.getTimePartitionPattern());
         Assert.assertEquals(config.get("timePartitionDuration"), cloudStorageSinkConfig.getTimePartitionDuration());
         Assert.assertEquals(config.get("batchSize"), cloudStorageSinkConfig.getBatchSize());
+        Assert.assertEquals(config.get("maxBatchBytes"), cloudStorageSinkConfig.getMaxBatchBytes());
     }
 
 }
