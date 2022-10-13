@@ -80,15 +80,15 @@ public class BytesFormatTest extends FormatTestBase {
 
     public org.apache.avro.generic.GenericRecord getFormatGeneratedRecord(TopicName topicName,
                                                                           Message<GenericRecord> msg) throws Exception {
+        final Schema<GenericRecord> schema = (Schema<GenericRecord>) msg.getReaderSchema().get();
         Record<GenericRecord> mockRecord = mock(Record.class);
-        Schema<GenericRecord> mockSchema = mock(Schema.class);
         when(mockRecord.getTopicName()).thenReturn(Optional.of(topicName.toString()));
         when(mockRecord.getPartitionIndex()).thenReturn(Optional.of(0));
         when(mockRecord.getMessage()).thenReturn(Optional.of(msg));
         when(mockRecord.getValue()).thenReturn(msg.getValue());
         when(mockRecord.getPartitionId()).thenReturn(Optional.of(String.format("%s-%s", topicName, 0)));
         when(mockRecord.getRecordSequence()).thenReturn(Optional.of(3221225506L));
-        when(mockRecord.getSchema()).thenReturn(mockSchema);
+        when(mockRecord.getSchema()).thenReturn(schema);
 
         List<Record<GenericRecord>> records = new ArrayList<>();
         records.add(mockRecord);

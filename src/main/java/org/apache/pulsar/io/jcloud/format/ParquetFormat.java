@@ -199,6 +199,7 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
             case JSON:
             case PROTOBUF:
             case PROTOBUF_NATIVE:
+            case KEY_VALUE:
                 return true;
             default:
                 return false;
