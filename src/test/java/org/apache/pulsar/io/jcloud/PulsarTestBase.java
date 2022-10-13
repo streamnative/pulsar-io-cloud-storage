@@ -38,6 +38,7 @@ import org.apache.pulsar.client.api.PulsarClient;
 import org.apache.pulsar.client.api.PulsarClientException;
 import org.apache.pulsar.client.api.Schema;
 import org.apache.pulsar.common.naming.TopicName;
+import org.apache.pulsar.common.schema.KeyValue;
 import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.io.jcloud.container.PulsarContainer;
 import org.junit.AfterClass;
@@ -177,6 +178,11 @@ public abstract class PulsarTestBase {
                     break;
                 case JSON:
                     producer = (Producer<T>) client.newProducer(Schema.JSON(tClass)).topic(topicName).create();
+                    break;
+                case KEY_VALUE:
+                    final KeyValue kvMessage = (KeyValue) messages.get(0);
+                    producer = (Producer<T>) client.newProducer(Schema.KeyValue(kvMessage.getKey().getClass(),
+                            kvMessage.getValue().getClass())).topic(topicName).create();
                     break;
 
                 default:
