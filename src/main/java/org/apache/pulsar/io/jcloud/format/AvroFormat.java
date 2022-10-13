@@ -99,6 +99,7 @@ public class AvroFormat implements Format<GenericRecord> , InitConfiguration<Blo
             case JSON:
             case PROTOBUF:
             case PROTOBUF_NATIVE:
+            case KEY_VALUE:
                 return true;
             default:
                 return false;

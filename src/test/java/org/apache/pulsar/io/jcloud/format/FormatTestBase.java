@@ -39,6 +39,7 @@ import org.apache.pulsar.client.api.schema.Field;
 import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.client.impl.schema.generic.GenericJsonRecord;
 import org.apache.pulsar.common.naming.TopicName;
+import org.apache.pulsar.common.schema.KeyValue;
 import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 import org.apache.pulsar.io.jcloud.PulsarTestBase;
@@ -62,6 +63,8 @@ public abstract class FormatTestBase extends PulsarTestBase {
             TopicName.get("test-parquet-avro" + RandomStringUtils.randomAlphabetic(5));
     private static final TopicName jsonTopicName =
             TopicName.get("test-parquet-json" + RandomStringUtils.randomAlphabetic(5));
+    private static final TopicName kvTopicName =
+            TopicName.get("test-parquet-kv" + RandomStringUtils.randomAlphabetic(5));
     private static final TopicName protobufNativeTopicName =
             TopicName.get("test-parquet-protobuf-native" + RandomStringUtils.randomAlphabetic(5));
 
@@ -72,6 +75,8 @@ public abstract class FormatTestBase extends PulsarTestBase {
                 .build();
         pulsarAdmin.topics().createPartitionedTopic(jsonTopicName.toString(), 1);
         pulsarAdmin.topics().createSubscription(jsonTopicName.toString(), "test", MessageId.earliest);
+        pulsarAdmin.topics().createPartitionedTopic(kvTopicName.toString(), 1);
+        pulsarAdmin.topics().createSubscription(kvTopicName.toString(), "test", MessageId.earliest);
         pulsarAdmin.topics().createPartitionedTopic(avroTopicName.toString(), 1);
         pulsarAdmin.topics().createSubscription(avroTopicName.toString(), "test", MessageId.earliest);
         pulsarAdmin.topics().createPartitionedTopic(protobufNativeTopicName.toString(), 1);
@@ -113,6 +118,30 @@ public abstract class FormatTestBase extends PulsarTestBase {
         Consumer<Message<GenericRecord>>
                 handle = getJSONMessageConsumer(jsonTopicName);
         consumerMessages(jsonTopicName.toString(), Schema.AUTO_CONSUME(), handle, testRecords.size(), 2000);
+    }
+
+
+    @Test
+    public void testKeyValueRecordWriter() throws Exception {
+        KeyValue<TestRecord, TestRecord> kv1 = new KeyValue<>(
+                new TestRecord("key1", 1, null),
+                new TestRecord("value1", 1, null)
+        );
+        KeyValue<TestRecord, TestRecord> kv2 = new KeyValue<>(
+                new TestRecord("key1", 1, new TestRecord.TestSubRecord("aaa")),
+                new TestRecord("value1", 1, new TestRecord.TestSubRecord("aaa"))
+        );
+        List<KeyValue> testRecords = Arrays.asList(
+                kv1,
+                kv2
+        );
+
+        sendTypedMessages(kvTopicName.toString(), SchemaType.KEY_VALUE,
+                testRecords, Optional.empty(), KeyValue.class);
+
+        Consumer<Message<GenericRecord>>
+                handle = getJSONMessageConsumer(kvTopicName);
+        consumerMessages(kvTopicName.toString(), Schema.AUTO_CONSUME(), handle, testRecords.size(), 2000);
     }
 
     @Test
