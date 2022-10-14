@@ -157,10 +157,11 @@ public class BlobStoreAbstractConfig implements Serializable {
         }
 
         if (pendingQueueSize <= 0) {
-            pendingQueueSize = batchSize * 10;
+            pendingQueueSize = batchSize;
         }
         checkArgument(pendingQueueSize > 0, "pendingQueueSize must be a positive integer.");
-        checkArgument(pendingQueueSize > batchSize, "pendingQueueSize must be large than batchSize.");
+        checkArgument(pendingQueueSize >= batchSize, "pendingQueueSize must be larger than or "
+                + "equal to batchSize");
     }
 
     private static boolean hasURIScheme(String endpoint) {
