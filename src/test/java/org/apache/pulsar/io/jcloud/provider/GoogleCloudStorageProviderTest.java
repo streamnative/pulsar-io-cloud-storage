@@ -37,7 +37,7 @@ public class GoogleCloudStorageProviderTest {
         config.put("gcsServiceAccountKeyFilePath", "/tmp/gcs.json");
         config.put("bucket", "testbucket");
         config.put("region", "localhost");
-        config.put("endpoint", "us-standard");
+        config.put("endpoint", "https://us-standard");
         config.put("pathPrefix", "pulsar/");
         config.put("formatType", "avro");
         config.put("partitionerType", "default");
