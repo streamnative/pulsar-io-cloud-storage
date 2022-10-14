@@ -5,7 +5,7 @@ alias: Cloud Storage Sink Connector
 
 The Cloud Storage sink connector supports exporting data from Pulsar topics to cloud storage (such as AWS S3 and Google GCS) either in Avro, JSON, Parquet or other formats. According to your environment, the Cloud Storage sink connector can guarantee exactly-once support for exporting data to cloud storage.
 
-![](/images/connectors/cloud-storage-sink.png)
+![](/docs/cloud-storage-sink.png)
 
 # How to get
 
