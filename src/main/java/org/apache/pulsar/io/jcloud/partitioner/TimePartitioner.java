@@ -102,7 +102,7 @@ public class TimePartitioner<T> extends AbstractPartitioner<T> {
 
     private long getPublishTime(Record<T> sinkRecord, Long defaultTime) {
         final Supplier<Long> defaultTimeSupplier = () -> {
-            LOGGER.warn("record not exist Message {}, {}", sinkRecord.getRecordSequence().get());
+            LOGGER.warn("record not exist Message {}", sinkRecord.getRecordSequence().get());
             return defaultTime;
         };
         return sinkRecord.getMessage()

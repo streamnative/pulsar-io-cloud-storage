@@ -21,7 +21,6 @@ package org.apache.pulsar.io.jcloud.partitioner;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.common.naming.TopicName;
@@ -88,8 +87,8 @@ public abstract class AbstractPartitioner<T> implements Partitioner<T> {
                             message.getMessageId());
                 }
             } else {
-                LOGGER.warn("Configured to true but no index found on message {}, perhaps "
-                        + "exposingBrokerEntryMetadataToClientEnabled is not enabled in the broker",
+                LOGGER.warn("partitionerUseIndexAsOffset configured to true but no index found on the message {}, " +
+                                "perhaps the broker didn't exposed the metadata, using recordSequence",
                         message.getMessageId());
             }
         }
