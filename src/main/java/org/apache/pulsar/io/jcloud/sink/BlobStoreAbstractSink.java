@@ -203,12 +203,12 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         }
 
         if (pendingFlushQueue.isEmpty()) {
-            log.info("Skip flushing, because the pending flush queue is empty ...");
+            log.debug("Skip flushing because the pending flush queue is empty...");
             return;
         }
 
         if (!isFlushRunning.compareAndSet(false, true)) {
-            log.info("Skip flushing, because there is an outstanding flush ...");
+            log.info("Skip flushing because there is an outstanding flush...");
             return;
         }
 
