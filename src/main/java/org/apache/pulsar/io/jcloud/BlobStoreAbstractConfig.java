@@ -34,6 +34,7 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.parquet.format.CompressionCodec;
 import org.apache.pulsar.io.jcloud.format.AvroFormat;
 import org.apache.pulsar.io.jcloud.format.BytesFormat;
 import org.apache.pulsar.io.jcloud.format.Format;
@@ -83,6 +84,10 @@ public class BlobStoreAbstractConfig implements Serializable {
     // The AVRO codec.
     // Options: null, deflate, bzip2, xz, zstandard, snappy
     private String avroCodec = "snappy";
+
+    // The Parquet codec.
+    // Options: null, snappy, gzip, lzo, brotli, lz4, zstd
+    private String parquetCodec = "gzip";
 
     private String timePartitionPattern;
 
