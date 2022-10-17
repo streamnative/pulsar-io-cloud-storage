@@ -96,13 +96,13 @@ public class TimePartitioner<T> extends AbstractPartitioner<T> {
         String timeString = dateTimeFormatter.format(Instant.ofEpochMilli(parsed).atOffset(ZoneOffset.UTC));
         final String result = timeString
                 + PATH_SEPARATOR
-                + sinkRecord.getRecordSequence().orElseThrow(() -> new RuntimeException("recordSequence not null"));
+                + getMessageOffset(sinkRecord);
         return result;
     }
 
     private long getPublishTime(Record<T> sinkRecord, Long defaultTime) {
         final Supplier<Long> defaultTimeSupplier = () -> {
-            LOGGER.warn("record not exist Message {}", sinkRecord.getRecordSequence().get());
+            LOGGER.warn("record not exist Message {}, {}", sinkRecord.getRecordSequence().get());
             return defaultTime;
         };
         return sinkRecord.getMessage()

@@ -29,12 +29,8 @@ import org.slf4j.LoggerFactory;
  */
 public class SimplePartitioner<T> extends AbstractPartitioner<T> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SimplePartitioner.class);
-
     @Override
     public String encodePartition(Record<T> sinkRecord) {
-        Long recordSequence = sinkRecord.getRecordSequence()
-                .orElseThrow(() -> new RuntimeException("recordSequence not null"));
-        return recordSequence.toString();
+        return Long.toString(getMessageOffset(sinkRecord));
     }
 }
