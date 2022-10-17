@@ -83,6 +83,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
     private final AtomicLong currentBatchSize = new AtomicLong(0L);
     private final AtomicLong currentBatchBytes = new AtomicLong(0L);
     private ArrayBlockingQueue<Record<GenericRecord>> pendingFlushQueue;
+    private ArrayBlockingQueue<Record<GenericRecord>> pendingFlushQueue;
     private final AtomicBoolean isFlushRunning = new AtomicBoolean(false);
     private SinkContext sinkContext;
     private volatile boolean isRunning = false;
@@ -203,12 +204,12 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         }
 
         if (pendingFlushQueue.isEmpty()) {
-            log.info("Skip flushing, because the pending flush queue is empty ...");
+            log.debug("Skip flushing because the pending flush queue is empty...");
             return;
         }
 
         if (!isFlushRunning.compareAndSet(false, true)) {
-            log.info("Skip flushing, because there is an outstanding flush ...");
+            log.info("Skip flushing because there is an outstanding flush...");
             return;
         }
 
