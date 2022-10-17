@@ -83,7 +83,6 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
     private final AtomicLong currentBatchSize = new AtomicLong(0L);
     private final AtomicLong currentBatchBytes = new AtomicLong(0L);
     private ArrayBlockingQueue<Record<GenericRecord>> pendingFlushQueue;
-    private ArrayBlockingQueue<Record<GenericRecord>> pendingFlushQueue;
     private final AtomicBoolean isFlushRunning = new AtomicBoolean(false);
     private SinkContext sinkContext;
     private volatile boolean isRunning = false;
