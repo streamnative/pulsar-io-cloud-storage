@@ -87,8 +87,8 @@ public abstract class AbstractPartitioner<T> implements Partitioner<T> {
                             message.getMessageId());
                 }
             } else {
-                LOGGER.warn("partitionerUseIndexAsOffset configured to true but no index found on the message {}, " +
-                                "perhaps the broker didn't exposed the metadata, using recordSequence",
+                LOGGER.warn("partitionerUseIndexAsOffset configured to true but no index found on the message {}, "
+                                + "perhaps the broker didn't exposed the metadata, using recordSequence",
                         message.getMessageId());
             }
         }

@@ -19,8 +19,6 @@
 package org.apache.pulsar.io.jcloud.partitioner;
 
 import org.apache.pulsar.functions.api.Record;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * use topic partition strategy.
