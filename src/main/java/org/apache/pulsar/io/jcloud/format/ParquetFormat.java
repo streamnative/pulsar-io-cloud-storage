@@ -64,6 +64,8 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
     private boolean useHumanReadableMessageId;
     private boolean useHumanReadableSchemaVersion;
 
+    private CompressionCodecName compressionCodecName = CompressionCodecName.GZIP;
+
     @Override
     public String getExtension() {
         return ".parquet";
@@ -74,6 +76,7 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
         this.useMetadata = configuration.isWithMetadata();
         this.useHumanReadableMessageId = configuration.isUseHumanReadableMessageId();
         this.useHumanReadableSchemaVersion = configuration.isUseHumanReadableSchemaVersion();
+        this.compressionCodecName = CompressionCodecName.fromConf(configuration.getParquetCodec());
     }
 
     @Override
@@ -217,7 +220,7 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
                 parquetWriter = ProtobufParquetWriter.builder(file)
                         .withPageSize(pageSize)
                         .withWriteMode(ParquetFileWriter.Mode.OVERWRITE)
-                        .withCompressionCodec(CompressionCodecName.GZIP)
+                        .withCompressionCodec(compressionCodecName)
                         .withDescriptor(descriptor)
                         .build();
             } else if (rootAvroSchema != null) {
@@ -225,7 +228,7 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
                         .builder(file)
                         .withPageSize(pageSize)
                         .withWriteMode(ParquetFileWriter.Mode.OVERWRITE)
-                        .withCompressionCodec(CompressionCodecName.GZIP)
+                        .withCompressionCodec(compressionCodecName)
                         .withSchema(rootAvroSchema).build();
             } else {
                 throw new UnsupportedOperationException("Cannot init parquet writer");
