@@ -84,6 +84,10 @@ public class BlobStoreAbstractConfig implements Serializable {
     // Options: null, deflate, bzip2, xz, zstandard, snappy
     private String avroCodec = "snappy";
 
+    // The Parquet codec.
+    // Options: null, snappy, gzip, lzo, brotli, lz4, zstd
+    private String parquetCodec = "gzip";
+
     private String timePartitionPattern;
 
     private String timePartitionDuration;
