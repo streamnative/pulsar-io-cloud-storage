@@ -19,7 +19,6 @@
 package org.apache.pulsar.io.jcloud.sink;
 
 import static org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig.PROVIDER_AWSS3V2;
-
 import java.io.IOException;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
