@@ -33,6 +33,21 @@ page at http://checkstyle.sourceforge.net/config.html -->
         <!-- Checks that there are no tab characters in the file. -->
     </module>
 
+    <module name="LineLength">
+        <!-- Checks if a line is too long. -->
+        <property name="max" value="120"/>
+        <property name="severity" value="error"/>
+
+        <!--
+          The default ignore pattern exempts the following elements:
+            - import statements
+            - long URLs inside comments
+        -->
+
+        <property name="ignorePattern"
+                  value="^(package .*;\s*)|(import .*;\s*)|( *\* .*https?://.*)$"/>
+    </module>
+
     <module name="RegexpSingleline">
         <!-- Checks that TODOs don't have stuff in parenthesis, e.g., username. -->
         <property name="format" value="((//.*)|(\*.*))TODO\("/>
@@ -57,12 +72,6 @@ page at http://checkstyle.sourceforge.net/config.html -->
         <property name="fileNamePattern" value=".*Tests\.java$"/>
     </module>
 
-    <!-- Allow use of comment to suppress javadocstyle -->
-    <module name="SuppressionCommentFilter">
-        <property name="offCommentFormat" value="CHECKSTYLE.OFF\: ([\w\|]+)"/>
-        <property name="onCommentFormat" value="CHECKSTYLE.ON\: ([\w\|]+)"/>
-        <property name="checkFormat" value="$1"/>
-    </module>
     <module name="SuppressionFilter">
         <property name="file" value="${checkstyle.suppressions.file}" default="suppressions.xml"/>
     </module>
@@ -148,21 +157,21 @@ page at http://checkstyle.sourceforge.net/config.html -->
 
         -->
 
+        <!-- Allow use of comment to suppress javadocstyle -->
+        <module name="SuppressionCommentFilter">
+            <property name="offCommentFormat" value="CHECKSTYLE.OFF\: ([\w\|]+)"/>
+            <property name="onCommentFormat" value="CHECKSTYLE.ON\: ([\w\|]+)"/>
+            <property name="checkFormat" value="$1"/>
+        </module>
+
         <!-- Checks for Javadoc comments.                     -->
         <!-- See http://checkstyle.sf.net/config_javadoc.html -->
         <module name="JavadocMethod">
             <property name="scope" value="protected"/>
             <property name="severity" value="error"/>
-            <property name="allowMissingJavadoc" value="true"/>
             <property name="allowMissingParamTags" value="true"/>
             <property name="allowMissingReturnTag" value="true"/>
-            <property name="allowMissingThrowsTags" value="true"/>
-            <property name="allowThrowsTagsForSubclasses" value="true"/>
-            <property name="allowUndeclaredRTE" value="true"/>
         </module>
-
-        <!-- Check that paragraph tags are used correctly in Javadoc. -->
-        <module name="JavadocParagraph"/>
 
         <module name="JavadocType">
             <property name="scope" value="protected"/>
@@ -282,24 +291,9 @@ page at http://checkstyle.sourceforge.net/config.html -->
 
         <!--
 
-        LENGTH and CODING CHECKS
+        CODING CHECKS
 
         -->
-
-        <module name="LineLength">
-            <!-- Checks if a line is too long. -->
-            <property name="max" value="120"/>
-            <property name="severity" value="error"/>
-
-            <!--
-              The default ignore pattern exempts the following elements:
-                - import statements
-                - long URLs inside comments
-            -->
-
-            <property name="ignorePattern"
-                      value="^(package .*;\s*)|(import .*;\s*)|( *\* .*https?://.*)$"/>
-        </module>
 
         <module name="LeftCurly">
             <!-- Checks for placement of the left curly brace ('{'). -->
@@ -440,9 +434,6 @@ page at http://checkstyle.sourceforge.net/config.html -->
             -->
             <property name="severity" value="error"/>
         </module>
-
-        <!-- Required to support SuppressWarningsComment -->
-        <module name="FileContentsHolder"/>
 
     </module>
 </module>

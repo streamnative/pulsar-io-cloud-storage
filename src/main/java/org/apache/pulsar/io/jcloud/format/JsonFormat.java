@@ -119,8 +119,7 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
             switch (record.getSchemaType()) {
                 case AVRO:
                 case JSON:
-                case PROTOBUF:
-                {
+                case PROTOBUF: {
                     List<Field> fields = record.getFields();
                     Map<String, Object> result = new LinkedHashMap<>(fields.size());
                     for (Field field : fields) {

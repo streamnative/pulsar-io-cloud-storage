@@ -21,7 +21,6 @@ package org.apache.pulsar.io.jcloud.writer;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
-
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.io.jcloud.sink.CloudStorageSinkConfig;

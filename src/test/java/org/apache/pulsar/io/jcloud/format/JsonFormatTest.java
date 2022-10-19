@@ -136,8 +136,7 @@ public class JsonFormatTest extends FormatTestBase {
             case PROTOBUF_NATIVE:
                 assertEquals((DynamicMessage) msgValue.getNativeObject(), record);
                 break;
-            default:
-            {
+            default: {
                 for (String fieldName : record.keySet()) {
                     Field genericField = fields.stream().filter(field ->
                             field.getName().equals(fieldName)).findFirst().orElse(null);
