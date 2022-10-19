@@ -83,11 +83,11 @@ public abstract class AbstractPartitioner<T> implements Partitioner<T> {
                 if (index.isPresent()) {
                     return index.get();
                 } else {
-                    LOGGER.warn("Found message {} with hasIndex=true but index is empty, using recordSequence",
+                    LOGGER.debug("Found message {} with hasIndex=true but index is empty, using recordSequence",
                             message.getMessageId());
                 }
             } else {
-                LOGGER.warn("partitionerUseIndexAsOffset configured to true but no index found on the message {}, "
+                LOGGER.debug("partitionerUseIndexAsOffset configured to true but no index found on the message {}, "
                                 + "perhaps the broker didn't exposed the metadata, using recordSequence",
                         message.getMessageId());
             }
