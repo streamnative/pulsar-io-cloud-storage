@@ -59,6 +59,7 @@
     <protoc3.version>${protobuf3.version}</protoc3.version>
     <grpc.version>1.42.1</grpc.version>
     <protoc-gen-grpc-java.version>${grpc.version}</protoc-gen-grpc-java.version>
+    <azure-sdk-bom.version>1.2.6</azure-sdk-bom.version>
 
     <!-- test dependencies -->
     <junit.version>4.13.1</junit.version>
@@ -179,6 +180,14 @@
         <artifactId>json-smart</artifactId>
         <version>${json-smart.version}</version>
       </dependency>
+      <dependency>
+        <groupId>com.azure</groupId>
+        <artifactId>azure-sdk-bom</artifactId>
+        <version>${azure-sdk-bom.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
       <!-- test dependencies -->
       <dependency>
         <groupId>junit</groupId>
@@ -445,6 +454,20 @@
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-api</artifactId>
       <version>${log4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.azure</groupId>
+      <artifactId>azure-storage-blob</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>com.azure</groupId>
+          <artifactId>azure-core-http-netty</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>com.azure</groupId>
+      <artifactId>azure-core-http-okhttp</artifactId>
     </dependency>
 
     <!-- test dependencies -->
