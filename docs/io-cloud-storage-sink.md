@@ -1,58 +1,52 @@
 ---
-description: The Cloud Storage sink connector pulls messages from Pulsar topics and persists messages to Cloud Storage.
-author: ["ASF"]
-contributors: ["ASF"]
-language: Java
-document: 
-source: "https://github.com/streamnative/pulsar-io-cloud-storage/tree/v2.5.1/src/main/java/org/apache/pulsar/io/jcloud"
-license: Apache License 2.0
-tags: ["Pulsar IO", "Cloud Storage", "Sink"]
-alias: Cloud Storage Sink
-features: ["Use the Cloud Storage sink connector to sync data from Pulsar"]
-license_link: "https://www.apache.org/licenses/LICENSE-2.0"
-icon: "https://a0.awsstatic.com/libra-css/images/logos/aws_logo_smile_179x109.png"
-download: "https://github.com/streamnative/pulsar-io-cloud-storage/releases/download/v2.5.1/pulsar-io-cloud-storage-2.5.1.nar"
-support: StreamNative
-support_link: https://streamnative.io
-support_img: "/images/connectors/streamnative.png"
-dockerfile: 
-owner_name: ""
-owner_img: ""
-id: "io-cloud-storage-sink"
+dockerfile: "https://hub.docker.com/r/streamnative/pulsar-io-cloud-storage"
+alias: Cloud Storage Sink Connector
 ---
 
-Cloud Storage Sink connector for Pulsar
+The Cloud Storage sink connector supports exporting data from Pulsar topics to cloud storage (such as AWS S3 and Google GCS) either in Avro, JSON, Parquet or other formats. According to your environment, the Cloud Storage sink connector can guarantee exactly-once support for exporting data to cloud storage.
 
-The Cloud Storage Sink connector supports exporting data from Pulsar Topic to cloud storage in Avro, json, parquet and other formats, such as aws-s3, google-GCS, etc. According to your environment, the Cloud Storage sink connector can guarantee exactly-once support for exporting to cloud storage.
+![](/docs/cloud-storage-sink.png)
 
-The Cloud Storage Sink connector receives data from Pulsar, and then uploads the data to the cloud storage. The partition program is used to split the data of each pulsar partition into multiple blocks. Each data block is represented as an object. The virtual path corresponds to the topic, using the pulsar partition and the starting offset of this data block for encoding. If the partition program is not specified in the configuration, the default partition program that retains the pulsar partition is used. The size of each data block depends on the number of records written to the cloud storage and the architecture compatibility.
+# How to get
 
-## Features
-The Pulsar IO Cloud Storage Sink connector provides the following features:
+You can get the Cloud Storage sink connector using one of the following methods:
 
-- Exactly Once Delivery: Records that are exported using a deterministic partitioner are delivered with exactly-once semantics regardless of the eventual consistency of Cloud Storage.
-- Data Format with or without a Schema: Plug and play, the connector supports writing data to cloud storage in Avro, JSON and parquet formats. Generally, the connector can accept any format that provides an implementation of the Format interface.
-- Partitioner: The connector supports the TimeBasedPartitioner class based on the Pulsar message publishTime TimeStamp. Time-based partitioning options are daily or hourly.
-- More object storage support: The connector uses jclouds as an implementation of cloud storage. You can use the jclouds object storage jar to connect to more types of object storage. If you need to customize credentials, you can register ʻorg.apache.pulsar.io.jcloud.credential.JcloudsCredential` via SPI.
+## Use it with Function Worker
 
-The Cloud Storage sink connector pulls messages from Pulsar topics and persists messages to Cloud Storage.
+- Download the NAR package from [here](https://github.com/streamnative/pulsar-io-cloud-storage/releases/download/v{{connector:version}}/pulsar-io-cloud-storage-{{connector:version}}.nar).
 
-# Installation
+- Build it from the source code.
 
-```
-git clone https://github.com/streamnative/pulsar-io-cloud-storage.git
-cd pulsar-io-cloud-storage/
-mvn clean install -DskipTests
-cp target/pulsar-io-cloud-storage-0.0.1.nar $PULSAR_HOME/pulsar-io-cloud-storage-0.0.1.nar
-```
+    1. Clone the source code to your machine.
 
-# Configuration 
+       ```bash
+       git clone https://github.com/streamnative/pulsar-io-cloud-storage.git
+       ```
 
-The Cloud Storage sink connector supports the following properties.
+    2. Assume that `PULSAR_IO_CLOUD_STORAGE_HOME` is the home directory for the `pulsar-io-cloud-storage` repo. Build the connector in the `${PULSAR_IO_CLOUD_STORAGE_HOME}` directory.
 
-## Cloud Storage sink connector configuration
+       ```bash
+       mvn clean install -DskipTests
+       ```
 
-### Storage Provider: AWS S3
+       After the connector is successfully built, a `NAR` package is generated under the `target` directory.
+
+       ```bash
+       ls target
+       pulsar-io-cloud-storage-{{connector:version}}.nar
+       ```
+
+## Use it with Function Mesh
+
+Pull the Cloud Storage connector Docker image from [here](https://hub.docker.com/r/streamnative/pulsar-io-cloud-storage).
+
+# How to configure
+
+Before using the Cloud Storage sink connector, you need to configure it.
+
+You can create a configuration file (JSON or YAML) to set the following properties.
+
+### Storage provider: AWS S3
 
 | Name                            | Type    | Required | Default      | Description                                                                                                                                                                                                             |
 |---------------------------------|---------|----------|--------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -82,7 +76,16 @@ The Cloud Storage sink connector supports the following properties.
 | `avroCodec`                     | String  | False    | snappy       | Compression codec used when formatType=`avro`. Available compression types are: null (no compression), deflate, bzip2, xz, zstandard, snappy.                                                                           |
 | `parquetCodec`                  | String  | False    | gzip         | Compression codec used when formatType=`parquet`. Available compression types are: null (no compression), snappy, gzip, lzo, brotli, lz4, zstd.                                                                         |
 
-### Storage Provider: Google Cloud Storage
+The provided AWS credentials must have permissions to access AWS resources. 
+To use the Cloud Storage sink connector, the suggested permission policies for AWS S3 are:
+- `s3:AbortMultipartUpload`
+- `s3:GetObject*`
+- `s3:PutObject*`
+- `s3:List*`
+
+If you do not want to provide `region` in the configuration, you should enable the `s3:GetBucketLocation` permission policy as well.
+
+### Storage provider: Google Cloud Storage
 
 | Name                              | Type    | Required | Default      | Description                                                                                                                                                                                                             |
 |-----------------------------------|---------|----------|--------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -138,69 +141,6 @@ The Cloud Storage sink connector supports the following properties.
 | `pathPrefix`                          | String  | False    | false        | If it is set, the output files are stored in a folder under the given bucket path. The `pathPrefix` must be in the format of `xx/xxx/`.                                                                                 |
 | `avroCodec`                           | String  | False    | snappy       | Compression codec used when formatType=`avro`. Available compression types are: null (no compression), deflate, bzip2, xz, zstandard, snappy.                                                                           |
 | `parquetCodec`                        | String  | False    | gzip         | Compression codec used when formatType=`parquet`. Available compression types are: null (no compression), snappy, gzip, lzo, brotli, lz4, zstd.                                                                         |
-
-## Configure Cloud Storage sink connector
-
-Before using the Cloud Storage sink connector, you need to create a configuration file through one of the following methods.
-
-* JSON 
-
-    ```json
-    {
-       "tenant": "public",
-       "namespace": "default",
-       "name": "cloud-storage-sink",
-       "inputs": [
-          "user-avro-topic"
-       ],
-       "archive": "connectors/pulsar-io-cloud-storage-0.0.1.nar",
-       "parallelism": 1,
-       "configs": {
-          "provider": "aws-s3",
-          "accessKeyId": "accessKeyId",
-          "secretAccessKey": "secretAccessKey",
-          "role": "none",
-          "roleSessionName": "none",
-          "bucket": "testBucket",
-          "region": "local",
-          "endpoint": "us-standard",
-          "formatType": "parquet",
-          "partitionerType": "time",
-          "timePartitionPattern": "yyyy-MM-dd",
-          "timePartitionDuration": "1d",
-          "batchSize": 10,
-          "batchTimeMs": 1000
-       }
-    }
-    ```
-    
-* YAML
-
-    ```yaml
-    tenant: "public"
-    namespace: "default"
-    name: "cloud-storage-sink"
-    inputs: 
-      - "user-avro-topic"
-    archive: "connectors/pulsar-io-cloud-storage-0.0.1.nar"
-    parallelism: 1
-    
-    configs:
-      provider: "aws-s3",
-      accessKeyId: "accessKeyId"
-      secretAccessKey: "secretAccessKey"
-      role: "none"
-      roleSessionName: "none"
-      bucket: "testBucket"
-      region: "local"
-      endpoint: "us-standard"
-      formatType: "parquet"
-      partitionerType: "time"
-      timePartitionPattern: "yyyy-MM-dd"
-      timePartitionDuration: "1d"
-      batchSize: 10
-      batchTimeMs: 1000
-    ```
 
 ### Data format types
 
@@ -258,16 +198,151 @@ This table lists the support of `withMetadata` configurations for different writ
 > ```
 >
 
-By default, when the connector receives a message with a non-supported schema type, the connector will `fail` the message. If you want to skip the non-supported messages, you can set `skipFailedMessages` to `true`.
+## Configure it with Function Worker
 
-### Dead letter topic
+You can create a configuration file (JSON or YAML) to set the properties as below.
 
-To use dead-letter-topic, you need to set `skipFailedMessages` to `false`, and set `--max-redeliver-count` and `--dead-letter-topic` when submit the connector with `pulsar-admin`. For more info about dead letter topic, please refer to the [Pulsar documentation](https://pulsar.apache.org/docs/en/concepts-messaging/#dead-letter-topic).
-When dead-letter-topic is enabled, the connector will send the message to the dead-letter-topic when the message is failed to be sent to the Cloud Storage.
+**Example**
 
-# Usage
+* JSON
 
-1. Prepare the Cloud Storage service. In this example, we use `s3mock` as an example.
+    ```json
+    {
+       "tenant": "public",
+       "namespace": "default",
+       "name": "cloud-storage-sink",
+       "inputs": [
+          "user-avro-topic"
+       ],
+       "archive": "connectors/pulsar-io-cloud-storage-0.0.1.nar",
+       "parallelism": 1,
+       "configs": {
+          "provider": "aws-s3",
+          "accessKeyId": "accessKeyId",
+          "secretAccessKey": "secretAccessKey",
+          "role": "none",
+          "roleSessionName": "none",
+          "bucket": "testBucket",
+          "region": "local",
+          "endpoint": "us-standard",
+          "formatType": "parquet",
+          "partitionerType": "time",
+          "timePartitionPattern": "yyyy-MM-dd",
+          "timePartitionDuration": "1d",
+          "batchSize": 10,
+          "batchTimeMs": 1000
+       }
+    }
+    ```
+
+* YAML
+
+    ```yaml
+    tenant: "public"
+    namespace: "default"
+    name: "Cloud Storage-sink"
+    inputs: 
+      - "user-avro-topic"
+    archive: "connectors/pulsar-io-cloud-storage-0.0.1.nar"
+    parallelism: 1
+    
+    configs:
+      provider: "aws-s3",
+      accessKeyId: "accessKeyId"
+      secretAccessKey: "secretAccessKey"
+      role: "none"
+      roleSessionName: "none"
+      bucket: "testBucket"
+      region: "local"
+      endpoint: "us-standard"
+      formatType: "parquet"
+      partitionerType: "time"
+      timePartitionPattern: "yyyy-MM-dd"
+      timePartitionDuration: "1d"
+      batchSize: 10
+      batchTimeMs: 1000
+    ```
+
+## Configure it with Function Mesh
+
+You can submit a [CustomResourceDefinitions (CRD)](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/) to create a Cloud Storage sink connector. Using CRD makes Function Mesh naturally integrate with the Kubernetes ecosystem. For more information about Pulsar sink CRD configurations, see [here](https://functionmesh.io/docs/connectors/io-crd-config/sink-crd-config).
+
+You can define a CRD file (YAML) to set the properties as below.
+
+```yaml
+apiVersion: compute.functionmesh.io/v1alpha1
+kind: Sink
+metadata:
+  name: cloud-storage-sink-sample
+spec:
+  image: streamnative/pulsar-io-cloud-storage:{{connector:version}}
+  className: org.apache.pulsar.io.jcloud.sink.CloudStorageGenericRecordSink
+  replicas: 1
+  maxReplicas: 1
+  input:
+    topic: persistent://public/default/user-avro-topic
+    typeClassName: “[B”
+  sinkConfig:
+    provider: "aws-s3",
+    accessKeyId: "accessKeyId"
+    secretAccessKey: "secretAccessKey"
+    role: "none"
+    roleSessionName: "none"
+    bucket: "testBucket"
+    region: "local"
+    endpoint: "us-standard"
+    formatType: "parquet"
+    partitionerType: "time"
+    timePartitionPattern: "yyyy-MM-dd"
+    timePartitionDuration: "1d"
+    batchSize: 10
+    batchTimeMs: 1000
+  pulsar:
+    pulsarConfig: "test-pulsar-sink-config"
+  resources:
+    limits:
+      cpu: "0.2"
+      memory: 1.1G
+    requests:
+      cpu: "0.1"
+      memory: 1G
+  java:
+    jar: connectors/pulsar-io-cloud-storage-{{connector:version}}.nar
+  clusterName: test-pulsar
+```
+
+# How to use
+
+You can use the Cloud Storage sink connector with Function Worker or Function Mesh.
+
+## Use it with Function Worker
+
+You can use the Cloud Storage sink connector as a non built-in connector or a built-in connector.
+
+### Use it as non built-in connector
+
+If you already have a Pulsar cluster, you can use the Cloud Storage sink connector as a non built-in connector directly.
+
+This example shows how to create an Cloud Storage sink connector on a Pulsar cluster using the [`pulsar-admin sinks create`](https://pulsar.apache.org/tools/pulsar-admin/2.11.0-SNAPSHOT/#-em-create-em--30) command.
+
+```
+PULSAR_HOME/bin/pulsar-admin sinks create \
+--archive pulsar-io-cloud-storage-{{connector:version}}.nar \
+--sink-config-file cloud-storage-sink-config.yaml \
+--classname org.apache.pulsar.io.jcloud.sink.CloudStorageGenericRecordSink \
+--name cloud-storage-sink
+```
+
+### Use it as built-in connector
+
+You can make the Cloud Storage sink connector as a built-in connector and use it on a standalone cluster or on-premises cluster.
+
+#### Standalone cluster
+
+This example describes how to use the Cloud Storage sink connector to export data from Pulsar topics to cloud storage (such as AWS S3 and Google GCS) in standalone mode.
+
+1. Prepare the AWS Cloud Storage service. In this example, we use `Cloud Storagemock` as an example.
+
 
     ```
     docker pull apachepulsar/s3mock:latest
@@ -277,7 +352,7 @@ When dead-letter-topic is enabled, the connector will send the message to the de
 2. Put the `pulsar-io-cloud-storage-2.5.1.nar` in the Pulsar connector catalog.
 
     ```
-    cp pulsar-io-cloud-storage-2.5.1.nar $PULSAR_HOME/connectors/pulsar-io-cloud-storage-2.5.1.nar
+    cp pulsar-io-cloud-storage-2.5.1.nar     $PULSAR_HOME/connectors/pulsar-io-cloud-storage-2.5.1.nar
     ```
 
 3. Start Pulsar in the standalone mode.
@@ -292,7 +367,7 @@ When dead-letter-topic is enabled, the connector will send the message to the de
     $PULSAR_HOME/bin/pulsar-admin sink localrun --sink-config-file cloud-storage-sink-config.yaml
     ```
 
-5. Send Pulsar messages. In this example, the schema of the topic only supports `avro` or `json`.
+5. Send Pulsar messages. Currently, only Avro or JSON schema is supported.
 
    ```java
      try (
@@ -314,7 +389,9 @@ When dead-letter-topic is enabled, the connector will send the message to the de
    ```
 
 6. Validate Cloud Storage data.
-    To get the path, you can use the [jclould](https://jclouds.apache.org/start/install/) to verify the file, as shown below.
+
+   To get the path, you can use the [jclould](https://jclouds.apache.org/start/install/) to verify the file, as shown below.
+
     ```java
     Properties overrides = new Properties();
     overrides.put(“jclouds.s3.virtual-host-buckets”, “false”);
@@ -332,23 +409,134 @@ When dead-letter-topic is enabled, the connector will send the message to the de
     final boolean blobExists = blobStore.blobExists(“testBucket”, path);
     Assert.assertTrue(“the sink record does not exist”, blobExists);
     ```
-    You can find the sink data in your `testBucket` Bucket. The path is something like `public/default/test-parquet-avro/2020-09-14/1234.parquet`.
-    The path consists of three parts, the basic part of the topic, partition information, and format suffix.
+   You can find the data in your `testBucket` bucket. The path is something like `public/default/test-parquet-avro/2020-09-14/1234.parquet`.
+   The path consists of three parts, the basic part of the topic, partition information, and format suffix.
+
     - Basic part of topic: `public/default/test-parquet-avro/`
-        This part consists of the tenant, namespace, and topic name of the input topic.
+      This part consists of the name of the tenant, namespace, and the input topic.
     - Partition information: `2020-09-14/${messageSequenceId}`
-        The date is generated based on the `partitionerType` parameter in the configuration. And the `${messageSequenceId}` is generated by `FunctionCommon.getSequenceId(message.getMessageId())`.
+      The date is generated based on the `partitionerType` parameter in the configuration. And the `${messageSequenceId}` is generated by `FunctionCommon.getSequenceId(message.getMessageId())`.
     - Format suffix: `.parquet`
-        This part is generated based on the `formatType` parameter in the configuration.
-    
-## Permissions
+      This part is generated based on the `formatType` parameter in the configuration.
 
-### AWS S3 permission policies
+#### On-premises cluster
 
-The suggested permission policies for AWS S3 are:
-- `s3:AbortMultipartUpload`
-- `s3:GetObject*`
-- `s3:PutObject*`
-- `s3:List*`
+This example explains how to create a Cloud Storage sink connector in an on-premises cluster.
 
-If you do not want to provide `region` in the configuration, you should enable `s3:GetBucketLocation` permission policy as well. 
+1. Copy the NAR package of the Cloud Storage connector to the Pulsar connectors directory.
+
+    ```
+    cp pulsar-io-cloud-storage-{{connector:version}}.nar $PULSAR_HOME/connectors/pulsar-io-cloud-storage-{{connector:version}}.nar
+    ```
+
+2. Reload all [built-in connectors](https://pulsar.apache.org/docs/en/next/io-connectors/).
+
+    ```
+    PULSAR_HOME/bin/pulsar-admin sinks reload
+    ```
+
+3. Check whether the Cloud Storage sink connector is available on the list or not.
+
+    ```
+    PULSAR_HOME/bin/pulsar-admin sinks available-sinks
+    ```
+
+4. Create a Cloud Storage connector on a Pulsar cluster using the [`pulsar-admin sinks create`](https://pulsar.apache.org/tools/pulsar-admin/2.11.0-SNAPSHOT/#-em-create-em--30) command.
+
+    ```
+    PULSAR_HOME/bin/pulsar-admin sinks create \
+    --sink-type cloud-storage \
+    --sink-config-file cloud-storage-sink-config.yaml \
+    --name cloud-storage-sink
+    ```
+
+## Use it with Function Mesh
+
+This example demonstrates how to create Cloud Storage sink connector through Function Mesh.
+
+### Prerequisites
+
+- Create and connect to a [Kubernetes cluster](https://kubernetes.io/).
+
+- Create a [Pulsar cluster](https://pulsar.apache.org/docs/en/kubernetes-helm/) in the Kubernetes cluster.
+
+- [Install the Function Mesh Operator and CRD](https://functionmesh.io/docs/install-function-mesh/) into the Kubernetes cluster.
+
+### Steps
+
+1. Define the Cloud Storage sink connector with a YAML file and save it as `sink-sample.yaml`.
+
+   This example shows how to publish the Cloud Storage sink connector to Function Mesh with a Docker image.
+
+    ```yaml
+    apiVersion: compute.functionmesh.io/v1alpha1
+    kind: Sink
+    metadata:
+      name: cloud-storage-sink-sample
+    spec:
+      image: streamnative/pulsar-io-cloud-storage:{{connector:version}}
+      className: org.apache.pulsar.io.jcloud.sink.CloudStorageGenericRecordSink
+      replicas: 1
+      maxReplicas: 1
+      input:
+        topic: persistent://public/default/user-avro-topic
+        typeClassName: “[B”
+      sinkConfig:
+        provider: "aws-s3",
+        accessKeyId: "accessKeyId"
+        secretAccessKey: "secretAccessKey"
+        role: "none"
+        roleSessionName: "none"
+        bucket: "testBucket"
+        region: "local"
+        endpoint: "us-standard"
+        formatType: "parquet"
+        partitionerType: "time"
+        timePartitionPattern: "yyyy-MM-dd"
+        timePartitionDuration: "1d"
+        batchSize: 10
+        batchTimeMs: 1000
+      pulsar:
+        pulsarConfig: "test-pulsar-sink-config"
+      resources:
+        limits:
+          cpu: "0.2"
+          memory: 1.1G
+        requests:
+          cpu: "0.1"
+          memory: 1G
+      java:
+        jar: connectors/pulsar-io-cloud-storage-{{connector:version}}.nar
+      clusterName: test-pulsar
+    ```
+
+2. Apply the YAML file to create the Cloud Storage sink connector.
+
+   **Input**
+
+    ```
+    kubectl apply -f <path-to-sink-sample.yaml>
+    ```
+
+   **Output**
+
+    ```
+    sink.compute.functionmesh.io/cloud-storage-sink-sample created
+    ```
+
+3. Check whether the Cloud Storage sink connector is created successfully.
+
+   **Input**
+
+    ```
+    kubectl get all
+    ```
+
+   **Output**
+
+    ```
+    NAME                                READY   STATUS      RESTARTS   AGE
+    pod/cloud-storage-sink-sample-0     1/1     Running     0          77s
+    ```
+
+   After that, you can produce and consume messages using the Cloud Storage sink connector between Pulsar and your cloud storage provider.
