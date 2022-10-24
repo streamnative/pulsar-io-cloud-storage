@@ -65,6 +65,7 @@ public class BlobStoreAbstractConfig implements Serializable {
     public static final String PROVIDER_AWSS3 = "aws-s3";
     public static final String PROVIDER_AWSS3V2 = "s3v2";
     public static final String PROVIDER_GCS = "google-cloud-storage";
+    public static final String PROVIDER_AZURE = "azure-blob-storage";
 
     private String provider;
 
@@ -116,9 +117,13 @@ public class BlobStoreAbstractConfig implements Serializable {
         if (provider.equalsIgnoreCase(PROVIDER_AWSS3) || provider.equalsIgnoreCase(PROVIDER_AWSS3V2)) {
             checkArgument(isNotBlank(region) || isNotBlank(endpoint),
                     "Either the aws-end-point or aws-region must be set.");
-            if (isNotBlank(endpoint)) {
-                checkArgument(hasURIScheme(endpoint), "endpoint property needs to specify URI scheme.");
-            }
+        }
+        if (provider.equalsIgnoreCase(PROVIDER_AZURE)) {
+            checkArgument(isNotBlank(endpoint),
+                    "endpoint property must be set.");
+        }
+        if (isNotBlank(endpoint)) {
+            checkArgument(hasURIScheme(endpoint), "endpoint property needs to specify URI scheme.");
         }
 
         if (!formatMap.containsKey(StringUtils.lowerCase(formatType))) {

@@ -19,6 +19,7 @@
 package org.apache.pulsar.io.jcloud.sink;
 
 import static org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig.PROVIDER_AWSS3V2;
+import static org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig.PROVIDER_AZURE;
 import java.io.IOException;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +27,7 @@ import org.apache.pulsar.io.common.IOConfigUtils;
 import org.apache.pulsar.io.core.SinkContext;
 import org.apache.pulsar.io.core.annotations.Connector;
 import org.apache.pulsar.io.core.annotations.IOType;
+import org.apache.pulsar.io.jcloud.writer.AzureBlobWriter;
 import org.apache.pulsar.io.jcloud.writer.BlobWriter;
 import org.apache.pulsar.io.jcloud.writer.JCloudsBlobWriter;
 import org.apache.pulsar.io.jcloud.writer.S3BlobWriter;
@@ -49,9 +51,12 @@ public class CloudStorageGenericRecordSink extends BlobStoreAbstractSink<CloudSt
 
     @Override
     protected BlobWriter initBlobWriter(CloudStorageSinkConfig sinkConfig) {
-        // use real AWS client, otherwise, use jclouds. TODO: replace jclouds with native SDKs for GCS/Azure
-        if (sinkConfig.getProvider().equals(PROVIDER_AWSS3V2)) {
+        //TODO: replace jclouds with native SDK for GCS
+        String provider = sinkConfig.getProvider();
+        if (provider.equalsIgnoreCase(PROVIDER_AWSS3V2)) {
             return new S3BlobWriter(sinkConfig);
+        } else if (provider.equalsIgnoreCase(PROVIDER_AZURE)) {
+            return new AzureBlobWriter(sinkConfig);
         } else {
             return new JCloudsBlobWriter(sinkConfig);
         }
