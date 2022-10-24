@@ -71,6 +71,34 @@ public class CloudStorageSinkConfig extends BlobStoreAbstractConfig {
     @FieldDoc(
             required = false,
             defaultValue = "",
+            sensitive = true,
+            help = "The Azure Blob Storage account SAS token.")
+    private String azureStorageAccountSASToken;
+
+    @FieldDoc(
+            required = false,
+            defaultValue = "",
+            sensitive = true,
+            help = "The Azure Blob Storage account name.")
+    private String azureStorageAccountName;
+
+    @FieldDoc(
+            required = false,
+            defaultValue = "",
+            sensitive = true,
+            help = "The Azure Blob Storage account key.")
+    private String azureStorageAccountKey;
+
+    @FieldDoc(
+            required = false,
+            defaultValue = "",
+            sensitive = true,
+            help = "The Azure Blob Storage account connection string.")
+    private String azureStorageAccountConnectionString;
+
+    @FieldDoc(
+            required = false,
+            defaultValue = "",
             help = "The aws role to use. Implies to use an assume role.")
     private String role;
 
