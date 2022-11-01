@@ -19,8 +19,6 @@
 package org.apache.pulsar.io.jcloud.partitioner;
 
 import org.apache.pulsar.functions.api.Record;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * use topic partition strategy.
@@ -29,12 +27,8 @@ import org.slf4j.LoggerFactory;
  */
 public class SimplePartitioner<T> extends AbstractPartitioner<T> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SimplePartitioner.class);
-
     @Override
     public String encodePartition(Record<T> sinkRecord) {
-        Long recordSequence = sinkRecord.getRecordSequence()
-                .orElseThrow(() -> new RuntimeException("recordSequence not null"));
-        return recordSequence.toString();
+        return Long.toString(getMessageOffset(sinkRecord));
     }
 }
