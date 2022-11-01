@@ -83,6 +83,8 @@ public class BlobStoreAbstractConfig implements Serializable {
 
     private String partitionerType;
 
+    private boolean partitionerUseIndexAsOffset;
+
     // The AVRO codec.
     // Options: null, deflate, bzip2, xz, zstandard, snappy
     private String avroCodec = "snappy";

@@ -63,6 +63,11 @@ public class PartitionerTest extends TestCase {
         TimePartitioner<Object> dayPartitioner = new TimePartitioner<>();
         dayPartitioner.configure(blobStoreAbstractConfig);
 
+        SimplePartitioner<Object> simplePartitionerIndexOffset = new SimplePartitioner<>();
+        blobStoreAbstractConfig = new BlobStoreAbstractConfig();
+        blobStoreAbstractConfig.setPartitionerUseIndexAsOffset(true);
+        simplePartitionerIndexOffset.configure(blobStoreAbstractConfig);
+
         BlobStoreAbstractConfig hourConfig = new BlobStoreAbstractConfig();
         hourConfig.setTimePartitionDuration("4h");
         hourConfig.setTimePartitionPattern("yyyy-MM-dd-HH");
@@ -86,6 +91,12 @@ public class PartitionerTest extends TestCase {
                         simplePartitioner,
                         "3221225506",
                         "public/default/test" + Partitioner.PATH_SEPARATOR + "3221225506",
+                        getTopic()
+                },
+                new Object[]{
+                        simplePartitionerIndexOffset,
+                        "11115506",
+                        "public/default/test" + Partitioner.PATH_SEPARATOR + "11115506",
                         getTopic()
                 },
                 new Object[]{
@@ -153,6 +164,9 @@ public class PartitionerTest extends TestCase {
         Message<Object> mock = mock(Message.class);
         when(mock.getPublishTime()).thenReturn(1599578218610L);
         when(mock.getMessageId()).thenReturn(new MessageIdImpl(12, 34, 1));
+        when(mock.hasIndex()).thenReturn(true);
+        when(mock.getIndex()).thenReturn(Optional.of(11115506L));
+
         String topic = TopicName.get("test").toString();
         Record<Object> mockRecord = mock(Record.class);
         when(mockRecord.getTopicName()).thenReturn(Optional.of(topic));
