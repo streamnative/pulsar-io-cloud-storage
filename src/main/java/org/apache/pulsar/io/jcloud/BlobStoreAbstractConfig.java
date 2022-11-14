@@ -97,7 +97,7 @@ public class BlobStoreAbstractConfig implements Serializable {
 
     private boolean sliceTopicPartitionPath;
 
-    private long maxBatchBytes = 10_000;
+    private long maxBatchBytes = 10_000_000;
     private int batchSize = 10;
     private int pendingQueueSize = -1;
 
