@@ -63,7 +63,7 @@ public class ConnectorConfigTest {
         Assert.assertEquals(config.get("timePartitionDuration"), cloudStorageSinkConfig.getTimePartitionDuration());
         Assert.assertEquals(config.get("batchSize"), cloudStorageSinkConfig.getBatchSize());
         Assert.assertEquals((int) config.get("batchSize"), cloudStorageSinkConfig.getPendingQueueSize());
-        Assert.assertEquals(10000L, cloudStorageSinkConfig.getMaxBatchBytes());
+        Assert.assertEquals(10000000L, cloudStorageSinkConfig.getMaxBatchBytes());
     }
 
     @Test
