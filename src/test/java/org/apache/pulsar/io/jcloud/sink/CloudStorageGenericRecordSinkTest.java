@@ -26,6 +26,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import java.nio.ByteBuffer;
@@ -138,6 +139,33 @@ public class CloudStorageGenericRecordSinkTest {
         this.config.put("batchSize", 5); // force flush after 5 messages
 
         verifySinkFlush();
+    }
+
+    @Test
+    public void repeatedlyFlushOnBatchSizeTest() throws Exception {
+        this.config.put("pendingQueueSize", 1000); // accept high number of messages
+        this.config.put("batchTimeMs", 60000); // set high batchTimeMs to prevent scheduled flush
+        this.config.put("maxBatchBytes", 100000); // set high maxBatchBytes to prevent flush
+        this.config.put("batchSize", 5); // force flush after 5 messages
+
+        verifyRecordAck(100);
+    }
+    @Test
+    public void repeatedlyFlushOnMaxBatchBytesTest() throws Exception {
+        this.config.put("pendingQueueSize", 1000); // accept high number of messages
+        this.config.put("batchTimeMs", 60000); // set high batchTimeMs to prevent scheduled flush
+        this.config.put("maxBatchBytes", 5 * PAYLOAD_BYTES); // force flush after 500 bytes
+        this.config.put("batchSize", 1000); // set high batchSize to prevent flush
+
+        verifyRecordAck(100);
+    }
+
+    private void verifyRecordAck(int numberOfRecords) throws Exception {
+        this.sink.open(this.config, this.mockSinkContext);
+        sendMockRecord(numberOfRecords);
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(
+                () -> verify(mockRecord, times(numberOfRecords)).ack()
+        );
     }
 
     private void verifySinkFlush() throws Exception {
