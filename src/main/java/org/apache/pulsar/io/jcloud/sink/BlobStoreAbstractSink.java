@@ -219,6 +219,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         } finally {
             isFlushRunning.compareAndSet(true, false);
         }
+        flushIfNeeded(false);
     }
 
     private void unsafeFlush() {
