@@ -75,7 +75,7 @@ public class AvroRecordUtil {
             Record<GenericRecord> record) {
 
         org.apache.pulsar.client.api.Schema<GenericRecord> schema = record.getSchema();
-        if (record.getValue().getSchemaVersion() == null) {
+        if (record.getValue().getSchemaVersion() == null && record.getValue().getSchemaType() != SchemaType.BYTES) {
             org.apache.pulsar.client.api.Schema<GenericRecord> internalSchema =
                     getPulsarInternalSchema(record.getMessage().orElse(null));
             if (internalSchema != null) {
