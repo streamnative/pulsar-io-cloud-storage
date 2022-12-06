@@ -35,7 +35,7 @@
   <description>Cloud Storage Connector integrates Apache Pulsar with Cloud Storage.</description>
 
   <properties>
-    <java.version>1.8</java.version>
+    <java.version>17</java.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <redirectTestOutputToFile>true</redirectTestOutputToFile>
@@ -45,7 +45,7 @@
     <!-- connector dependencies -->
     <jackson.version>2.13.2</jackson.version>
     <jackson-databind.version>2.13.2.1</jackson-databind.version>
-    <lombok.version>1.16.22</lombok.version>
+    <lombok.version>1.18.24</lombok.version>
     <pulsar.version>2.9.0-rc-202110221101</pulsar.version>
     <parquet.version>1.12.2</parquet.version>
     <awsjavasdk.version>1.12.148</awsjavasdk.version>
@@ -69,13 +69,23 @@
     <!-- build plugin dependencies -->
     <license.plugin.version>3.0</license.plugin.version>
     <maven-checkstyle-plugin.version>3.0.0</maven-checkstyle-plugin.version>
-    <maven-compiler-plugin.version>3.7.0</maven-compiler-plugin.version>
-    <maven-surefire-plugin.version>2.21.0</maven-surefire-plugin.version>
+    <maven-compiler-plugin.version>3.10.1</maven-compiler-plugin.version>
+    <maven-surefire-plugin.version>3.0.0-M3</maven-surefire-plugin.version>
     <nifi.nar.plugin.version>1.2.0</nifi.nar.plugin.version>
     <puppycrawl.checkstyle.version>6.19</puppycrawl.checkstyle.version>
-    <spotbugs-maven-plugin.version>3.1.8</spotbugs-maven-plugin.version>
+    <spotbugs-maven-plugin.version>4.2.2</spotbugs-maven-plugin.version>
     <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
     <os-maven-plugin.version>1.4.1.Final</os-maven-plugin.version>
+
+    <test.additional.args>
+      --add-opens java.base/jdk.internal.loader=ALL-UNNAMED
+      --add-opens java.base/java.lang=ALL-UNNAMED <!--Mockito-->
+      --add-opens java.base/java.io=ALL-UNNAMED <!--Bookkeeper NativeIO-->
+      --add-opens java.base/java.util=ALL-UNNAMED <!--System Lambda-->
+      --add-opens java.base/sun.net=ALL-UNNAMED <!--netty.DnsResolverUtil-->
+      --add-opens java.management/sun.management=ALL-UNNAMED <!--JvmDefaultGCMetricsLogger & MBeanStatsGenerator-->
+      --add-opens jdk.management/com.sun.management.internal=ALL-UNNAMED <!--MBeanStatsGenerator-->
+    </test.additional.args>
   </properties>
 
   <licenses>
@@ -554,7 +564,8 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${maven-surefire-plugin.version}</version>
           <configuration>
-<!--            <redirectTestOutputToFile>${redirectTestOutputToFile}</redirectTestOutputToFile>-->
+            <!--            <redirectTestOutputToFile>${redirectTestOutputToFile}</redirectTestOutputToFile>-->
+            <argLine>${test.additional.args}</argLine>
             <reuseForks>false</reuseForks>
             <forkedProcessTimeoutInSeconds>1800</forkedProcessTimeoutInSeconds>
             <rerunFailingTestsCount>${testRetryCount}</rerunFailingTestsCount>
