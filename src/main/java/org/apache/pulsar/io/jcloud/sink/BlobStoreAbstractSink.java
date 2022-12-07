@@ -268,13 +268,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                 elapsedMs = System.currentTimeMillis() - elapsedMs;
                 log.debug("Uploading blob {} elapsed time in ms: {}", filepath, elapsedMs);
                 singleTopicRecordsToInsert.forEach(Record::ack);
-                long singleTopicRecordsToInsertBytes = singleTopicRecordsToInsert.stream()
-                        .map(Record::getMessage)
-                        .filter(Optional::isPresent)
-                        .map(Optional::get)
-                        .mapToLong(Message::size)
-                        .sum();
-                currentBatchBytes.addAndGet(-1 * singleTopicRecordsToInsertBytes);
+                currentBatchBytes.addAndGet(-1 * getBytesSum(singleTopicRecordsToInsert));
                 currentBatchSize.addAndGet(-1 * singleTopicRecordsToInsert.size());
                 if (sinkContext != null) {
                     sinkContext.recordMetric(METRICS_TOTAL_SUCCESS, singleTopicRecordsToInsert.size());
@@ -303,6 +297,8 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         } else {
             failedRecords.forEach(Record::fail);
         }
+        currentBatchBytes.addAndGet(-1 * getBytesSum(failedRecords));
+        currentBatchSize.addAndGet(-1 * failedRecords.size());
         if (sinkContext != null) {
             sinkContext.recordMetric(METRICS_TOTAL_FAILURE, failedRecords.size());
         }
@@ -323,6 +319,15 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         String path = pathPrefix + partitionedPath + format.getExtension();
         log.info("generate message[recordSequence={}] savePath: {}", message.getRecordSequence().get(), path);
         return path;
+    }
+
+    private long getBytesSum(List<Record<GenericRecord>> records) {
+        return records.stream()
+                .map(Record::getMessage)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .mapToLong(Message::size)
+                .sum();
     }
 
 }
