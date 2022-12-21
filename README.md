@@ -340,3 +340,12 @@ The suggested permission policies for AWS S3 are:
 - `s3:List*`
 
 If you do not want to provide `region` in the configuration, you should enable `s3:GetBucketLocation` permission policy as well. 
+
+## Troubleshooting
+
+### Sink flushing only after batchTimeMs elapses
+
+There is a scenario where the sink is only flushing whenever the `batchTimeMs` has elapsed, even though there are many messages waiting to be processed.
+The reason for this is that the sink will only acknowledge messages after they are flushed to cloud storage but the broker stops sending messages when it reaches a certain limit of unacknowledged messages.
+If this limit is lower or close to `batchSize`, the sink never receives enough messages to trigger a flush based on the amount of messages.
+In this case please ensure the `maxUnackedMessagesPerConsumer` set in the broker configuration is sufficiently larger than the `batchSize` setting of the sink.
