@@ -248,7 +248,15 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
         for (List<Record<GenericRecord>> singleTopicRecordsToInsert : recordsToInsertByTopic.values()) {
             Record<GenericRecord> firstRecord = singleTopicRecordsToInsert.get(0);
-            Schema<GenericRecord> schema = getPulsarSchema(firstRecord);
+            Schema<GenericRecord> schema;
+            try {
+                schema = getPulsarSchema(firstRecord);
+            } catch (Exception e) {
+                log.error("Failed to retrieve message schema", e);
+                bulkHandleFailedRecords(singleTopicRecordsToInsert);
+                return;
+            }
+
             if (!format.doSupportPulsarSchemaType(schema.getSchemaInfo().getType())) {
                 log.warn("sink does not support schema type {}", schema.getSchemaInfo().getType());
                 bulkHandleFailedRecords(singleTopicRecordsToInsert);
