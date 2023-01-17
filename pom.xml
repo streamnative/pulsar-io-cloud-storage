@@ -1,4 +1,5 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?><!--
+<?xml version='1.0' encoding='UTF-8'?>
+<!--
 
     Licensed to the Apache Software Foundation (ASF) under one
     or more contributor license agreements.  See the NOTICE file
@@ -18,22 +19,18 @@
     under the License.
 
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
     <groupId>org.apache</groupId>
     <artifactId>apache</artifactId>
     <version>18</version>
   </parent>
-
   <modelVersion>4.0.0</modelVersion>
-
   <groupId>io.streamnative.ecosystem</groupId>
   <artifactId>pulsar-io-cloud-storage</artifactId>
-  <version>2.9.0-rc-202110221101</version>
+  <version>2.10.3.0-rc-daily</version>
   <name>Pulsar Ecosystem :: IO Connector :: Cloud Storage Project</name>
   <description>Cloud Storage Connector integrates Apache Pulsar with Cloud Storage.</description>
-
   <properties>
     <java.version>1.8</java.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -41,12 +38,11 @@
     <redirectTestOutputToFile>true</redirectTestOutputToFile>
     <spotbugs-annotations.version>3.1.8</spotbugs-annotations.version>
     <testRetryCount>2</testRetryCount>
-
     <!-- connector dependencies -->
     <jackson.version>2.13.2</jackson.version>
     <jackson-databind.version>2.13.2.1</jackson-databind.version>
     <lombok.version>1.16.22</lombok.version>
-    <pulsar.version>2.9.0-rc-202110221101</pulsar.version>
+    <pulsar.version>2.10.3.0-rc-daily</pulsar.version>
     <parquet.version>1.12.2</parquet.version>
     <awsjavasdk.version>1.12.148</awsjavasdk.version>
     <aws.java.sdk2.version>2.16.1</aws.java.sdk2.version>
@@ -60,14 +56,12 @@
     <grpc.version>1.42.1</grpc.version>
     <protoc-gen-grpc-java.version>${grpc.version}</protoc-gen-grpc-java.version>
     <azure-sdk-bom.version>1.2.6</azure-sdk-bom.version>
-
     <!-- test dependencies -->
     <junit.version>4.13.1</junit.version>
     <awaitility.version>4.2.0</awaitility.version>
     <mockito.version>3.7.7</mockito.version>
     <powermock.version>2.0.2</powermock.version>
     <testcontainers.version>1.15.2</testcontainers.version>
-
     <!-- build plugin dependencies -->
     <license.plugin.version>3.0</license.plugin.version>
     <maven-checkstyle-plugin.version>3.1.1</maven-checkstyle-plugin.version>
@@ -79,7 +73,6 @@
     <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
     <os-maven-plugin.version>1.4.1.Final</os-maven-plugin.version>
   </properties>
-
   <licenses>
     <license>
       <name>Apache License, Version 2.0</name>
@@ -87,7 +80,6 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
-
   <!-- keep all the dependencies used by all modules here -->
   <dependencyManagement>
     <dependencies>
@@ -187,7 +179,6 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
-
       <!-- test dependencies -->
       <dependency>
         <groupId>junit</groupId>
@@ -244,13 +235,10 @@
         <artifactId>sts</artifactId>
         <version>${aws.java.sdk2.version}</version>
       </dependency>
-
     </dependencies>
   </dependencyManagement>
-
   <!-- include the dependencies -->
   <dependencies>
-
     <!-- provided dependencies (available at compilation and test classpaths and *NOT* packaged) -->
     <dependency>
       <groupId>org.projectlombok</groupId>
@@ -262,13 +250,11 @@
       <artifactId>spotbugs-annotations</artifactId>
       <scope>provided</scope>
     </dependency>
-
     <!-- runtime dependencies -->
     <dependency>
       <groupId>io.streamnative</groupId>
       <artifactId>pulsar-io-core</artifactId>
     </dependency>
-
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
@@ -469,7 +455,6 @@
       <groupId>com.azure</groupId>
       <artifactId>azure-core-http-okhttp</artifactId>
     </dependency>
-
     <!-- test dependencies -->
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
@@ -524,8 +509,6 @@
       <artifactId>pulsar</artifactId>
       <scope>test</scope>
     </dependency>
-
-
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
@@ -562,7 +545,6 @@
       <version>${pulsar.version}</version>
     </dependency>
   </dependencies>
-
   <build>
     <pluginManagement>
       <plugins>
@@ -574,12 +556,12 @@
             <source>${java.version}</source>
             <target>${java.version}</target>
             <compilerArgs>
-<!--              <compilerArg>-Werror</compilerArg>-->
+              <!--              <compilerArg>-Werror</compilerArg>-->
               <compilerArg>-Xlint:deprecation</compilerArg>
               <compilerArg>-Xlint:unchecked</compilerArg>
               <!-- https://issues.apache.org/jira/browse/MCOMPILER-205 -->
               <compilerArg>-Xpkginfo:always</compilerArg>
-	        </compilerArgs>
+            </compilerArgs>
           </configuration>
         </plugin>
         <!-- test -->
@@ -588,7 +570,7 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${maven-surefire-plugin.version}</version>
           <configuration>
-<!--            <redirectTestOutputToFile>${redirectTestOutputToFile}</redirectTestOutputToFile>-->
+            <!--            <redirectTestOutputToFile>${redirectTestOutputToFile}</redirectTestOutputToFile>-->
             <reuseForks>false</reuseForks>
             <forkedProcessTimeoutInSeconds>1800</forkedProcessTimeoutInSeconds>
             <rerunFailingTestsCount>${testRetryCount}</rerunFailingTestsCount>
@@ -701,7 +683,6 @@
         <version>${os-maven-plugin.version}</version>
       </extension>
     </extensions>
-
     <plugins>
       <!-- compile -->
       <plugin>
@@ -726,31 +707,26 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
       </plugin>
-
       <!-- test -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
       </plugin>
-
       <!-- package -->
       <plugin>
         <groupId>org.apache.nifi</groupId>
         <artifactId>nifi-nar-maven-plugin</artifactId>
       </plugin>
-
       <!-- license -->
       <plugin>
         <groupId>com.mycila</groupId>
         <artifactId>license-maven-plugin</artifactId>
       </plugin>
-
       <!-- checkstyle -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
       </plugin>
-
       <!-- spotbugs -->
       <plugin>
         <groupId>com.github.spotbugs</groupId>
@@ -769,5 +745,19 @@
       <name>bintray</name>
       <url>https://dl.bintray.com/streamnative/maven</url>
     </repository>
+    <repository>
+      <id>ossrh</id>
+      <url>https://s01.oss.sonatype.org/service/local/repositories/iostreamnative-1934/content</url>
+    </repository>
   </repositories>
+  <distributionManagement>
+    <snapshotRepository>
+      <id>ossrh</id>
+      <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+    </snapshotRepository>
+    <repository>
+      <id>ossrh</id>
+      <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+    </repository>
+  </distributionManagement>
 </project>
