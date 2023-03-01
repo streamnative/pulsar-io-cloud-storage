@@ -55,7 +55,7 @@
     <commons-compress.version>1.21</commons-compress.version>
     <log4j.version>2.17.1</log4j.version>
     <json-smart.version>2.4.7</json-smart.version>
-    <protobuf3.version>3.16.1</protobuf3.version>
+    <protobuf3.version>3.19.6</protobuf3.version>
     <protoc3.version>${protobuf3.version}</protoc3.version>
     <grpc.version>1.42.1</grpc.version>
     <protoc-gen-grpc-java.version>${grpc.version}</protoc-gen-grpc-java.version>
@@ -78,6 +78,11 @@
     <spotbugs-maven-plugin.version>3.1.8</spotbugs-maven-plugin.version>
     <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
     <os-maven-plugin.version>1.4.1.Final</os-maven-plugin.version>
+    <snakeyaml.version>1.33</snakeyaml.version>
+    <reload4j.version>1.2.24</reload4j.version>
+    <woodstox-core.version>5.4.0</woodstox-core.version>
+    <netty.version>4.1.86.Final</netty.version>
+    <libthrift.version>0.17.0</libthrift.version>
   </properties>
 
   <licenses>
@@ -243,6 +248,38 @@
         <groupId>software.amazon.awssdk</groupId>
         <artifactId>sts</artifactId>
         <version>${aws.java.sdk2.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.yaml</groupId>
+        <artifactId>snakeyaml</artifactId>
+        <version>${snakeyaml.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>ch.qos.reload4j</groupId>
+        <artifactId>reload4j</artifactId>
+        <version>${reload4j.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.fasterxml.woodstox</groupId>
+        <artifactId>woodstox-core</artifactId>
+        <version>${woodstox-core.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-bom</artifactId>
+        <version>${netty.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.thrift</groupId>
+        <artifactId>libthrift</artifactId>
+        <version>${libthrift.version}</version>
       </dependency>
 
     </dependencies>
