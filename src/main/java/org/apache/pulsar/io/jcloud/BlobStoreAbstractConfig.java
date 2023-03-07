@@ -139,11 +139,11 @@ public class BlobStoreAbstractConfig implements Serializable {
                 && !partitionerType.equalsIgnoreCase("default"))) {
             // `default` option is for backward compatibility
             throw new IllegalArgumentException(
-                    "partitionerType property not set properly, available options: " +
-                            Arrays.stream(PartitionerType.values())
-                                    .map(Enum::name)
-                                    .map(String::toLowerCase)
-                                    .collect(Collectors.joining(","))
+                    "partitionerType property not set properly, available options: "
+                            + Arrays.stream(PartitionerType.values())
+                            .map(Enum::name)
+                            .map(String::toLowerCase)
+                            .collect(Collectors.joining(","))
             );
         }
         if (PartitionerType.TIME.name().equalsIgnoreCase(partitionerType)) {
