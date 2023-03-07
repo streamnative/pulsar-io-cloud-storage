@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.pulsar.io.common.IOConfigUtils;
 import org.apache.pulsar.io.core.SinkContext;
+import org.apache.pulsar.io.jcloud.partitioner.PartitionerType;
 import org.apache.pulsar.io.jcloud.sink.CloudStorageSinkConfig;
 import org.junit.Assert;
 import org.junit.Test;
@@ -258,4 +259,40 @@ public class ConnectorConfigTest {
                 cloudStorageSinkConfig.getBytesFormatTypeSeparator());
         Assert.assertEquals((int) config.get("batchSize"), cloudStorageSinkConfig.getPendingQueueSize());
     }
+
+    @Test
+    public void testEmptyPartitionerType() throws IOException {
+        Map<String, Object> config = new HashMap<>();
+        config.put("provider", PROVIDER_AWSS3);
+        config.put("accessKeyId", "aws-s3");
+        config.put("secretAccessKey", "aws-s3");
+        config.put("bucket", "testbucket");
+        config.put("region", "localhost");
+        config.put("endpoint", "https://localhost");
+        config.put("formatType", "bytes");
+        CloudStorageSinkConfig cloudStorageSinkConfig = CloudStorageSinkConfig.load(config);
+        try {
+            cloudStorageSinkConfig.validate();
+        } catch (IllegalArgumentException e) {
+            Assert.assertEquals("partitionerType property not set properly, available options: partition,time",
+                    e.getMessage());
+        }
+        config.put("partitionerType", "invalid");
+        cloudStorageSinkConfig = CloudStorageSinkConfig.load(config);
+        try {
+            cloudStorageSinkConfig.validate();
+        } catch (IllegalArgumentException e) {
+            Assert.assertEquals("partitionerType property not set properly, available options: partition,time",
+                    e.getMessage());
+        }
+        config.put("partitionerType", "default");
+        cloudStorageSinkConfig = CloudStorageSinkConfig.load(config);
+        cloudStorageSinkConfig.validate();
+        for (PartitionerType value : PartitionerType.values()) {
+            config.put("partitionerType", value);
+            cloudStorageSinkConfig = CloudStorageSinkConfig.load(config);
+            cloudStorageSinkConfig.validate();
+        }
+    }
+
 }
