@@ -28,8 +28,10 @@ import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import org.apache.commons.lang3.EnumUtils;
@@ -132,11 +134,17 @@ public class BlobStoreAbstractConfig implements Serializable {
             throw new IllegalArgumentException("formatType property not set.");
         }
 
-        if (EnumUtils.getEnumIgnoreCase(PartitionerType.class, partitionerType) == null
-                && !partitionerType.equalsIgnoreCase("default")) {
+        if (partitionerType == null
+                || (EnumUtils.getEnumIgnoreCase(PartitionerType.class, partitionerType) == null
+                && !partitionerType.equalsIgnoreCase("default"))) {
             // `default` option is for backward compatibility
             throw new IllegalArgumentException(
-                    "partitionerType property not set properly, available options: partition / time.");
+                    "partitionerType property not set properly, available options: " +
+                            Arrays.stream(PartitionerType.values())
+                                    .map(Enum::name)
+                                    .map(String::toLowerCase)
+                                    .collect(Collectors.joining(","))
+            );
         }
         if (PartitionerType.TIME.name().equalsIgnoreCase(partitionerType)) {
             if (StringUtils.isNoneBlank(timePartitionPattern)) {
