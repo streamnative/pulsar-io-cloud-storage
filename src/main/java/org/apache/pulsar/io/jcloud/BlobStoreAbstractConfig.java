@@ -114,6 +114,7 @@ public class BlobStoreAbstractConfig implements Serializable {
     private boolean withTopicPartitionNumber = true;
     private String bytesFormatTypeSeparator = "0x10";
     private boolean skipFailedMessages = false;
+    private boolean jsonAllowNaN = false;
 
     public void validate() {
         checkNotNull(provider, "provider not set.");
@@ -173,6 +174,11 @@ public class BlobStoreAbstractConfig implements Serializable {
                     "bytesFormatTypeSeparator cannot be empty when formatType is 'bytes'.");
             checkArgument(StringUtils.startsWith(bytesFormatTypeSeparator, "0x"),
                     "bytesFormatTypeSeparator should be a hex encoded string, which starts with '0x'.");
+        }
+
+        if (jsonAllowNaN) {
+            checkArgument(formatType.equalsIgnoreCase("json"), "jsonAllowNaN can only be true "
+                    + "when formatType is 'json'.");
         }
 
         if (pendingQueueSize <= 0) {
