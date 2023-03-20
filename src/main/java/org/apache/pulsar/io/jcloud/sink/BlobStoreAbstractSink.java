@@ -246,7 +246,8 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         final Map<String, List<Record<GenericRecord>>> recordsToInsertByTopic =
                 recordsToInsert.stream().collect(Collectors.groupingBy(record -> record.getTopicName().get()));
 
-        for (List<Record<GenericRecord>> singleTopicRecordsToInsert : recordsToInsertByTopic.values()) {
+        for (Map.Entry<String, List<Record<GenericRecord>>> entry : recordsToInsertByTopic.entrySet()) {
+            List<Record<GenericRecord>> singleTopicRecordsToInsert = entry.getValue();
             Record<GenericRecord> firstRecord = singleTopicRecordsToInsert.get(0);
             Schema<GenericRecord> schema;
             try {
@@ -269,21 +270,27 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                 final Iterator<Record<GenericRecord>> iter = singleTopicRecordsToInsert.iterator();
                 filepath = buildPartitionPath(firstRecord, partitioner, format, timeStampForPartitioning);
                 ByteBuffer payload = bindValue(iter, format);
-                log.info("Uploading blob {} currentBatchSize {} currentBatchBytes {}", filepath, currentBatchSize.get(),
-                        currentBatchBytes.get());
+                int uploadSize = singleTopicRecordsToInsert.size();
+                long uploadBytes = getBytesSum(singleTopicRecordsToInsert);
+                log.info("Uploading blob {} from topic {} uploadSize {} out of currentBatchSize {} "
+                        + " uploadBytes {} out of currcurrentBatchBytes {}",
+                        filepath, entry.getKey(),
+                        uploadSize, currentBatchSize.get(),
+                        uploadBytes, currentBatchBytes.get());
                 long elapsedMs = System.currentTimeMillis();
                 uploadPayload(payload, filepath);
                 elapsedMs = System.currentTimeMillis() - elapsedMs;
                 log.debug("Uploading blob {} elapsed time in ms: {}", filepath, elapsedMs);
                 singleTopicRecordsToInsert.forEach(Record::ack);
-                currentBatchBytes.addAndGet(-1 * getBytesSum(singleTopicRecordsToInsert));
-                currentBatchSize.addAndGet(-1 * singleTopicRecordsToInsert.size());
+                currentBatchBytes.addAndGet(-1 * uploadBytes);
+                currentBatchSize.addAndGet(-1 * uploadSize);
                 if (sinkContext != null) {
                     sinkContext.recordMetric(METRICS_TOTAL_SUCCESS, singleTopicRecordsToInsert.size());
                     sinkContext.recordMetric(METRICS_LATEST_UPLOAD_ELAPSED_TIME, elapsedMs);
                 }
-                log.info("Successfully uploaded blob {} currentBatchSize {} currentBatchBytes {}", filepath,
-                        currentBatchSize.get(), currentBatchBytes.get());
+                log.info("Successfully uploaded blob {} from topic {} uploadSize {} uploadBytes {}",
+                    filepath, entry.getKey(),
+                    uploadSize, uploadBytes);
             } catch (Exception e) {
                 if (e instanceof ContainerNotFoundException) {
                     log.error("Blob {} is not found", filepath, e);
