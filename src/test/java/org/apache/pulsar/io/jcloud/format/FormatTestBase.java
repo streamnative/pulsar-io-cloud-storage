@@ -67,9 +67,9 @@ public abstract class FormatTestBase extends PulsarTestBase {
             TopicName.get("test-parquet-kv" + RandomStringUtils.randomAlphabetic(5));
     private static final TopicName protobufNativeTopicName =
             TopicName.get("test-parquet-protobuf-native" + RandomStringUtils.randomAlphabetic(5));
-    protected static final TopicName jsonBytesTopicName =
+    protected static TopicName jsonBytesTopicName =
             TopicName.get("test-json-bytes-parquet-json" + RandomStringUtils.randomAlphabetic(5));
-    protected static final TopicName jsonStringTopicName =
+    protected static TopicName jsonStringTopicName =
             TopicName.get("test-json-string-parquet-json" + RandomStringUtils.randomAlphabetic(5));
 
     @BeforeClass

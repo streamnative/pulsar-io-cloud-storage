@@ -68,7 +68,8 @@ public class JsonFormatTest extends FormatTestBase {
         );
 
         String json = JSON_MAPPER.get().writeValueAsString(testRecords);
-        sendTypedMessages(jsonBytesTopicName.toString(), SchemaType.BYTES, Arrays.asList(json.getBytes(), json.getBytes()), Optional.empty(), byte[].class);
+        sendTypedMessages(jsonBytesTopicName.toString(), SchemaType.BYTES,
+                Arrays.asList(json.getBytes(), json.getBytes()), Optional.empty(), byte[].class);
 
         Consumer<Message<GenericRecord>> handle = getJSONMessageConsumer(jsonBytesTopicName);
         consumerMessages(jsonBytesTopicName.toString(), Schema.AUTO_CONSUME(), handle, 2, 2000);
@@ -83,7 +84,8 @@ public class JsonFormatTest extends FormatTestBase {
         );
 
         String json = JSON_MAPPER.get().writeValueAsString(testRecords);
-        sendTypedMessages(jsonStringTopicName.toString(), SchemaType.STRING, Arrays.asList(json, json), Optional.empty(), String.class);
+        sendTypedMessages(jsonStringTopicName.toString(), SchemaType.STRING,
+                Arrays.asList(json, json), Optional.empty(), String.class);
 
         Consumer<Message<GenericRecord>> handle = getJSONMessageConsumer(jsonStringTopicName);
         consumerMessages(jsonStringTopicName.toString(), Schema.AUTO_CONSUME(), handle, 2, 2000);

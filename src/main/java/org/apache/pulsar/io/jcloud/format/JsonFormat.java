@@ -63,7 +63,7 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
     private static final JsonFactory JSON_FACTORY = new JsonFactory();
     private static final TypeReference<Map<String, Object>> TYPEREF = new TypeReference<>() {};
     private static final TypeReference<List<Map<String, Object>>> ARRAY_TYPEREF = new TypeReference<>() {};
-    private static TypeReference PRIORITY_TRY_TYPEREF = TYPEREF;
+    private static TypeReference priorityTryTyperef = TYPEREF;
 
     private boolean useMetadata;
     private boolean useHumanReadableMessageId;
@@ -188,12 +188,12 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
      * @throws IOException
      */
     private static Map<String, Object> dynamicReadValue(JsonParser jsonParser) throws IOException {
-        if (PRIORITY_TRY_TYPEREF == TYPEREF) {
+        if (priorityTryTyperef == TYPEREF) {
             try {
                 return JSON_MAPPER.get().readValue(jsonParser, TYPEREF);
             } catch (MismatchedInputException e) {
                 log.info("Use Map<String, Object> read json failed, try to use List<Map<String, Object>>");
-                PRIORITY_TRY_TYPEREF = ARRAY_TYPEREF;
+                priorityTryTyperef = ARRAY_TYPEREF;
                 return readValueForArrayType(jsonParser);
             }
         } else {
@@ -201,7 +201,7 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
                 return readValueForArrayType(jsonParser);
             } catch (MismatchedInputException e) {
                 log.info("Use List<Map<String, Object>> read json failed, try to use Map<String, Object>");
-                PRIORITY_TRY_TYPEREF = TYPEREF;
+                priorityTryTyperef = TYPEREF;
                 return JSON_MAPPER.get().readValue(jsonParser, TYPEREF);
             }
         }
