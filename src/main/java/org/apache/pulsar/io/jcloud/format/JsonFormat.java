@@ -20,9 +20,12 @@ package org.apache.pulsar.io.jcloud.format;
 
 import static com.fasterxml.jackson.core.json.JsonReadFeature.ALLOW_NON_NUMERIC_NUMBERS;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.util.JsonFormat.Printer;
 import java.io.IOException;
@@ -57,7 +60,10 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
         return mapper;
     });
 
-    public static final TypeReference<Map<String, Object>> TYPEREF = new TypeReference<Map<String, Object>>() {};
+    private static final JsonFactory JSON_FACTORY = new JsonFactory();
+    private static final TypeReference<Map<String, Object>> TYPEREF = new TypeReference<>() {};
+    private static final TypeReference<List<Map<String, Object>>> ARRAY_TYPEREF = new TypeReference<>() {};
+    private static TypeReference PRIORITY_TRY_TYPEREF = TYPEREF;
 
     private boolean useMetadata;
     private boolean useHumanReadableMessageId;
@@ -141,16 +147,16 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
                     if (record.getNativeObject() instanceof DynamicMessage) {
                         Printer printer = com.google.protobuf.util.JsonFormat.printer();
                         String json = printer.print((DynamicMessage) record.getNativeObject());
-                        return JSON_MAPPER.get().readValue(json, TYPEREF);
+                        return dynamicReadValue(JSON_FACTORY.createParser(json));
                     }
                     break;
                 default:
                     throw new UnsupportedOperationException("Unsupported value schemaType=" + record.getSchemaType());
             }
         } else if (record.getSchemaType() == SchemaType.STRING) {
-            return JSON_MAPPER.get().readValue((String) record.getNativeObject(), TYPEREF);
+            return dynamicReadValue(JSON_FACTORY.createParser((String) record.getNativeObject()));
         } else if (record.getSchemaType() == SchemaType.BYTES) {
-            return JSON_MAPPER.get().readValue((byte[]) record.getNativeObject(), TYPEREF);
+            return dynamicReadValue(JSON_FACTORY.createParser((byte[]) record.getNativeObject()));
         } else if (record.getSchemaType() == SchemaType.KEY_VALUE) {
             Map<String, Object> jsonKeyValue = new LinkedHashMap<>();
             KeyValueSchema<GenericObject, GenericObject> keyValueSchema = (KeyValueSchema) schema;
@@ -170,5 +176,43 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
         if (record != null) {
             jsonKeyValue.put(key, convertRecordToObject((GenericRecord) record, schema));
         }
+    }
+
+    /**
+     * This method will try use TYPEREF and ARRAY_TYPEREF to read json value.
+     *
+     * Once the read is successful, the same type is used for the next read.
+     *
+     * @param jsonParser
+     * @return
+     * @throws IOException
+     */
+    private static Map<String, Object> dynamicReadValue(JsonParser jsonParser) throws IOException {
+        if (PRIORITY_TRY_TYPEREF == TYPEREF) {
+            try {
+                return JSON_MAPPER.get().readValue(jsonParser, TYPEREF);
+            } catch (MismatchedInputException e) {
+                log.info("Use Map<String, Object> read json failed, try to use List<Map<String, Object>>");
+                PRIORITY_TRY_TYPEREF = ARRAY_TYPEREF;
+                return readValueForArrayType(jsonParser);
+            }
+        } else {
+            try {
+                return readValueForArrayType(jsonParser);
+            } catch (MismatchedInputException e) {
+                log.info("Use List<Map<String, Object>> read json failed, try to use Map<String, Object>");
+                PRIORITY_TRY_TYPEREF = TYPEREF;
+                return JSON_MAPPER.get().readValue(jsonParser, TYPEREF);
+            }
+        }
+    }
+
+    private static Map<String, Object> readValueForArrayType(JsonParser jsonParser) throws IOException {
+        Map<String, Object> result = new LinkedHashMap<>();
+        List<Map<String, Object>> valueList =
+                JSON_MAPPER.get().readValue(jsonParser, ARRAY_TYPEREF);
+        // To maintain compatibility, put the valueList in the map.
+        result.put("value", valueList);
+        return result;
     }
 }

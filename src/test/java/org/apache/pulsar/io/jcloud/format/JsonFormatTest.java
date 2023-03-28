@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.DynamicMessage;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -35,9 +36,12 @@ import org.apache.pulsar.client.api.Schema;
 import org.apache.pulsar.client.api.schema.Field;
 import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.common.naming.TopicName;
+import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.functions.api.Record;
+import org.apache.pulsar.io.jcloud.bo.TestRecord;
 import org.apache.pulsar.jcloud.shade.com.google.common.io.ByteSource;
 import org.junit.Assert;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +58,36 @@ public class JsonFormatTest extends FormatTestBase {
 
     private static final Logger log = LoggerFactory.getLogger(JsonFormatTest.class);
     private JsonFormat format = new JsonFormat();
+
+    @Test
+    public void testJsonBytesRecordWriter() throws Exception {
+        List<TestRecord> testRecords = Arrays.asList(
+                new TestRecord("key1", 1, null),
+                new TestRecord("key1", 1, new TestRecord.TestSubRecord("aaa")),
+                new TestRecord("key2", 2, new TestRecord.TestSubRecord("aaa"))
+        );
+
+        String json = JSON_MAPPER.get().writeValueAsString(testRecords);
+        sendTypedMessages(jsonBytesTopicName.toString(), SchemaType.BYTES, Arrays.asList(json.getBytes(), json.getBytes()), Optional.empty(), byte[].class);
+
+        Consumer<Message<GenericRecord>> handle = getJSONMessageConsumer(jsonBytesTopicName);
+        consumerMessages(jsonBytesTopicName.toString(), Schema.AUTO_CONSUME(), handle, 2, 2000);
+    }
+
+    @Test
+    public void testJsonStringRecordWriter() throws Exception {
+        List<TestRecord> testRecords = Arrays.asList(
+                new TestRecord("key1", 1, null),
+                new TestRecord("key1", 1, new TestRecord.TestSubRecord("aaa")),
+                new TestRecord("key2", 2, new TestRecord.TestSubRecord("aaa"))
+        );
+
+        String json = JSON_MAPPER.get().writeValueAsString(testRecords);
+        sendTypedMessages(jsonStringTopicName.toString(), SchemaType.STRING, Arrays.asList(json, json), Optional.empty(), String.class);
+
+        Consumer<Message<GenericRecord>> handle = getJSONMessageConsumer(jsonStringTopicName);
+        consumerMessages(jsonStringTopicName.toString(), Schema.AUTO_CONSUME(), handle, 2, 2000);
+    }
 
     @Override
     public Format<GenericRecord> getFormat() {

@@ -67,6 +67,10 @@ public abstract class FormatTestBase extends PulsarTestBase {
             TopicName.get("test-parquet-kv" + RandomStringUtils.randomAlphabetic(5));
     private static final TopicName protobufNativeTopicName =
             TopicName.get("test-parquet-protobuf-native" + RandomStringUtils.randomAlphabetic(5));
+    protected static final TopicName jsonBytesTopicName =
+            TopicName.get("test-json-bytes-parquet-json" + RandomStringUtils.randomAlphabetic(5));
+    protected static final TopicName jsonStringTopicName =
+            TopicName.get("test-json-string-parquet-json" + RandomStringUtils.randomAlphabetic(5));
 
     @BeforeClass
     public static void setUp() throws Exception {
@@ -81,6 +85,10 @@ public abstract class FormatTestBase extends PulsarTestBase {
         pulsarAdmin.topics().createSubscription(avroTopicName.toString(), "test", MessageId.earliest);
         pulsarAdmin.topics().createPartitionedTopic(protobufNativeTopicName.toString(), 1);
         pulsarAdmin.topics().createSubscription(protobufNativeTopicName.toString(), "test", MessageId.earliest);
+        pulsarAdmin.topics().createPartitionedTopic(jsonBytesTopicName.toString(), 1);
+        pulsarAdmin.topics().createSubscription(jsonBytesTopicName.toString(), "test", MessageId.earliest);
+        pulsarAdmin.topics().createPartitionedTopic(jsonStringTopicName.toString(), 1);
+        pulsarAdmin.topics().createSubscription(jsonStringTopicName.toString(), "test", MessageId.earliest);
     }
 
     public abstract Format<GenericRecord> getFormat();
