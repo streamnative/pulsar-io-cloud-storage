@@ -72,7 +72,7 @@ public class JsonFormatTest extends FormatTestBase {
             sendTypedMessages(jsonBytesTopicName.toString(), SchemaType.BYTES,
                     Arrays.asList(json.getBytes(), json.getBytes()), Optional.empty(), byte[].class);
 
-            Consumer<Message<GenericRecord>> handle = getJSONMessageConsumer(jsonBytesTopicName);
+            Consumer<Message<GenericRecord>> handle = getJsonByteAndStringHandler(jsonBytesTopicName);
             consumerMessages(jsonBytesTopicName.toString(), Schema.AUTO_CONSUME(), handle, 2, 2000);
         } catch (Exception e) {
             fail(e.getMessage());
@@ -92,11 +92,27 @@ public class JsonFormatTest extends FormatTestBase {
             sendTypedMessages(jsonStringTopicName.toString(), SchemaType.STRING,
                     Arrays.asList(json, json), Optional.empty(), String.class);
 
-            Consumer<Message<GenericRecord>> handle = getJSONMessageConsumer(jsonStringTopicName);
+            Consumer<Message<GenericRecord>> handle = getJsonByteAndStringHandler(jsonStringTopicName);
             consumerMessages(jsonStringTopicName.toString(), Schema.AUTO_CONSUME(), handle, 2, 2000);
         } catch (Exception e) {
             fail(e.getMessage());
         }
+    }
+
+    private Consumer<Message<GenericRecord>> getJsonByteAndStringHandler(TopicName topic) {
+        return msg -> {
+            try {
+                Schema<GenericRecord> schema = (Schema<GenericRecord>) msg.getReaderSchema().get();
+                initSchema(schema);
+                Map<String, Object> message = getJSONMessage(topic, msg);
+                Assert.assertEquals(message.size(), 2);
+                List<Map<String, Object>> value = (List<Map<String, Object>>) message.get("value");
+                Assert.assertEquals(value.size(), 3);
+            } catch (Exception e) {
+                log.error("formatter handle message is fail", e);
+                fail();
+            }
+        };
     }
 
     @Override
