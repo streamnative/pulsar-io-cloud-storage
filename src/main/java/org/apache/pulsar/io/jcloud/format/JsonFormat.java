@@ -63,7 +63,7 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
     private static final JsonFactory JSON_FACTORY = new JsonFactory();
     private static final TypeReference<Map<String, Object>> TYPEREF = new TypeReference<>() {};
     private static final TypeReference<List<Map<String, Object>>> ARRAY_TYPEREF = new TypeReference<>() {};
-    private static TypeReference priorityTryTyperef = TYPEREF;
+    private TypeReference priorityTryTyperef = TYPEREF;
 
     private boolean useMetadata;
     private boolean useHumanReadableMessageId;
@@ -187,7 +187,7 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
      * @return
      * @throws IOException
      */
-    private static Map<String, Object> dynamicReadValue(JsonParser jsonParser) throws IOException {
+    private Map<String, Object> dynamicReadValue(JsonParser jsonParser) throws IOException {
         if (priorityTryTyperef == TYPEREF) {
             try {
                 return JSON_MAPPER.get().readValue(jsonParser, TYPEREF);
@@ -207,7 +207,7 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
         }
     }
 
-    private static Map<String, Object> readValueForArrayType(JsonParser jsonParser) throws IOException {
+    private Map<String, Object> readValueForArrayType(JsonParser jsonParser) throws IOException {
         Map<String, Object> result = new LinkedHashMap<>();
         List<Map<String, Object>> valueList =
                 JSON_MAPPER.get().readValue(jsonParser, ARRAY_TYPEREF);
