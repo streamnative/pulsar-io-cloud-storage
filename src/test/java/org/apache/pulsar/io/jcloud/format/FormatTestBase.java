@@ -308,14 +308,15 @@ public abstract class FormatTestBase extends PulsarTestBase {
     }
 
     protected void initSchema(Schema<GenericRecord> schema) {
+        Schema<GenericRecord> convertSchema = schema;
         if (schema instanceof AutoConsumeSchema) {
             AutoConsumeSchema autoConsumeSchema = (AutoConsumeSchema) schema;
-            schema = (Schema<GenericRecord>) autoConsumeSchema.atSchemaVersion(null);
+            convertSchema = (Schema<GenericRecord>) autoConsumeSchema.atSchemaVersion(null);
         }
         final BlobStoreAbstractConfig config = getBlobStoreAbstractConfig();
         ((InitConfiguration<BlobStoreAbstractConfig>) getFormat()).configure(config);
-        Assert.assertTrue(getFormat().doSupportPulsarSchemaType(schema.getSchemaInfo().getType()));
-        getFormat().initSchema(schema);
+        Assert.assertTrue(getFormat().doSupportPulsarSchemaType(convertSchema.getSchemaInfo().getType()));
+        getFormat().initSchema(convertSchema);
     }
 
     protected void validMetadata(org.apache.avro.generic.GenericRecord record, Message<GenericRecord> message) {
