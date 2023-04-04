@@ -37,6 +37,7 @@ import org.apache.pulsar.client.api.MessageId;
 import org.apache.pulsar.client.api.Schema;
 import org.apache.pulsar.client.api.schema.Field;
 import org.apache.pulsar.client.api.schema.GenericRecord;
+import org.apache.pulsar.client.impl.schema.AutoConsumeSchema;
 import org.apache.pulsar.client.impl.schema.generic.GenericJsonRecord;
 import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.common.schema.KeyValue;
@@ -307,10 +308,15 @@ public abstract class FormatTestBase extends PulsarTestBase {
     }
 
     protected void initSchema(Schema<GenericRecord> schema) {
+        Schema<GenericRecord> convertSchema = schema;
+        if (schema instanceof AutoConsumeSchema) {
+            AutoConsumeSchema autoConsumeSchema = (AutoConsumeSchema) schema;
+            convertSchema = (Schema<GenericRecord>) autoConsumeSchema.atSchemaVersion(null);
+        }
         final BlobStoreAbstractConfig config = getBlobStoreAbstractConfig();
         ((InitConfiguration<BlobStoreAbstractConfig>) getFormat()).configure(config);
-        Assert.assertTrue(getFormat().doSupportPulsarSchemaType(schema.getSchemaInfo().getType()));
-        getFormat().initSchema(schema);
+        Assert.assertTrue(getFormat().doSupportPulsarSchemaType(convertSchema.getSchemaInfo().getType()));
+        getFormat().initSchema(convertSchema);
     }
 
     protected void validMetadata(org.apache.avro.generic.GenericRecord record, Message<GenericRecord> message) {
