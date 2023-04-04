@@ -48,7 +48,7 @@
     <jackson.version>2.13.2</jackson.version>
     <jackson-databind.version>2.13.4.1</jackson-databind.version>
     <lombok.version>1.18.20</lombok.version>
-    <pulsar.version>2.9.0-rc-202110221101</pulsar.version>
+    <pulsar.version>2.11.0.4</pulsar.version>
     <parquet.version>1.12.2</parquet.version>
     <awsjavasdk.version>1.12.148</awsjavasdk.version>
     <aws.java.sdk2.version>2.16.1</aws.java.sdk2.version>
