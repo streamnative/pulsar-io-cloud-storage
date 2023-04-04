@@ -61,8 +61,9 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
     });
 
     private static final JsonFactory JSON_FACTORY = new JsonFactory();
-    private static final TypeReference<Map<String, Object>> TYPEREF = new TypeReference<>() {};
-    private static final TypeReference<List<Map<String, Object>>> ARRAY_TYPEREF = new TypeReference<>() {};
+    private static final TypeReference<Map<String, Object>> TYPEREF = new TypeReference<Map<String, Object>>() {};
+    private static final TypeReference<List<Map<String, Object>>> ARRAY_TYPEREF =
+                                                                  new TypeReference<List<Map<String, Object>>>() {};
     private TypeReference priorityTryTyperef = TYPEREF;
 
     private boolean useMetadata;
