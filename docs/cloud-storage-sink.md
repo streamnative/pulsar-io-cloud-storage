@@ -13,7 +13,7 @@ You can get the Cloud Storage sink connector using one of the following methods:
 
 ## Use it with Function Worker
 
-- Download the NAR package from [here](https://github.com/streamnative/pulsar-io-cloud-storage/releases/download/v{{connector:version}}/pulsar-io-cloud-storage-{{connector:version}}.nar).
+- Download the NAR package from [here](https://github.com/streamnative/pulsar-io-cloud-storage/releases/download/v2.9.5.2/pulsar-io-cloud-storage-2.9.5.2.nar).
 
 - Build it from the source code.
 
@@ -33,7 +33,7 @@ You can get the Cloud Storage sink connector using one of the following methods:
 
        ```bash
        ls target
-       pulsar-io-cloud-storage-{{connector:version}}.nar
+       pulsar-io-cloud-storage-2.9.5.2.nar
        ```
 
 ## Use it with Function Mesh
@@ -281,7 +281,7 @@ kind: Sink
 metadata:
   name: cloud-storage-sink-sample
 spec:
-  image: streamnative/pulsar-io-cloud-storage:{{connector:version}}
+  image: streamnative/pulsar-io-cloud-storage:2.9.5.2
   className: org.apache.pulsar.io.jcloud.sink.CloudStorageGenericRecordSink
   replicas: 1
   maxReplicas: 1
@@ -313,7 +313,7 @@ spec:
       cpu: "0.1"
       memory: 1G
   java:
-    jar: connectors/pulsar-io-cloud-storage-{{connector:version}}.nar
+    jar: connectors/pulsar-io-cloud-storage-2.9.5.2.nar
   clusterName: test-pulsar
 ```
 
@@ -333,7 +333,7 @@ This example shows how to create an Cloud Storage sink connector on a Pulsar clu
 
 ```
 PULSAR_HOME/bin/pulsar-admin sinks create \
---archive pulsar-io-cloud-storage-{{connector:version}}.nar \
+--archive pulsar-io-cloud-storage-2.9.5.2.nar \
 --sink-config-file cloud-storage-sink-config.yaml \
 --classname org.apache.pulsar.io.jcloud.sink.CloudStorageGenericRecordSink \
 --name cloud-storage-sink
@@ -432,7 +432,7 @@ This example explains how to create a Cloud Storage sink connector in an on-prem
 1. Copy the NAR package of the Cloud Storage connector to the Pulsar connectors directory.
 
     ```
-    cp pulsar-io-cloud-storage-{{connector:version}}.nar $PULSAR_HOME/connectors/pulsar-io-cloud-storage-{{connector:version}}.nar
+    cp pulsar-io-cloud-storage-2.9.5.2.nar $PULSAR_HOME/connectors/pulsar-io-cloud-storage-2.9.5.2.nar
     ```
 
 2. Reload all [built-in connectors](https://pulsar.apache.org/docs/en/next/io-connectors/).
@@ -480,7 +480,7 @@ This example demonstrates how to create Cloud Storage sink connector through Fun
     metadata:
       name: cloud-storage-sink-sample
     spec:
-      image: streamnative/pulsar-io-cloud-storage:{{connector:version}}
+      image: streamnative/pulsar-io-cloud-storage:2.9.5.2
       className: org.apache.pulsar.io.jcloud.sink.CloudStorageGenericRecordSink
       replicas: 1
       maxReplicas: 1
@@ -512,7 +512,7 @@ This example demonstrates how to create Cloud Storage sink connector through Fun
           cpu: "0.1"
           memory: 1G
       java:
-        jar: connectors/pulsar-io-cloud-storage-{{connector:version}}.nar
+        jar: connectors/pulsar-io-cloud-storage-2.9.5.2.nar
       clusterName: test-pulsar
     ```
 
