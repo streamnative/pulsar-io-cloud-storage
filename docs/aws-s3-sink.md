@@ -7,7 +7,7 @@ dockerfile: "https://hub.docker.com/r/streamnative/pulsar-io-cloud-storage"
 
 The [AWS S3](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html) sink connector pulls data from Pulsar topics and persists data to AWS S3 buckets.
 
-![](/docs/cloud-storage-sink.png)
+![](/docs/aws-s3-sink.png)
 
 ## Quick start
 
