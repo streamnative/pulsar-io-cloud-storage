@@ -35,7 +35,7 @@ import org.apache.pulsar.io.jcloud.sink.CloudStorageSinkConfig;
 @Slf4j
 public class AzureBlobWriter implements BlobWriter {
 
-    public final BlobContainerClient containerClient;
+    private final BlobContainerClient containerClient;
 
     public AzureBlobWriter(CloudStorageSinkConfig sinkConfig) {
         BlobContainerClientBuilder containerClientBuilder = new BlobContainerClientBuilder();
