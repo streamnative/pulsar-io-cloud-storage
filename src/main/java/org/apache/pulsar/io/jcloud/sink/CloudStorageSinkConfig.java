@@ -18,7 +18,10 @@
  */
 package org.apache.pulsar.io.jcloud.sink;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.lang3.StringUtils.isEmpty;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import java.io.File;
@@ -142,6 +145,10 @@ public class CloudStorageSinkConfig extends BlobStoreAbstractConfig {
         if (!useDefaultCredentials && getProvider().equalsIgnoreCase(PROVIDER_AWSS3)) {
             checkNotNull(accessKeyId, "accessKeyId property not set.");
             checkNotNull(secretAccessKey, "secretAccessKey property not set.");
+        }
+        if (getProvider().equalsIgnoreCase(PROVIDER_AZURE) && isEmpty(azureStorageAccountConnectionString)) {
+            checkArgument(isNotBlank(getEndpoint()),
+                    "endpoint property must be set.");
         }
     }
 }
