@@ -123,10 +123,6 @@ public class BlobStoreAbstractConfig implements Serializable {
             checkArgument(isNotBlank(region) || isNotBlank(endpoint),
                     "Either the aws-end-point or aws-region must be set.");
         }
-        if (provider.equalsIgnoreCase(PROVIDER_AZURE)) {
-            checkArgument(isNotBlank(endpoint),
-                    "endpoint property must be set.");
-        }
         if (isNotBlank(endpoint)) {
             checkArgument(hasURIScheme(endpoint), "endpoint property needs to specify URI scheme.");
         }

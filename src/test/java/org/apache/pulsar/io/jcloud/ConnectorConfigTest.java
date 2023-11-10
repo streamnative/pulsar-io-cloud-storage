@@ -19,6 +19,7 @@
 package org.apache.pulsar.io.jcloud;
 
 import static org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig.PROVIDER_AWSS3;
+import static org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig.PROVIDER_AZURE;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -292,6 +293,39 @@ public class ConnectorConfigTest {
             config.put("partitionerType", value);
             cloudStorageSinkConfig = CloudStorageSinkConfig.load(config);
             cloudStorageSinkConfig.validate();
+        }
+    }
+
+    @Test
+    public void testAllowEndpointEmptyWithAzure() throws IOException {
+        Map<String, Object> config = new HashMap<>();
+        config.put("provider", PROVIDER_AZURE);
+        config.put("azureStorageAccountConnectionString", "test-connection-string");
+        config.put("bucket", "test-container-name");
+        config.put("formatType", "bytes");
+        config.put("partitionerType", "PARTITION");
+        CloudStorageSinkConfig cloudStorageSinkConfig = CloudStorageSinkConfig.load(config);
+        try {
+            cloudStorageSinkConfig.validate();
+        } catch (Exception e) {
+            Assert.fail(e.getMessage());
+        }
+    }
+
+    @Test
+    public void testNotAllowEndpointEmptyWithAzure() throws IOException {
+        Map<String, Object> config = new HashMap<>();
+        config.put("provider", PROVIDER_AZURE);
+        config.put("azureStorageAccountSASToken", "test-account-sas-token");
+        config.put("bucket", "test-container-name");
+        config.put("formatType", "bytes");
+        config.put("partitionerType", "PARTITION");
+        CloudStorageSinkConfig cloudStorageSinkConfig = CloudStorageSinkConfig.load(config);
+        try {
+            cloudStorageSinkConfig.validate();
+            Assert.fail("Should be validate failed.");
+        } catch (Exception e) {
+            Assert.assertEquals("endpoint property must be set.", e.getMessage());
         }
     }
 
