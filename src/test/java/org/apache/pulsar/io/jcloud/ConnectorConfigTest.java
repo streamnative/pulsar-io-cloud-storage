@@ -275,7 +275,8 @@ public class ConnectorConfigTest {
         try {
             cloudStorageSinkConfig.validate();
         } catch (IllegalArgumentException e) {
-            Assert.assertEquals("partitionerType property not set properly, available options: partition,time",
+            Assert.assertEquals(
+                    "partitionerType property not set properly, available options: partition,time,global_time",
                     e.getMessage());
         }
         config.put("partitionerType", "invalid");
@@ -283,7 +284,8 @@ public class ConnectorConfigTest {
         try {
             cloudStorageSinkConfig.validate();
         } catch (IllegalArgumentException e) {
-            Assert.assertEquals("partitionerType property not set properly, available options: partition,time",
+            Assert.assertEquals(
+                    "partitionerType property not set properly, available options: partition,time,global_time",
                     e.getMessage());
         }
         config.put("partitionerType", "default");
