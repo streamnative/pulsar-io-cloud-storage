@@ -20,6 +20,7 @@ package org.apache.pulsar.io.jcloud.sink;
 
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
@@ -180,6 +181,30 @@ public class CloudStorageGenericRecordSinkTest {
         );
         await().atMost(Duration.ofSeconds(10)).untilAsserted(
                 () -> verify(mockRecord, atLeast(5)).ack()
+        );
+    }
+
+    @Test
+    public void testGlobalTimeFileFormat() throws Exception {
+        this.config.put("batchTimeMs", 60000); // set high batchTimeMs to prevent scheduled flush
+        this.config.put("maxBatchBytes", 10000); // set high maxBatchBytes to prevent flush
+        this.config.put("batchSize", 5); // force flush after 5 messages
+        this.config.put("pathPrefix", "global_time/");
+        this.config.put("partitionerType", "GLOBAL_TIME");
+        this.config.put("formatType", "json");
+
+
+        verifySinkFlushGlobalTime();
+    }
+
+    private void verifySinkFlushGlobalTime() throws Exception {
+        this.sink.open(this.config, this.mockSinkContext);
+
+        sendMockRecord(5);
+        await().atMost(Duration.ofSeconds(10)).untilAsserted(
+                () -> verify(mockBlobWriter, atLeastOnce()).uploadBlob(
+                        // The file path must follows the format `{pathPrefix}{timestamp}.{format ext}`
+                        argThat((String s) -> s.matches("global_time/(\\d+)\\.json")), any(ByteBuffer.class))
         );
     }
 
