@@ -30,5 +30,6 @@ public class PartitionerTypeTest {
     public void testValueOf() {
         assertEquals(PartitionerType.PARTITION, EnumUtils.getEnumIgnoreCase(PartitionerType.class, "partition"));
         assertEquals(PartitionerType.TIME, EnumUtils.getEnumIgnoreCase(PartitionerType.class, "time"));
+        assertEquals(PartitionerType.GLOBAL_TIME, EnumUtils.getEnumIgnoreCase(PartitionerType.class, "global_time"));
     }
 }

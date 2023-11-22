@@ -92,6 +92,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
     private static final String METRICS_TOTAL_SUCCESS = "_cloud_storage_sink_total_success_";
     private static final String METRICS_TOTAL_FAILURE = "_cloud_storage_sink_total_failure_";
     private static final String METRICS_LATEST_UPLOAD_ELAPSED_TIME = "_cloud_storage_latest_upload_elapsed_time_";
+    private boolean useGlobalTimePartitioner = false;
 
     @Override
     public void open(Map<String, Object> config, SinkContext sinkContext) throws Exception {
@@ -132,6 +133,11 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         switch (partitionerType) {
             case TIME:
                 partitioner = new TimePartitioner<>();
+                break;
+            case GLOBAL_TIME:
+                log.info("Use global time partitioner");
+                useGlobalTimePartitioner = true;
+                partitioner = new SimplePartitioner<>();
                 break;
             case PARTITION:
             default:
@@ -243,57 +249,76 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
         // all output blobs of the same batch should have the same partitioning timestamp
         final long timeStampForPartitioning = System.currentTimeMillis();
+        if (useGlobalTimePartitioner) {
+            String filePath = pathPrefix + timeStampForPartitioning + format.getExtension();
+            flushRecords("", filePath, recordsToInsert);
+            return;
+        }
+
         final Map<String, List<Record<GenericRecord>>> recordsToInsertByTopic =
                 recordsToInsert.stream().collect(Collectors.groupingBy(record -> record.getTopicName().get()));
 
-        for (List<Record<GenericRecord>> singleTopicRecordsToInsert : recordsToInsertByTopic.values()) {
-            Record<GenericRecord> firstRecord = singleTopicRecordsToInsert.get(0);
-            Schema<GenericRecord> schema = getPulsarSchema(firstRecord);
-            if (!format.doSupportPulsarSchemaType(schema.getSchemaInfo().getType())) {
-                log.warn("sink does not support schema type {}", schema.getSchemaInfo().getType());
-                bulkHandleFailedRecords(singleTopicRecordsToInsert);
-                return;
-            }
+        for (Map.Entry<String, List<Record<GenericRecord>>> entry : recordsToInsertByTopic.entrySet()) {
+            List<Record<GenericRecord>> singleTopicRecordsToInsert = entry.getValue();
+            String filePath = buildPartitionPath(singleTopicRecordsToInsert.get(0), partitioner, format,
+                    timeStampForPartitioning);
+            flushRecords(entry.getKey(), filePath, singleTopicRecordsToInsert);
+        }
+    }
 
-            String filepath = "";
-            try {
-                format.initSchema(schema);
-                final Iterator<Record<GenericRecord>> iter = singleTopicRecordsToInsert.iterator();
-                filepath = buildPartitionPath(firstRecord, partitioner, format, timeStampForPartitioning);
-                ByteBuffer payload = bindValue(iter, format);
-                log.info("Uploading blob {} currentBatchSize {} currentBatchBytes {}", filepath, currentBatchSize.get(),
-                        currentBatchBytes.get());
-                long elapsedMs = System.currentTimeMillis();
-                uploadPayload(payload, filepath);
-                elapsedMs = System.currentTimeMillis() - elapsedMs;
-                log.debug("Uploading blob {} elapsed time in ms: {}", filepath, elapsedMs);
-                singleTopicRecordsToInsert.forEach(Record::ack);
-                long singleTopicRecordsToInsertBytes = singleTopicRecordsToInsert.stream()
-                        .map(Record::getMessage)
-                        .filter(Optional::isPresent)
-                        .map(Optional::get)
-                        .mapToLong(Message::size)
-                        .sum();
-                currentBatchBytes.addAndGet(-1 * singleTopicRecordsToInsertBytes);
-                currentBatchSize.addAndGet(-1 * singleTopicRecordsToInsert.size());
-                if (sinkContext != null) {
-                    sinkContext.recordMetric(METRICS_TOTAL_SUCCESS, singleTopicRecordsToInsert.size());
-                    sinkContext.recordMetric(METRICS_LATEST_UPLOAD_ELAPSED_TIME, elapsedMs);
-                }
-                log.info("Successfully uploaded blob {} currentBatchSize {} currentBatchBytes {}", filepath,
-                        currentBatchSize.get(), currentBatchBytes.get());
-            } catch (Exception e) {
-                if (e instanceof ContainerNotFoundException) {
-                    log.error("Blob {} is not found", filepath, e);
-                } else if (e instanceof IOException) {
-                    log.error("Failed to write to blob {}", filepath, e);
-                } else if (e instanceof UnsupportedOperationException || e instanceof IllegalArgumentException) {
-                    log.error("Failed to handle message schema {}", schema, e);
-                } else {
-                    log.error("Encountered unknown error writing to blob {}", filepath, e);
-                }
-                bulkHandleFailedRecords(singleTopicRecordsToInsert);
+    private void flushRecords(String topic, String filePath, List<Record<GenericRecord>> records) {
+        Record<GenericRecord> firstRecord = records.get(0);
+        Schema<GenericRecord> schema;
+        try {
+            schema = getPulsarSchema(firstRecord);
+        } catch (Exception e) {
+            log.error("Failed to retrieve message schema", e);
+            bulkHandleFailedRecords(records);
+            return;
+        }
+
+        if (!format.doSupportPulsarSchemaType(schema.getSchemaInfo().getType())) {
+            log.warn("sink does not support schema type {}", schema.getSchemaInfo().getType());
+            bulkHandleFailedRecords(records);
+            return;
+        }
+
+        try {
+            format.initSchema(schema);
+            final Iterator<Record<GenericRecord>> iter = records.iterator();
+            ByteBuffer payload = bindValue(iter, format);
+            int uploadSize = records.size();
+            long uploadBytes = getBytesSum(records);
+            log.info("Uploading blob {} {} uploadSize {} out of currentBatchSize {} "
+                            + " uploadBytes {} out of currcurrentBatchBytes {}",
+                    filePath, topic.isEmpty() ? "" : "from topic " + topic,
+                    uploadSize, currentBatchSize.get(),
+                    uploadBytes, currentBatchBytes.get());
+            long elapsedMs = System.currentTimeMillis();
+            uploadPayload(payload, filePath);
+            elapsedMs = System.currentTimeMillis() - elapsedMs;
+            log.debug("Uploading blob {} elapsed time in ms: {}", filePath, elapsedMs);
+            records.forEach(Record::ack);
+            currentBatchBytes.addAndGet(-1 * uploadBytes);
+            currentBatchSize.addAndGet(-1 * uploadSize);
+            if (sinkContext != null) {
+                sinkContext.recordMetric(METRICS_TOTAL_SUCCESS, records.size());
+                sinkContext.recordMetric(METRICS_LATEST_UPLOAD_ELAPSED_TIME, elapsedMs);
             }
+            log.info("Successfully uploaded blob {} {} uploadSize {} uploadBytes {}",
+                    filePath, topic.isEmpty() ? "" : "from topic " + topic,
+                    uploadSize, uploadBytes);
+        } catch (Exception e) {
+            if (e instanceof ContainerNotFoundException) {
+                log.error("Blob {} is not found", filePath, e);
+            } else if (e instanceof IOException) {
+                log.error("Failed to write to blob {}", filePath, e);
+            } else if (e instanceof UnsupportedOperationException || e instanceof IllegalArgumentException) {
+                log.error("Failed to handle message schema {}", schema, e);
+            } else {
+                log.error("Encountered unknown error writing to blob {}", filePath, e);
+            }
+            bulkHandleFailedRecords(records);
         }
     }
 
@@ -303,6 +328,8 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         } else {
             failedRecords.forEach(Record::fail);
         }
+        currentBatchBytes.addAndGet(-1 * getBytesSum(failedRecords));
+        currentBatchSize.addAndGet(-1 * failedRecords.size());
         if (sinkContext != null) {
             sinkContext.recordMetric(METRICS_TOTAL_FAILURE, failedRecords.size());
         }
@@ -323,6 +350,15 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         String path = pathPrefix + partitionedPath + format.getExtension();
         log.info("generate message[recordSequence={}] savePath: {}", message.getRecordSequence().get(), path);
         return path;
+    }
+
+    private long getBytesSum(List<Record<GenericRecord>> records) {
+        return records.stream()
+                .map(Record::getMessage)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .mapToLong(Message::size)
+                .sum();
     }
 
 }
