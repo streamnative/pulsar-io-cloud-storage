@@ -204,7 +204,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
     private void flush() {
         if (log.isDebugEnabled()) {
-            log.debug("flush requested, pending: {} ({} bytes}, batchSize: {}, maxBatchBytes: {}",
+            log.debug("flush requested, pending: {} ({} bytes), batchSize: {}, maxBatchBytes: {}",
                 currentBatchSize.get(), currentBatchBytes.get(), maxBatchSize, maxBatchBytes);
         }
 
@@ -283,12 +283,14 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
             return;
         }
 
+        int uploadSize = records.size();
+        long uploadBytes = getBytesSum(records);
+
         try {
             format.initSchema(schema);
             final Iterator<Record<GenericRecord>> iter = records.iterator();
             ByteBuffer payload = bindValue(iter, format);
-            int uploadSize = records.size();
-            long uploadBytes = getBytesSum(records);
+
             log.info("Uploading blob {} {} uploadSize {} out of currentBatchSize {} "
                             + " uploadBytes {} out of currcurrentBatchBytes {}",
                     filePath, topic.isEmpty() ? "" : "from topic " + topic,
@@ -299,8 +301,6 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
             elapsedMs = System.currentTimeMillis() - elapsedMs;
             log.debug("Uploading blob {} elapsed time in ms: {}", filePath, elapsedMs);
             records.forEach(Record::ack);
-            currentBatchBytes.addAndGet(-1 * uploadBytes);
-            currentBatchSize.addAndGet(-1 * uploadSize);
             if (sinkContext != null) {
                 sinkContext.recordMetric(METRICS_TOTAL_SUCCESS, records.size());
                 sinkContext.recordMetric(METRICS_LATEST_UPLOAD_ELAPSED_TIME, elapsedMs);
@@ -319,6 +319,9 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                 log.error("Encountered unknown error writing to blob {}", filePath, e);
             }
             bulkHandleFailedRecords(records);
+        } finally {
+            currentBatchBytes.addAndGet(-1 * uploadBytes);
+            currentBatchSize.addAndGet(-1 * uploadSize);
         }
     }
 
