@@ -23,5 +23,12 @@ package org.apache.pulsar.io.jcloud.partitioner;
  */
 public enum PartitionerType {
     PARTITION,
-    TIME;
+    TIME,
+    /**
+     * The global time partitioner.
+     * Using this partitioner gathers all messages from subscribed topics into a single file.
+     * The file path follows the format: `{pathPrefix}{timestamp}.{format ext}`.
+     * For instance: global_time/1700646082956.json
+     */
+    GLOBAL_TIME;
 }
