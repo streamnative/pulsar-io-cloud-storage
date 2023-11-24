@@ -268,25 +268,26 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
     private void flushRecords(String topic, String filePath, List<Record<GenericRecord>> records) {
         Record<GenericRecord> firstRecord = records.get(0);
-        Schema<GenericRecord> schema;
-        try {
-            schema = getPulsarSchema(firstRecord);
-        } catch (Exception e) {
-            log.error("Failed to retrieve message schema", e);
-            bulkHandleFailedRecords(records);
-            return;
-        }
-
-        if (!format.doSupportPulsarSchemaType(schema.getSchemaInfo().getType())) {
-            log.warn("sink does not support schema type {}", schema.getSchemaInfo().getType());
-            bulkHandleFailedRecords(records);
-            return;
-        }
+        Schema<GenericRecord> schema = null;
 
         int uploadSize = records.size();
         long uploadBytes = getBytesSum(records);
 
         try {
+            try {
+                schema = getPulsarSchema(firstRecord);
+            } catch (Exception e) {
+                log.error("Failed to retrieve message schema", e);
+                bulkHandleFailedRecords(records);
+                return;
+            }
+
+            if (!format.doSupportPulsarSchemaType(schema.getSchemaInfo().getType())) {
+                log.warn("sink does not support schema type {}", schema.getSchemaInfo().getType());
+                bulkHandleFailedRecords(records);
+                return;
+            }
+
             format.initSchema(schema);
             final Iterator<Record<GenericRecord>> iter = records.iterator();
             ByteBuffer payload = bindValue(iter, format);
@@ -331,8 +332,6 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         } else {
             failedRecords.forEach(Record::fail);
         }
-        currentBatchBytes.addAndGet(-1 * getBytesSum(failedRecords));
-        currentBatchSize.addAndGet(-1 * failedRecords.size());
         if (sinkContext != null) {
             sinkContext.recordMetric(METRICS_TOTAL_FAILURE, failedRecords.size());
         }
