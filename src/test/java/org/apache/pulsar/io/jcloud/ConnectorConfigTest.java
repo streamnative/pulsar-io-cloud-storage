@@ -19,13 +19,11 @@
 package org.apache.pulsar.io.jcloud;
 
 import static org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig.PROVIDER_AWSS3;
-import static org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig.PROVIDER_AZURE;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.pulsar.io.common.IOConfigUtils;
 import org.apache.pulsar.io.core.SinkContext;
-import org.apache.pulsar.io.jcloud.partitioner.PartitionerType;
 import org.apache.pulsar.io.jcloud.sink.CloudStorageSinkConfig;
 import org.junit.Assert;
 import org.junit.Test;
