@@ -329,4 +329,34 @@ public class ConnectorConfigTest {
         }
     }
 
+    @Test
+    public void testCodec() throws IOException {
+        Map<String, Object> config = new HashMap<>();
+        config.put("provider", PROVIDER_AZURE);
+        config.put("azureStorageAccountConnectionString", "test-connection-string");
+        config.put("bucket", "test-container-name");
+        config.put("formatType", "bytes");
+        config.put("partitionerType", "PARTITION");
+        config.put("avroCodec", "snappy");
+        config.put("parquetCodec", "snappy");
+        CloudStorageSinkConfig cloudStorageSinkConfig = CloudStorageSinkConfig.load(config);
+        cloudStorageSinkConfig.validate();
+        Assert.assertEquals("snappy", cloudStorageSinkConfig.getAvroCodec());
+        Assert.assertEquals("snappy", cloudStorageSinkConfig.getParquetCodec());
+
+        config.put("avroCodec", "");
+        config.put("parquetCodec", "");
+        cloudStorageSinkConfig = CloudStorageSinkConfig.load(config);
+        cloudStorageSinkConfig.validate();
+        Assert.assertNull(cloudStorageSinkConfig.getAvroCodec());
+        Assert.assertNull(cloudStorageSinkConfig.getParquetCodec());
+
+        config.put("avroCodec", "none");
+        config.put("parquetCodec", "none");
+        cloudStorageSinkConfig = CloudStorageSinkConfig.load(config);
+        cloudStorageSinkConfig.validate();
+        Assert.assertNull(cloudStorageSinkConfig.getAvroCodec());
+        Assert.assertNull(cloudStorageSinkConfig.getParquetCodec());
+    }
+
 }
