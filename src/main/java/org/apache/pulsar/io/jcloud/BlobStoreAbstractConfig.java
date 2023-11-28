@@ -86,11 +86,11 @@ public class BlobStoreAbstractConfig implements Serializable {
     private boolean partitionerUseIndexAsOffset;
 
     // The AVRO codec.
-    // Options: null, deflate, bzip2, xz, zstandard, snappy
+    // Options: none, deflate, bzip2, xz, zstandard, snappy
     private String avroCodec = "snappy";
 
     // The Parquet codec.
-    // Options: null, snappy, gzip, lzo, brotli, lz4, zstd
+    // Options: none, snappy, gzip, lzo, brotli, lz4, zstd
     private String parquetCodec = "gzip";
 
     private String timePartitionPattern;
@@ -183,6 +183,13 @@ public class BlobStoreAbstractConfig implements Serializable {
         checkArgument(pendingQueueSize > 0, "pendingQueueSize must be a positive integer.");
         checkArgument(pendingQueueSize >= batchSize, "pendingQueueSize must be larger than or "
                 + "equal to batchSize");
+
+        if (avroCodec != null && (avroCodec.isEmpty() || avroCodec.equals("none"))) {
+            avroCodec = null;
+        }
+        if (parquetCodec != null && (parquetCodec.isEmpty() || parquetCodec.equals("none"))) {
+            parquetCodec = null;
+        }
     }
 
     private static boolean hasURIScheme(String endpoint) {
