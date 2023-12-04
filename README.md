@@ -337,10 +337,9 @@ If a message fails to be sent to the Cloud Storage and there is a dead-letter to
 ### AWS S3 permission policies
 
 The suggested permission policies for AWS S3 are:
-- `s3:AbortMultipartUpload`
-- `s3:GetObject*`
-- `s3:PutObject*`
-- `s3:List*`
+- s3:AbortMultipartUpload
+- s3:CreateBucket
+- s3:PutObject
 
 If you do not want to provide `region` in the configuration, you should enable `s3:GetBucketLocation` permission policy as well. 
 

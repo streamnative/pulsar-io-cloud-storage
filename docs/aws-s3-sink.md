@@ -20,9 +20,8 @@ The prerequisites for connecting an AWS S3 sink connector to external systems in
 3. Assign permissions to AWS User, and ensure they have the following permissions to the AWS S3. 
 ```text
 - s3:AbortMultipartUpload
-- s3:GetObject*
-- s3:PutObject*
-- s3:List*
+- s3:CreateBucket
+- s3:PutObject
 ```
 
 ### 1. Create a connector
