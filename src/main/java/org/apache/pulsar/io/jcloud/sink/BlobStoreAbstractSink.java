@@ -80,8 +80,8 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
     private long maxBatchSize;
     private long maxBatchBytes;
-    private final AtomicLong currentBatchSize = new AtomicLong(0L);
-    private final AtomicLong currentBatchBytes = new AtomicLong(0L);
+    final AtomicLong currentBatchSize = new AtomicLong(0L);
+    final AtomicLong currentBatchBytes = new AtomicLong(0L);
     private ArrayBlockingQueue<Record<GenericRecord>> pendingFlushQueue;
     private final AtomicBoolean isFlushRunning = new AtomicBoolean(false);
     private SinkContext sinkContext;
@@ -236,6 +236,8 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                 recordsToInsert.add(r);
             }
         }
+        currentBatchBytes.addAndGet(-1 * recordsToInsertBytes);
+        currentBatchSize.addAndGet(-1 * recordsToInsert.size());
         log.info("Flushing {} buffered records to blob store", recordsToInsert.size());
         if (log.isDebugEnabled()) {
             log.debug("buffered records {}", recordsToInsert);
@@ -282,8 +284,6 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                 elapsedMs = System.currentTimeMillis() - elapsedMs;
                 log.debug("Uploading blob {} elapsed time in ms: {}", filepath, elapsedMs);
                 singleTopicRecordsToInsert.forEach(Record::ack);
-                currentBatchBytes.addAndGet(-1 * uploadBytes);
-                currentBatchSize.addAndGet(-1 * uploadSize);
                 if (sinkContext != null) {
                     sinkContext.recordMetric(METRICS_TOTAL_SUCCESS, singleTopicRecordsToInsert.size());
                     sinkContext.recordMetric(METRICS_LATEST_UPLOAD_ELAPSED_TIME, elapsedMs);
@@ -312,8 +312,6 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         } else {
             failedRecords.forEach(Record::fail);
         }
-        currentBatchBytes.addAndGet(-1 * getBytesSum(failedRecords));
-        currentBatchSize.addAndGet(-1 * failedRecords.size());
         if (sinkContext != null) {
             sinkContext.recordMetric(METRICS_TOTAL_FAILURE, failedRecords.size());
         }
