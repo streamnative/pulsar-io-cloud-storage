@@ -198,7 +198,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
     private void flush() {
         if (log.isDebugEnabled()) {
-            log.debug("flush requested, pending: {} ({} bytes}, batchSize: {}, maxBatchBytes: {}",
+            log.debug("flush requested, pending: {} ({} bytes), batchSize: {}, maxBatchBytes: {}",
                 currentBatchSize.get(), currentBatchBytes.get(), maxBatchSize, maxBatchBytes);
         }
 
