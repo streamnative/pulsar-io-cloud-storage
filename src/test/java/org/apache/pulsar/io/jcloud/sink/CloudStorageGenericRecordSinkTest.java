@@ -48,6 +48,7 @@ import org.apache.pulsar.io.core.SinkContext;
 import org.apache.pulsar.io.jcloud.format.Format;
 import org.apache.pulsar.io.jcloud.writer.BlobWriter;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -156,6 +157,24 @@ public class CloudStorageGenericRecordSinkTest {
         this.config.put("batchSize", 1000); // set high batchSize to prevent flush
 
         verifyRecordAck(100);
+    }
+
+    @Test
+    public void testBatchCleanupWhenFlushCrashed() throws Exception {
+        this.config.put("pendingQueueSize", 1000);
+        this.config.put("batchTimeMs", 1000);
+        this.config.put("maxBatchBytes", 5 * PAYLOAD_BYTES);
+        this.config.put("batchSize", 1);
+
+        this.sink.open(this.config, this.mockSinkContext);
+        when(mockRecord.getSchema()).thenThrow(new OutOfMemoryError());
+        sendMockRecord(1);
+        await().atMost(Duration.ofSeconds(10)).untilAsserted(
+                () -> {
+                    Assert.assertEquals(0, this.sink.currentBatchBytes.get());
+                    Assert.assertEquals(0, this.sink.currentBatchSize.get());
+                }
+        );
     }
 
     private void verifyPartitionerSinkFlush(String prefix) throws Exception {
