@@ -40,7 +40,7 @@ pulsarctl sinks create \
   '{
     "azureStorageAccountConnectionString": "Your azure blob storage account connection string",
     "provider": "azure-blob-storage",
-    "bucket": "{Your container name",
+    "bucket": "Your container name",
     "formatType": "json",
     "partitionerType": "PARTITION"
   }'
