@@ -18,7 +18,7 @@ The prerequisites for connecting an AWS S3 sink connector to external systems in
 1. Create S3 buckets in AWS.
 2. Create the [AWS User](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_users_create.html) and create `AccessKey`(Please record `AccessKey` and `SecretAccessKey`).
 3. Assign permissions to AWS User, and ensure they have the following permissions to the AWS S3. 
-```text
+```json
 {
 	"Version": "2012-10-17",
 	"Statement": [
