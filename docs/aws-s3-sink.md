@@ -18,39 +18,62 @@ The prerequisites for connecting an AWS S3 sink connector to external systems in
 1. Create S3 buckets in AWS.
 2. Create the [AWS User](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_users_create.html) and create `AccessKey`(Please record `AccessKey` and `SecretAccessKey`).
 3. Assign permissions to AWS User, and ensure they have the following permissions to the AWS S3. 
-```text
-- s3:AbortMultipartUpload
-- s3:CreateBucket
-- s3:PutObject
+```json
+{
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Sid": "VisualEditor0",
+			"Effect": "Allow",
+			"Action": [
+				"s3:PutObject",
+				"s3:AbortMultipartUpload"
+			],
+			"Resource": "{Your bucket arn}/*"
+		}
+	]
+}
 ```
 
 ### 1. Create a connector
 
-Depending on the environment, there are several ways to create an AWS S3 sink connector:
+The following command shows how to use [pulsarctl](https://github.com/streamnative/pulsarctl) to create a `builtin` connector. If you want to create a `non-builtin` connector,
+you need to replace `--sink-type cloud-storage-s3` with `--archive /path/to/pulsar-io-cloud-storage.nar`. You can find the button to download the `nar` package at the beginning of the document.
 
-- [Create Connector on StreamNative Cloud](https://docs.streamnative.io/docs/connector-create).
-- [Create Connector with Function worker](https://pulsar.apache.org/docs/3.0.x/io-quickstart/).
-  Using this way requires you to download a **JAR** package to create a built-in or non-built-in connector. You can download the version you need from [here](https://github.com/streamnative/pulsar-io-cloud-storage/releases).
-- [Create Connector with Function mesh](https://functionmesh.io/docs/connectors/run-connector).
-  Using this way requires you to set the docker image. You can choose the version you want to launch from [here](https://hub.docker.com/r/streamnative/pulsar-io-cloud-storage/tags)
+{% callout title="For StreamNative Cloud User" type="note" %}
+If you are a StreamNative Cloud user, you need [set up your environment](https://docs.streamnative.io/docs/connector-setup) first.
+{% /callout %}
 
-No matter how you create an AWS S3 sink connector, the minimum configuration contains the following parameters.
-
-```yaml
-   configs:
-     accessKeyId: "{{Your access access key}}"
-     secretAccessKey: "{{Your secret access key}}"
-     provider: "s3v2"
-     bucket: "{{Your bucket name}}"
-     region: "{{Your AWS S3 region}}"
-     formatType: "json"  
-     partitionerType: "PARTITION" 
+```bash
+pulsarctl sinks create \
+  --sink-type cloud-storage-s3 \
+  --name aws-s3-sink \
+  --tenant public \
+  --namespace default \
+  --inputs "Your topic name" \
+  --parallelism 1 \
+  --sink-config \
+  '{
+    "accessKeyId": "Your access access key", 
+    "secretAccessKey": "Your secret access key",
+    "provider": "s3v2",
+    "bucket": "Your bucket name",
+    "region": "Your AWS S3 region",
+    "formatType": "json",
+    "partitionerType": "PARTITION"
+  }'
 ```
 
-> * The configuration structure varies depending on how you create the AWS S3 sink connector.
->   For example, some are **JSON**, some are **YAML**, and some are **Kubernetes YAML**. You need to adapt the configs to the corresponding format.
->
-> * If you want to configure more parameters, see [Configuration Properties](#configuration-properties) for reference.
+The `--sink-config` is the minimum necessary configuration for starting this connector, and it is a JSON string. You need to substitute the relevant parameters with your own.
+If you want to configure more parameters, see [Configuration Properties](#configuration-properties) for reference.
+
+{% callout title="Note" type="note" %}
+You can also choose to use a variety of other tools to create a connector:
+- [pulsar-admin](https://pulsar.apache.org/docs/3.1.x/io-use/): The command arguments for `pulsar-admin` are similar to those of `pulsarctl`. You can find an example for [StreamNative Cloud Doc](https://docs.streamnative.io/docs/connector-create#create-a-built-in-connector ).
+- [RestAPI](https://pulsar.apache.org/sink-rest-api/?version=3.1.1): You can find an example for [StreamNative Cloud Doc](https://docs.streamnative.io/docs/connector-create#create-a-built-in-connector).
+- [Terraform](https://github.com/hashicorp/terraform): You can find an example for [StreamNative Cloud Doc](https://docs.streamnative.io/docs/connector-create#create-a-built-in-connector).
+- [Function Mesh](https://functionmesh.io/docs/connectors/run-connector): The docker image can be found at the beginning of the document.
+  {% /callout %}
 
 ### 2. Send messages to the topic
 
