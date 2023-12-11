@@ -54,8 +54,8 @@ pulsarctl sinks create \
   --parallelism 1 \
   --sink-config \
   '{
-    "accessKeyId": "Your access access key", 
-    "secretAccessKey": "Your secret access key",
+    "accessKeyId": "Your AWS access key", 
+    "secretAccessKey": "Your AWS secret access key",
     "provider": "s3v2",
     "bucket": "Your bucket name",
     "region": "Your AWS S3 region",
