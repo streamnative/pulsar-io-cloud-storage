@@ -44,6 +44,7 @@ public class MetadataUtilTest {
         String messageIdString = "1:2:3:4";
         byte[] schemaVersionBytes = new byte[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0A};
         byte[] messageIdBytes = new byte[]{0x00, 0x01, 0x02, 0x03};
+        String topicName = "test-topic";
         Record<GenericRecord> mockRecord = mock(Record.class);
         Message<GenericRecord> mockMessage = mock(Message.class);
         MessageId mockMessageId = mock(MessageId.class);
@@ -53,23 +54,25 @@ public class MetadataUtilTest {
         when(mockMessage.getSchemaVersion()).thenReturn(schemaVersionBytes);
         when(mockMessageId.toString()).thenReturn(messageIdString);
         when(mockMessageId.toByteArray()).thenReturn(messageIdBytes);
+        when(mockMessage.getTopicName()).thenReturn(topicName);
 
         Map<String, Object> metadataWithHumanReadableMetadata =
-                MetadataUtil.extractedMetadata(mockRecord, true, true);
+                MetadataUtil.extractedMetadata(mockRecord, true, true, true);
         Assert.assertEquals(metadataWithHumanReadableMetadata.get(METADATA_MESSAGE_ID_KEY), messageIdString);
         Assert.assertNotEquals(metadataWithHumanReadableMetadata.get(METADATA_MESSAGE_ID_KEY),
                 ByteBuffer.wrap(messageIdBytes));
         Assert.assertEquals(metadataWithHumanReadableMetadata.get(METADATA_SCHEMA_VERSION_KEY),
                 MetadataUtil.parseSchemaVersionFromBytes(schemaVersionBytes));
+        Assert.assertEquals(metadataWithHumanReadableMetadata.get(MetadataUtil.METADATA_TOPIC), topicName);
 
         Map<String, Object> metadataWithHumanReadableMessageId =
-                MetadataUtil.extractedMetadata(mockRecord, true, false);
+                MetadataUtil.extractedMetadata(mockRecord, true, false, false);
         Assert.assertEquals(metadataWithHumanReadableMessageId.get(METADATA_MESSAGE_ID_KEY), messageIdString);
         Assert.assertNotEquals(metadataWithHumanReadableMessageId.get(METADATA_MESSAGE_ID_KEY),
                 ByteBuffer.wrap(messageIdBytes));
 
 
-        Map<String, Object> metadata = MetadataUtil.extractedMetadata(mockRecord, false, false);
+        Map<String, Object> metadata = MetadataUtil.extractedMetadata(mockRecord, false, false, false);
         Assert.assertEquals(metadata.get(METADATA_MESSAGE_ID_KEY), ByteBuffer.wrap(messageIdBytes));
         Assert.assertEquals(metadata.get(METADATA_SCHEMA_VERSION_KEY), schemaVersionBytes);
         Assert.assertNotEquals(metadata.get(METADATA_MESSAGE_ID_KEY), messageIdString);
