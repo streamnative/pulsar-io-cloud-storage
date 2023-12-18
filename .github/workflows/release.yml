@@ -25,7 +25,7 @@ jobs:
           echo "::set-output name=readme-file::pulsar-io-cloud-storage-readme.md"
 
       - name: build and push docker image
-        uses: nick-invision/retry@v2
+        uses: nick-fields/retry@v2
         with:
           max_attempts: 99
           retry_wait_seconds: 60
