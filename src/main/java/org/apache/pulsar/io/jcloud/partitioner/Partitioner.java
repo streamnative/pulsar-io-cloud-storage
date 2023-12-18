@@ -18,49 +18,11 @@
  */
 package org.apache.pulsar.io.jcloud.partitioner;
 
-import java.io.File;
+import java.util.List;
+import java.util.Map;
+import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.functions.api.Record;
-import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 
-/**
- * Partition incoming records, and generates directories and file names in which to store the
- * incoming records.
- *
- * @param <T> The type representing the field schemas.
- */
-public interface Partitioner<T> {
-
-    String PATH_SEPARATOR = File.separator;
-
-
-    void configure(BlobStoreAbstractConfig config);
-
-    /**
-     * Returns string representing the output path for a sinkRecord to be encoded and stored.
-     *
-     * @param sinkRecord The record to be stored by the Sink Connector
-     * @return The path/filename the SinkRecord will be stored into after it is encoded
-     */
-    String encodePartition(Record<T> sinkRecord);
-
-    /**
-     * Returns string representing the output path for a sinkRecord to be encoded and stored.
-     *
-     * @param sinkRecord  The record to be stored by the Sink Connector
-     * @param nowInMillis The current time in ms. Some Partitioners will use this option, but by
-     *                    default it is unused.
-     * @return The path/filename the SinkRecord will be stored into after it is encoded
-     */
-    default String encodePartition(Record<T> sinkRecord, long nowInMillis) {
-        return encodePartition(sinkRecord);
-    }
-
-    /**
-     * Generate saved path.
-     *
-     * @param topic            topic name
-     * @param encodedPartition Path encoded by the implementation class
-     * @return saved path
-     */
-    String generatePartitionedPath(String topic, String encodedPartition);
+public interface Partitioner {
+    Map<String, List<Record<GenericRecord>>> partition(List<Record<GenericRecord>> records);
 }

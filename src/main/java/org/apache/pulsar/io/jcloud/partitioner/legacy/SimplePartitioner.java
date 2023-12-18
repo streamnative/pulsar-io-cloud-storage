@@ -16,20 +16,19 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.pulsar.io.jcloud.partitioner;
+package org.apache.pulsar.io.jcloud.partitioner.legacy;
 
-import static org.junit.Assert.assertEquals;
-import org.apache.commons.lang3.EnumUtils;
-import org.apache.pulsar.io.jcloud.partitioner.legacy.PartitionerType;
-import org.junit.Test;
+import org.apache.pulsar.functions.api.Record;
 
 /**
- * partitionerType unit test.
+ * use topic partition strategy.
+ *
+ * @param <T> config
  */
-public class PartitionerTypeTest {
-    @Test
-    public void testValueOf() {
-        assertEquals(PartitionerType.PARTITION, EnumUtils.getEnumIgnoreCase(PartitionerType.class, "partition"));
-        assertEquals(PartitionerType.TIME, EnumUtils.getEnumIgnoreCase(PartitionerType.class, "time"));
+public class SimplePartitioner<T> extends AbstractPartitioner<T> {
+
+    @Override
+    public String encodePartition(Record<T> sinkRecord) {
+        return Long.toString(getMessageOffset(sinkRecord));
     }
 }

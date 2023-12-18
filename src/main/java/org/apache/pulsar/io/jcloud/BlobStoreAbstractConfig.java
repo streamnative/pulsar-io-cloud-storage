@@ -41,7 +41,7 @@ import org.apache.pulsar.io.jcloud.format.BytesFormat;
 import org.apache.pulsar.io.jcloud.format.Format;
 import org.apache.pulsar.io.jcloud.format.JsonFormat;
 import org.apache.pulsar.io.jcloud.format.ParquetFormat;
-import org.apache.pulsar.io.jcloud.partitioner.PartitionerType;
+import org.apache.pulsar.io.jcloud.partitioner.legacy.PartitionerType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,7 +81,9 @@ public class BlobStoreAbstractConfig implements Serializable {
 
     private String formatType;
 
+    @Deprecated // Use partitioner instead
     private String partitionerType;
+    private String partitioner;
 
     private boolean partitionerUseIndexAsOffset;
 

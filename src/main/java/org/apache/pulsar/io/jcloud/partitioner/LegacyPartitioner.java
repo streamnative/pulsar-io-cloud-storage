@@ -18,18 +18,16 @@
  */
 package org.apache.pulsar.io.jcloud.partitioner;
 
-import static org.junit.Assert.assertEquals;
-import org.apache.commons.lang3.EnumUtils;
-import org.apache.pulsar.io.jcloud.partitioner.legacy.PartitionerType;
-import org.junit.Test;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import org.apache.pulsar.client.api.schema.GenericRecord;
+import org.apache.pulsar.functions.api.Record;
 
-/**
- * partitionerType unit test.
- */
-public class PartitionerTypeTest {
-    @Test
-    public void testValueOf() {
-        assertEquals(PartitionerType.PARTITION, EnumUtils.getEnumIgnoreCase(PartitionerType.class, "partition"));
-        assertEquals(PartitionerType.TIME, EnumUtils.getEnumIgnoreCase(PartitionerType.class, "time"));
+public class LegacyPartitioner implements Partitioner {
+    public static final String PARTITIONER_NAME = "legacy";
+    @Override
+    public Map<String, List<Record<GenericRecord>>> partition(List<Record<GenericRecord>> records) {
+        return records.stream().collect(Collectors.groupingBy(record -> record.getTopicName().get()));
     }
 }

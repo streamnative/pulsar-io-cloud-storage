@@ -45,7 +45,7 @@ import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.core.SinkContext;
 import org.apache.pulsar.io.jcloud.format.Format;
-import org.apache.pulsar.io.jcloud.partitioner.Partitioner;
+import org.apache.pulsar.io.jcloud.partitioner.legacy.Partitioner;
 import org.apache.pulsar.io.jcloud.writer.BlobWriter;
 import org.junit.After;
 import org.junit.Before;
