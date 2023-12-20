@@ -26,7 +26,7 @@ The Cloud Storage sink connector offers two partitioners:
   topic `public/default/my-topic-partition-0` would be directed to the
   file `public/default/my-topic-partition-0/xxx.json`, where `xxx` signifies the message offset.
 
-- **Time partitioner**: Data is partitioned according to the time it was received. Using the previous message as an
+- **Time partitioner**: Data is partitioned according to the time it was flushed. Using the previous message as an
   example, if it was received on 2023-12-20, it would be directed
   to `public/default/my-topic-partition-0/2023-12-20/xxx.json`, where `xxx` also denotes the message offset.
 
@@ -70,7 +70,7 @@ The behavior of these partitioners is as follows:
 - **Topic Partitioner**: Messages are partitioned according to the pre-existing partitions in the Pulsar topics. For
   instance, a message for the topic `public/default/my-topic-partition-0` would be directed to the
   file `public/default/my-topic-partition-0/xxx.json`, where `xxx` signifies the message offset.
-- Time Partitioner: Messages are partitioned based on the timestamp at the time of flushing. For the aforementioned
+- **Time Partitioner**: Messages are partitioned based on the timestamp at the time of flushing. For the aforementioned
   message, it would be directed to the file `1703037311.json`, where `1703037311` represents the flush timestamp of the
   first message in this file.
 
@@ -137,6 +137,7 @@ Add a new configuration `partitioner` to the Cloud Storage sink connector. The v
 be `topic`, `time` or `legacy`. The default value is `legacy`.
 
 When it's set to the `legacy`, the `partitionerType` is respected. The user can fallback to the legacy behavior.
+
 When it's set to the `topic` or `time`, the connector will use the new implementation of the partitioners.
 The `partitionerType` configuration will be ignored.
 
