@@ -24,11 +24,12 @@ The Cloud Storage sink connector offers two partitioners:
 - **Simple partitioner**: This is the default partitioning method based on Pulsar partitions. In other words, data is
   partitioned according to the pre-existing partitions in Pulsar topics. For instance, a message for the
   topic `public/default/my-topic-partition-0` would be directed to the
-  file `public/default/my-topic-partition-0/xxx.json`, where `xxx` signifies the message offset.
+  file `public/default/my-topic-partition-0/xxx.json`, where `xxx` signifies the earliest message offset in this file.
 
 - **Time partitioner**: Data is partitioned according to the time it was flushed. Using the previous message as an
   example, if it was received on 2023-12-20, it would be directed
-  to `public/default/my-topic-partition-0/2023-12-20/xxx.json`, where `xxx` also denotes the message offset.
+  to `public/default/my-topic-partition-0/2023-12-20/xxx.json`, where `xxx` also denotes the earliest message offset in
+  this file.
 
 ## Motivation
 
@@ -69,7 +70,7 @@ The behavior of these partitioners is as follows:
 
 - **Topic Partitioner**: Messages are partitioned according to the pre-existing partitions in the Pulsar topics. For
   instance, a message for the topic `public/default/my-topic-partition-0` would be directed to the
-  file `public/default/my-topic-partition-0/xxx.json`, where `xxx` signifies the message offset.
+  file `public/default/my-topic-partition-0/xxx.json`, where `xxx` signifies the earliest message offset in this file.
 - **Time Partitioner**: Messages are partitioned based on the timestamp at the time of flushing. For the aforementioned
   message, it would be directed to the file `1703037311.json`, where `1703037311` represents the flush timestamp of the
   first message in this file.
