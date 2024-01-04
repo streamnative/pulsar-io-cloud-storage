@@ -33,8 +33,8 @@ public interface Partitioner {
      *
      * @param records A list of records to be partitioned. Each record is of the type GenericRecord.
      * @return A map where keys represent unique partitions and values are lists of records
-     * associated with their respective partitions. The unique partition is consistently used as a file path in the cloud
-     * storage system.
+     * associated with their respective partitions. The unique partition is consistently used as a file path in the
+     * cloud storage system.
      */
     Map<String, List<Record<GenericRecord>>> partition(List<Record<GenericRecord>> records);
 }

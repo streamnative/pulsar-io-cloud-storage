@@ -34,7 +34,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -284,7 +283,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
             String filepath;
             try {
-                if(partitioner instanceof LegacyPartitioner) {
+                if (partitioner instanceof LegacyPartitioner) {
                     filepath = buildPartitionPath(firstRecord, legacyPartitioner, format, timeStampForPartitioning);
                 } else {
                     filepath = entry.getKey() + format.getExtension();
