@@ -149,14 +149,15 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
     private org.apache.pulsar.io.jcloud.partitioner.Partitioner buildPartitioner(V sinkConfig) {
         String partitionerTypeName = sinkConfig.getPartitioner();
-        switch (partitionerTypeName) {
-            case TopicPartitioner.PARTITIONER_NAME:
-                return new TopicPartitioner();
-            case org.apache.pulsar.io.jcloud.partitioner.TimePartitioner.PARTITIONER_NAME:
-                return new org.apache.pulsar.io.jcloud.partitioner.TimePartitioner();
-            default:
-                return new LegacyPartitioner();
+        if (partitionerTypeName == null) {
+            return new LegacyPartitioner();
         }
+        return switch (partitionerTypeName) {
+            case TopicPartitioner.PARTITIONER_NAME -> new TopicPartitioner();
+            case org.apache.pulsar.io.jcloud.partitioner.TimePartitioner.PARTITIONER_NAME ->
+                    new org.apache.pulsar.io.jcloud.partitioner.TimePartitioner();
+            default -> new LegacyPartitioner();
+        };
     }
 
     private Format<GenericRecord> buildFormat(V sinkConfig) {
