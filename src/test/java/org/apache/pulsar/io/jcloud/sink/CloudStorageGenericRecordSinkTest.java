@@ -20,6 +20,7 @@ package org.apache.pulsar.io.jcloud.sink;
 
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
@@ -106,6 +107,7 @@ public class CloudStorageGenericRecordSinkTest {
         when(mockRecord.getValue()).thenReturn(genericRecord);
         when(mockRecord.getSchema()).thenAnswer((Answer<Schema>) invocationOnMock -> schema);
         when(mockRecord.getMessage()).thenReturn(Optional.of(mockMessage));
+        when(mockRecord.getRecordSequence()).thenReturn(Optional.of(1L));
     }
 
     @After
@@ -158,6 +160,40 @@ public class CloudStorageGenericRecordSinkTest {
         this.config.put("batchSize", 1000); // set high batchSize to prevent flush
 
         verifyRecordAck(100);
+    }
+
+    private void verifyPartitionerSinkFlush(String prefix) throws Exception {
+        this.sink.open(this.config, this.mockSinkContext);
+
+        sendMockRecord(5);
+        await().atMost(Duration.ofSeconds(10)).untilAsserted(
+                () -> verify(mockBlobWriter, atLeastOnce()).uploadBlob(
+                        argThat((String s) -> s.matches(prefix + "(\\d+)\\.json")), any(ByteBuffer.class))
+        );
+    }
+
+    @Test
+    public void testTimePartitioner() throws Exception {
+        this.config.put("batchTimeMs", 60000); // set high batchTimeMs to prevent scheduled flush
+        this.config.put("maxBatchBytes", 10000); // set high maxBatchBytes to prevent flush
+        this.config.put("batchSize", 5); // force flush after 5 messages
+        this.config.put("pathPrefix", "time/");
+        this.config.put("partitioner", "time");
+        this.config.put("formatType", "json");
+
+        verifyPartitionerSinkFlush("time/");
+    }
+
+    @Test
+    public void testTopicPartitioner() throws Exception {
+        this.config.put("batchTimeMs", 60000); // set high batchTimeMs to prevent scheduled flush
+        this.config.put("maxBatchBytes", 10000); // set high maxBatchBytes to prevent flush
+        this.config.put("batchSize", 5); // force flush after 5 messages
+        this.config.put("pathPrefix", "topic/");
+        this.config.put("partitioner", "topic");
+        this.config.put("formatType", "json");
+
+        verifyPartitionerSinkFlush("topic/public/default/test-topic/");
     }
 
     private void verifyRecordAck(int numberOfRecords) throws Exception {

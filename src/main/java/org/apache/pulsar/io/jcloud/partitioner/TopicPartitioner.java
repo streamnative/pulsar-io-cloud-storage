@@ -28,6 +28,9 @@ import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.functions.api.Record;
 
+/**
+ * The TopicPartitioner is used to partition records based on the topic name.
+ */
 public class TopicPartitioner implements Partitioner {
     public static final String PARTITIONER_NAME = "topic";
     @Override

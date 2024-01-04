@@ -286,7 +286,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                 if (partitioner instanceof LegacyPartitioner) {
                     filepath = buildPartitionPath(firstRecord, legacyPartitioner, format, timeStampForPartitioning);
                 } else {
-                    filepath = entry.getKey() + format.getExtension();
+                    filepath = pathPrefix + entry.getKey() + format.getExtension();
                 }
             } catch (Exception e) {
                 log.error("Failed to generate file path", e);

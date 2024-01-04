@@ -24,8 +24,21 @@ import java.util.stream.Collectors;
 import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.functions.api.Record;
 
+/**
+ * The LegacyPartitioner class, implementing the Partitioner interface, is designed to partition records according to
+ * their respective topic names.
+ * It is used to partition records based on their topic name. It will then use the legacy partitioner such as
+ * SimplePartitioner or TimePartitioner as the underlying partitioner. This is for the backward compatibility usage.
+ */
 public class LegacyPartitioner implements Partitioner {
-    public static final String PARTITIONER_NAME = "legacy";
+
+    /**
+     * This method partitions a list of records into a map where the keys are the topic names and the values are lists
+     * of records.
+     *
+     * @param records A list of records of type GenericRecord that need to be partitioned.
+     * @return A map where the keys are the topic names and the values are lists of records.
+     */
     @Override
     public Map<String, List<Record<GenericRecord>>> partition(List<Record<GenericRecord>> records) {
         return records.stream().collect(Collectors.groupingBy(record -> record.getTopicName().get()));
