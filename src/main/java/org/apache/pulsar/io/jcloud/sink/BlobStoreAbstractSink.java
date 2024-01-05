@@ -51,9 +51,10 @@ import org.apache.pulsar.io.jcloud.format.InitConfiguration;
 import org.apache.pulsar.io.jcloud.format.JsonFormat;
 import org.apache.pulsar.io.jcloud.format.ParquetFormat;
 import org.apache.pulsar.io.jcloud.partitioner.LegacyPartitioner;
+import org.apache.pulsar.io.jcloud.partitioner.PartitionerType;
 import org.apache.pulsar.io.jcloud.partitioner.TopicPartitioner;
+import org.apache.pulsar.io.jcloud.partitioner.legacy.LegacyPartitionerType;
 import org.apache.pulsar.io.jcloud.partitioner.legacy.Partitioner;
-import org.apache.pulsar.io.jcloud.partitioner.legacy.PartitionerType;
 import org.apache.pulsar.io.jcloud.partitioner.legacy.SimplePartitioner;
 import org.apache.pulsar.io.jcloud.partitioner.legacy.TimePartitioner;
 import org.apache.pulsar.io.jcloud.writer.BlobWriter;
@@ -132,8 +133,9 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
     private Partitioner<GenericRecord> buildLegacyPartitioner(V sinkConfig) {
         Partitioner<GenericRecord> partitioner;
         String partitionerTypeName = sinkConfig.getPartitionerType();
-        PartitionerType partitionerType =
-                EnumUtils.getEnumIgnoreCase(PartitionerType.class, partitionerTypeName, PartitionerType.PARTITION);
+        LegacyPartitionerType partitionerType =
+                EnumUtils.getEnumIgnoreCase(LegacyPartitionerType.class, partitionerTypeName,
+                        LegacyPartitionerType.PARTITION);
         switch (partitionerType) {
             case TIME:
                 partitioner = new TimePartitioner<>();
@@ -148,14 +150,11 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
     }
 
     private org.apache.pulsar.io.jcloud.partitioner.Partitioner buildPartitioner(V sinkConfig) {
-        String partitionerTypeName = sinkConfig.getPartitioner();
-        if (partitionerTypeName == null) {
-            return new LegacyPartitioner();
-        }
-        switch (partitionerTypeName) {
-            case TopicPartitioner.PARTITIONER_NAME:
+        PartitionerType partitionerType = sinkConfig.getPartitioner();
+        switch (partitionerType) {
+            case TOPIC:
                 return new TopicPartitioner();
-            case org.apache.pulsar.io.jcloud.partitioner.TimePartitioner.PARTITIONER_NAME:
+            case TIME:
                 return new org.apache.pulsar.io.jcloud.partitioner.TimePartitioner();
             default:
                 return new LegacyPartitioner();

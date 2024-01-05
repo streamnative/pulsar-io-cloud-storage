@@ -28,10 +28,8 @@ import org.apache.pulsar.functions.api.Record;
  * The TimePartitioner is used to partition records based on the current sink timestamp.
  */
 public class TimePartitioner implements Partitioner {
-    public static final String PARTITIONER_NAME = "time";
-
     /**
-     * This method partitions a list of records into a map where the key is the current system time in milliseconds
+     * Partitions a list of records into a map, where the key is the current system time in milliseconds
      * and the value is the list of records.
      *
      * @param records A list of records of type GenericRecord that need to be partitioned.

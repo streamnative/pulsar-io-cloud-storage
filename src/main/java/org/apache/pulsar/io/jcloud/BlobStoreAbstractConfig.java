@@ -41,7 +41,8 @@ import org.apache.pulsar.io.jcloud.format.BytesFormat;
 import org.apache.pulsar.io.jcloud.format.Format;
 import org.apache.pulsar.io.jcloud.format.JsonFormat;
 import org.apache.pulsar.io.jcloud.format.ParquetFormat;
-import org.apache.pulsar.io.jcloud.partitioner.legacy.PartitionerType;
+import org.apache.pulsar.io.jcloud.partitioner.PartitionerType;
+import org.apache.pulsar.io.jcloud.partitioner.legacy.LegacyPartitionerType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,7 +84,7 @@ public class BlobStoreAbstractConfig implements Serializable {
 
     @Deprecated // Use partitioner instead
     private String partitionerType;
-    private String partitioner;
+    private PartitionerType partitioner;
 
     private boolean partitionerUseIndexAsOffset;
 
@@ -134,18 +135,18 @@ public class BlobStoreAbstractConfig implements Serializable {
         }
 
         if (partitionerType == null
-                || (EnumUtils.getEnumIgnoreCase(PartitionerType.class, partitionerType) == null
+                || (EnumUtils.getEnumIgnoreCase(LegacyPartitionerType.class, partitionerType) == null
                 && !partitionerType.equalsIgnoreCase("default"))) {
             // `default` option is for backward compatibility
             throw new IllegalArgumentException(
                     "partitionerType property not set properly, available options: "
-                            + Arrays.stream(PartitionerType.values())
+                            + Arrays.stream(LegacyPartitionerType.values())
                             .map(Enum::name)
                             .map(String::toLowerCase)
                             .collect(Collectors.joining(","))
             );
         }
-        if (PartitionerType.TIME.name().equalsIgnoreCase(partitionerType)) {
+        if (LegacyPartitionerType.TIME.name().equalsIgnoreCase(partitionerType)) {
             if (StringUtils.isNoneBlank(timePartitionPattern)) {
                 LOGGER.info("test timePartitionPattern is ok {} {}",
                         timePartitionPattern,

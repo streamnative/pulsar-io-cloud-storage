@@ -25,7 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.pulsar.io.common.IOConfigUtils;
 import org.apache.pulsar.io.core.SinkContext;
-import org.apache.pulsar.io.jcloud.partitioner.legacy.PartitionerType;
+import org.apache.pulsar.io.jcloud.partitioner.legacy.LegacyPartitionerType;
 import org.apache.pulsar.io.jcloud.sink.CloudStorageSinkConfig;
 import org.junit.Assert;
 import org.junit.Test;
@@ -65,7 +65,7 @@ public class ConnectorConfigTest {
         Assert.assertEquals(config.get("timePartitionPattern"), cloudStorageSinkConfig.getTimePartitionPattern());
         Assert.assertEquals(config.get("timePartitionDuration"), cloudStorageSinkConfig.getTimePartitionDuration());
         Assert.assertEquals(config.get("batchSize"), cloudStorageSinkConfig.getBatchSize());
-        Assert.assertEquals(config.get("partitioner"), cloudStorageSinkConfig.getPartitioner());
+        Assert.assertEquals(config.get("partitioner"), cloudStorageSinkConfig.getPartitioner().toString());
         Assert.assertEquals((int) config.get("batchSize"), cloudStorageSinkConfig.getPendingQueueSize());
         Assert.assertEquals(10000000L, cloudStorageSinkConfig.getMaxBatchBytes());
     }
@@ -291,7 +291,7 @@ public class ConnectorConfigTest {
         config.put("partitionerType", "default");
         cloudStorageSinkConfig = CloudStorageSinkConfig.load(config);
         cloudStorageSinkConfig.validate();
-        for (PartitionerType value : PartitionerType.values()) {
+        for (LegacyPartitionerType value : LegacyPartitionerType.values()) {
             config.put("partitionerType", value);
             cloudStorageSinkConfig = CloudStorageSinkConfig.load(config);
             cloudStorageSinkConfig.validate();
