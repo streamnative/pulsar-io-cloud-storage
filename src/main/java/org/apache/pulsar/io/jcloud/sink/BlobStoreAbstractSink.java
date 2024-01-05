@@ -262,8 +262,6 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
             log.debug("buffered records {}", recordsToInsert);
         }
 
-        // all output blobs of the same batch should have the same partitioning timestamp
-        final long timeStampForPartitioning = System.currentTimeMillis();
         final Map<String, List<Record<GenericRecord>>> recordsToInsertByTopic =
                 partitioner.partition(recordsToInsert);
 
@@ -288,7 +286,10 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
             String filepath;
             try {
                 if (partitioner instanceof LegacyPartitioner) {
-                    filepath = buildPartitionPath(firstRecord, legacyPartitioner, format, timeStampForPartitioning);
+                    // all output blobs of the same batch should have the same partitioning timestamp
+                    final long timeStampForPartitioning = System.currentTimeMillis();
+                    filepath = ((LegacyPartitioner) partitioner).buildPartitionPath(firstRecord, pathPrefix,
+                            legacyPartitioner, format, timeStampForPartitioning);
                 } else {
                     filepath = pathPrefix + entry.getKey() + format.getExtension();
                 }
@@ -351,18 +352,6 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
     public ByteBuffer bindValue(Iterator<Record<GenericRecord>> message,
                                 Format<GenericRecord> format) throws Exception {
         return format.recordWriterBuf(message);
-    }
-
-    public String buildPartitionPath(Record<GenericRecord> message,
-                                     Partitioner<GenericRecord> partitioner,
-                                     Format<?> format,
-                                     long partitioningTimestamp) {
-
-        String encodePartition = partitioner.encodePartition(message, partitioningTimestamp);
-        String partitionedPath = partitioner.generatePartitionedPath(message.getTopicName().get(), encodePartition);
-        String path = pathPrefix + partitionedPath + format.getExtension();
-        log.info("generate message[recordSequence={}] savePath: {}", message.getRecordSequence().get(), path);
-        return path;
     }
 
     private long getBytesSum(List<Record<GenericRecord>> records) {

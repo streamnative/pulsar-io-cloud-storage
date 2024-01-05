@@ -46,7 +46,6 @@ import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.core.SinkContext;
 import org.apache.pulsar.io.jcloud.format.Format;
-import org.apache.pulsar.io.jcloud.partitioner.legacy.Partitioner;
 import org.apache.pulsar.io.jcloud.writer.BlobWriter;
 import org.junit.After;
 import org.junit.Assert;
@@ -90,9 +89,6 @@ public class CloudStorageGenericRecordSinkTest {
         this.mockBlobWriter = mock(BlobWriter.class);
         this.mockRecord = mock(Record.class);
 
-
-        doReturn("a/test.json").when(sink)
-                .buildPartitionPath(any(Record.class), any(Partitioner.class), any(Format.class), any(Long.class));
         doReturn(mockBlobWriter).when(sink).initBlobWriter(any(CloudStorageSinkConfig.class));
         doReturn(ByteBuffer.wrap(new byte[]{0x0})).when(sink).bindValue(any(Iterator.class), any(Format.class));
 

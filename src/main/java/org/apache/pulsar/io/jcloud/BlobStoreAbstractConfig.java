@@ -84,7 +84,7 @@ public class BlobStoreAbstractConfig implements Serializable {
 
     @Deprecated // Use partitioner instead
     private String partitionerType;
-    private PartitionerType partitioner;
+    private PartitionerType partitioner = PartitionerType.LEGACY;
 
     private boolean partitionerUseIndexAsOffset;
 
