@@ -20,6 +20,7 @@ package org.apache.pulsar.io.jcloud.sink;
 
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
@@ -45,7 +46,6 @@ import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.core.SinkContext;
 import org.apache.pulsar.io.jcloud.format.Format;
-import org.apache.pulsar.io.jcloud.partitioner.Partitioner;
 import org.apache.pulsar.io.jcloud.writer.BlobWriter;
 import org.junit.After;
 import org.junit.Assert;
@@ -89,9 +89,6 @@ public class CloudStorageGenericRecordSinkTest {
         this.mockBlobWriter = mock(BlobWriter.class);
         this.mockRecord = mock(Record.class);
 
-
-        doReturn("a/test.json").when(sink)
-                .buildPartitionPath(any(Record.class), any(Partitioner.class), any(Format.class), any(Long.class));
         doReturn(mockBlobWriter).when(sink).initBlobWriter(any(CloudStorageSinkConfig.class));
         doReturn(ByteBuffer.wrap(new byte[]{0x0})).when(sink).bindValue(any(Iterator.class), any(Format.class));
 
@@ -107,6 +104,7 @@ public class CloudStorageGenericRecordSinkTest {
         when(mockRecord.getValue()).thenReturn(genericRecord);
         when(mockRecord.getSchema()).thenAnswer((Answer<Schema>) invocationOnMock -> schema);
         when(mockRecord.getMessage()).thenReturn(Optional.of(mockMessage));
+        when(mockRecord.getRecordSequence()).thenReturn(Optional.of(1L));
     }
 
     @After
@@ -177,6 +175,40 @@ public class CloudStorageGenericRecordSinkTest {
                     Assert.assertEquals(0, this.sink.currentBatchSize.get());
                 }
         );
+    }
+
+    private void verifyPartitionerSinkFlush(String prefix) throws Exception {
+        this.sink.open(this.config, this.mockSinkContext);
+
+        sendMockRecord(5);
+        await().atMost(Duration.ofSeconds(10)).untilAsserted(
+                () -> verify(mockBlobWriter, atLeastOnce()).uploadBlob(
+                        argThat((String s) -> s.matches(prefix + "(\\d+)\\.json")), any(ByteBuffer.class))
+        );
+    }
+
+    @Test
+    public void testTimePartitioner() throws Exception {
+        this.config.put("batchTimeMs", 60000); // set high batchTimeMs to prevent scheduled flush
+        this.config.put("maxBatchBytes", 10000); // set high maxBatchBytes to prevent flush
+        this.config.put("batchSize", 5); // force flush after 5 messages
+        this.config.put("pathPrefix", "time/");
+        this.config.put("partitioner", "time");
+        this.config.put("formatType", "json");
+
+        verifyPartitionerSinkFlush("time/");
+    }
+
+    @Test
+    public void testTopicPartitioner() throws Exception {
+        this.config.put("batchTimeMs", 60000); // set high batchTimeMs to prevent scheduled flush
+        this.config.put("maxBatchBytes", 10000); // set high maxBatchBytes to prevent flush
+        this.config.put("batchSize", 5); // force flush after 5 messages
+        this.config.put("pathPrefix", "topic/");
+        this.config.put("partitioner", "topic");
+        this.config.put("formatType", "json");
+
+        verifyPartitionerSinkFlush("topic/public/default/test-topic/");
     }
 
     private void verifyRecordAck(int numberOfRecords) throws Exception {

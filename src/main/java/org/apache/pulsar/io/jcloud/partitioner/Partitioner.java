@@ -18,49 +18,23 @@
  */
 package org.apache.pulsar.io.jcloud.partitioner;
 
-import java.io.File;
+import java.util.List;
+import java.util.Map;
+import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.functions.api.Record;
-import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 
 /**
- * Partition incoming records, and generates directories and file names in which to store the
- * incoming records.
- *
- * @param <T> The type representing the field schemas.
+ * The Partitioner interface offers a mechanism to categorize a list of records into distinct parts.
  */
-public interface Partitioner<T> {
-
-    String PATH_SEPARATOR = File.separator;
-
-
-    void configure(BlobStoreAbstractConfig config);
-
+public interface Partitioner {
     /**
-     * Returns string representing the output path for a sinkRecord to be encoded and stored.
+     * The partition method takes a list of records and returns a map. Each key in the map represents a
+     * unique partition, and the corresponding value is a list of records that belong to that partition.
      *
-     * @param sinkRecord The record to be stored by the Sink Connector
-     * @return The path/filename the SinkRecord will be stored into after it is encoded
+     * @param records A list of records to be partitioned. Each record is of the type GenericRecord.
+     * @return A map where keys represent unique partitions and values are lists of records
+     * associated with their respective partitions. The unique partition is consistently used as a file path in the
+     * cloud storage system.
      */
-    String encodePartition(Record<T> sinkRecord);
-
-    /**
-     * Returns string representing the output path for a sinkRecord to be encoded and stored.
-     *
-     * @param sinkRecord  The record to be stored by the Sink Connector
-     * @param nowInMillis The current time in ms. Some Partitioners will use this option, but by
-     *                    default it is unused.
-     * @return The path/filename the SinkRecord will be stored into after it is encoded
-     */
-    default String encodePartition(Record<T> sinkRecord, long nowInMillis) {
-        return encodePartition(sinkRecord);
-    }
-
-    /**
-     * Generate saved path.
-     *
-     * @param topic            topic name
-     * @param encodedPartition Path encoded by the implementation class
-     * @return saved path
-     */
-    String generatePartitionedPath(String topic, String encodedPartition);
+    Map<String, List<Record<GenericRecord>>> partition(List<Record<GenericRecord>> records);
 }
