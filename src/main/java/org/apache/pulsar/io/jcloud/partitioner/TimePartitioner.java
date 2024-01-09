@@ -18,95 +18,25 @@
  */
 package org.apache.pulsar.io.jcloud.partitioner;
 
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
-import java.util.function.Supplier;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.pulsar.client.api.Message;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.functions.api.Record;
-import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * partition by day, hour.
- *
- * @param <T>
+ * The TimePartitioner is used to partition records based on the current sink timestamp.
  */
-public class TimePartitioner<T> extends AbstractPartitioner<T> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(TimePartitioner.class);
-
-    private static final long DEFAULT_PARTITION_DURATION = 24 * 3600 * 1000L;
-    private static final String DEFAULT_PARTITION_PATTERN = "yyyy-MM-dd";
-    private long partitionDuration;
-    private String formatString;
-    private DateTimeFormatter dateTimeFormatter;
-
+public class TimePartitioner implements Partitioner {
+    /**
+     * Partitions a list of records into a map, where the key is the current system time in milliseconds
+     * and the value is the list of records.
+     *
+     * @param records A list of records of type GenericRecord that need to be partitioned.
+     * @return A map where the key is the current system time in milliseconds and the value is the list of records.
+     */
     @Override
-    public void configure(BlobStoreAbstractConfig config) {
-        super.configure(config);
-        this.formatString = StringUtils.defaultIfBlank(config.getTimePartitionPattern(), DEFAULT_PARTITION_PATTERN);
-        this.partitionDuration = parseDurationString(config.getTimePartitionDuration());
-        this.dateTimeFormatter = new DateTimeFormatterBuilder()
-                .appendPattern(formatString)
-                .toFormatter();
-    }
-
-    private long parseDurationString(String timePartitionDuration) {
-        if (StringUtils.isBlank(timePartitionDuration)) {
-            return DEFAULT_PARTITION_DURATION;
-        }
-        if (Character.isAlphabetic(timePartitionDuration.charAt(timePartitionDuration.length() - 1))) {
-            String number = timePartitionDuration.substring(0, timePartitionDuration.length() - 1);
-            switch (timePartitionDuration.charAt(timePartitionDuration.length() - 1)) {
-                case 'd':
-                case 'D':
-                    return Long.parseLong(number) * 24L * 3600L * 1000L;
-                case 'h':
-                case 'H':
-                    return Long.parseLong(number) * 3600L * 1000L;
-                case 'm':
-                    return Long.parseLong(number) * 60L * 1000L;
-                case 's':
-                    return Long.parseLong(number) * 1000L;
-                default:
-                    throw new RuntimeException("not supported time duration scale " + timePartitionDuration);
-            }
-        } else {
-            try {
-                return Long.parseLong(timePartitionDuration);
-            } catch (NumberFormatException ex) {
-                throw new RuntimeException("not supported time duration format " + timePartitionDuration, ex);
-            }
-        }
-    }
-
-    @Override
-    public String encodePartition(Record<T> sinkRecord) {
-        throw new RuntimeException(new IllegalAccessException());
-    }
-
-    @Override
-    public String encodePartition(Record<T> sinkRecord, long nowInMillis) {
-        long publishTime = getPublishTime(sinkRecord, nowInMillis);
-        long parsed = (publishTime / partitionDuration) * partitionDuration;
-        String timeString = dateTimeFormatter.format(Instant.ofEpochMilli(parsed).atOffset(ZoneOffset.UTC));
-        final String result = timeString
-                + PATH_SEPARATOR
-                + getMessageOffset(sinkRecord);
-        return result;
-    }
-
-    private long getPublishTime(Record<T> sinkRecord, Long defaultTime) {
-        final Supplier<Long> defaultTimeSupplier = () -> {
-            LOGGER.warn("record not exist Message {}", sinkRecord.getRecordSequence().get());
-            return defaultTime;
-        };
-        return sinkRecord.getMessage()
-                .map(Message::getPublishTime)
-                .orElseGet(defaultTimeSupplier);
+    public Map<String, List<Record<GenericRecord>>> partition(List<Record<GenericRecord>> records) {
+        return Collections.singletonMap(Long.toString(System.currentTimeMillis()), records);
     }
 }
