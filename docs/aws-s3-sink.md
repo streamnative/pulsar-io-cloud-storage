@@ -60,7 +60,7 @@ pulsarctl sinks create \
     "bucket": "Your bucket name",
     "region": "Your AWS S3 region",
     "formatType": "json",
-    "partitionerType": "PARTITION"
+    "partitioner": "topic"
   }'
 ```
 
@@ -131,7 +131,8 @@ Before using the AWS S3 sink connector, you need to configure it. This table out
 | `secretAccessKey`               | String  | True     | true      | null         | The AWS secret access key.                                                                                                                                                                                                                                                                                                                                                            |
 | `bucket`                        | String  | True     | false     | null         | The AWS S3 bucket.                                                                                                                                                                                                                                                                                                                                                                    |
 | `formatType`                    | String  | True     | false     | "json"       | The data format type. Available options are `json`, `avro`, `bytes`, or `parquet`. By default, it is set to `json`.                                                                                                                                                                                                                                                                   |
-| `partitionerType`               | String  | True     | false     | null         | The partitioning type. It can be configured by topic partitions or by time. By default, the partition type is configured by topic partitions.                                                                                                                                                                                                                                         |
+| `partitioner`                   | String  | False    | false     | null         | The partitioner for partitioning the resulting files. Available options are `topic`, `time` or `legacy`. By default, it's set to `legacy`. Please see [Partitioner](#partitioner) for more details.                                                                                                                                                                                   |
+| `partitionerType`               | String  | False    | false     | null         | The legacy partitioning type. It can be configured by topic partitions or by time. By default, the partition type is configured by topic partitions. It only works when the partitioner is set to `legacy`.                                                                                                                                                                           |
 | `region`                        | String  | False    | false     | null         | The AWS S3 region. Either the endpoint or region must be set.                                                                                                                                                                                                                                                                                                                         |
 | `endpoint`                      | String  | False    | false     | null         | The AWS S3 endpoint. Either the endpoint or region must be set.                                                                                                                                                                                                                                                                                                                       |
 | `role`                          | String  | False    | false     | null         | The AWS role.                                                                                                                                                                                                                                                                                                                                                                         |
@@ -226,3 +227,30 @@ There is a scenario where the sink is only flushing whenever the `batchTimeMs` h
 The reason for this is that the sink will only acknowledge messages after they are flushed to AWS S3 but the broker stops sending messages when it reaches a certain limit of unacknowledged messages.
 If this limit is lower or close to `batchSize`, the sink never receives enough messages to trigger a flush based on the amount of messages.
 In this case please ensure the `maxUnackedMessagesPerConsumer` set in the broker configuration is sufficiently larger than the `batchSize` setting of the sink.
+
+### Partitioner
+
+The partitioner is used for partitioning the data into different files in the cloud storage.
+There are three types of partitioner: 
+
+- **Topic Partitioner**: Messages are partitioned according to the pre-existing partitions in the Pulsar topics. For
+  instance, a message for the topic `public/default/my-topic-partition-0` would be directed to the
+  file `public/default/my-topic-partition-0/xxx.json`, where `xxx` signifies the earliest message offset in this file.
+- **Time Partitioner**: Messages are partitioned based on the timestamp at the time of flushing. For the aforementioned
+  message, it would be directed to the file `1703037311.json`, where `1703037311` represents the flush timestamp of the
+  first message in this file.
+- **Legacy Partitioner**: This type reverts to the old partitioner behavior. The legacy configuration `partitionerType` would be respected.
+
+#### Legacy Partitioner
+
+There are two types of legacy partitioner:
+
+- **Simple partitioner**: This is the default partitioning method based on Pulsar partitions. In other words, data is
+  partitioned according to the pre-existing partitions in Pulsar topics. For instance, a message for the
+  topic `public/default/my-topic-partition-0` would be directed to the
+  file `public/default/my-topic-partition-0/xxx.json`, where `xxx` signifies the earliest message offset in this file.
+
+- **Time partitioner**: Data is partitioned according to the time it was flushed. Using the previous message as an
+  example, if it was received on 2023-12-20, it would be directed
+  to `public/default/my-topic-partition-0/2023-12-20/xxx.json`, where `xxx` also denotes the earliest message offset in
+  this file.
