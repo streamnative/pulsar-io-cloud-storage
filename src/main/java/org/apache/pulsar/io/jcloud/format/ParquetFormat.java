@@ -63,6 +63,7 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
     private boolean useMetadata;
     private boolean useHumanReadableMessageId;
     private boolean useHumanReadableSchemaVersion;
+    private boolean includeTopicToMetadata;
 
     private CompressionCodecName compressionCodecName = CompressionCodecName.GZIP;
 
@@ -76,6 +77,7 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
         this.useMetadata = configuration.isWithMetadata();
         this.useHumanReadableMessageId = configuration.isUseHumanReadableMessageId();
         this.useHumanReadableSchemaVersion = configuration.isUseHumanReadableSchemaVersion();
+        this.includeTopicToMetadata = configuration.isIncludeTopicToMetadata();
         this.compressionCodecName = CompressionCodecName.fromConf(configuration.getParquetCodec());
     }
 
@@ -185,7 +187,7 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
                 rootAvroSchema = AvroRecordUtil.convertToAvroSchema(schema);
                 if (useMetadata) {
                     rootAvroSchema = MetadataUtil.setMetadataSchema(rootAvroSchema,
-                            useHumanReadableMessageId, useHumanReadableSchemaVersion);
+                            useHumanReadableMessageId, useHumanReadableSchemaVersion, includeTopicToMetadata);
                 }
                 log.info("Using avro schema: {}", rootAvroSchema);
             }
@@ -268,7 +270,9 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
                     if (useMetadata) {
                         org.apache.avro.generic.GenericRecord metadataRecord =
                                 MetadataUtil.extractedMetadataRecord(next,
-                                        useHumanReadableMessageId, useHumanReadableSchemaVersion);
+                                        useHumanReadableMessageId,
+                                        useHumanReadableSchemaVersion,
+                                        includeTopicToMetadata);
                         writeRecord.put(MESSAGE_METADATA_KEY, metadataRecord);
                     }
                     if (parquetWriter != null) {
