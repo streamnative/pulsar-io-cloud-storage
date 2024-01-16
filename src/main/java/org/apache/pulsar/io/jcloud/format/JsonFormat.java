@@ -68,6 +68,7 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
     private boolean useMetadata;
     private boolean useHumanReadableMessageId;
     private boolean useHumanReadableSchemaVersion;
+    private boolean includeTopicToMetadata;
 
     @Override
     public String getExtension() {
@@ -79,6 +80,7 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
         this.useMetadata = configuration.isWithMetadata();
         this.useHumanReadableMessageId = configuration.isUseHumanReadableMessageId();
         this.useHumanReadableSchemaVersion = configuration.isUseHumanReadableSchemaVersion();
+        this.includeTopicToMetadata = configuration.isIncludeTopicToMetadata();
 
         if (configuration.isJsonAllowNaN()) {
             JSON_MAPPER.get().enable(ALLOW_NON_NUMERIC_NUMBERS.mappedFeature());
@@ -117,7 +119,8 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
             Map<String, Object> writeValue = convertRecordToObject(next.getValue(), schema);
             if (useMetadata) {
                 writeValue.put(MetadataUtil.MESSAGE_METADATA_KEY,
-                        MetadataUtil.extractedMetadata(next, useHumanReadableMessageId, useHumanReadableSchemaVersion));
+                        MetadataUtil.extractedMetadata(next, useHumanReadableMessageId, useHumanReadableSchemaVersion,
+                                includeTopicToMetadata));
             }
             String recordAsString = JSON_MAPPER.get().writeValueAsString(writeValue);
             stringBuilder.append(recordAsString).append("\n");

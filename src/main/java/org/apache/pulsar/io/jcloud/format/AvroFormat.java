@@ -53,6 +53,7 @@ public class AvroFormat implements Format<GenericRecord> , InitConfiguration<Blo
     private boolean useMetadata;
     private boolean useHumanReadableMessageId;
     private boolean useHumanReadableSchemaVersion;
+    private boolean includeTopicToMetadata;
     private CodecFactory codecFactory;
 
     @Override
@@ -65,6 +66,7 @@ public class AvroFormat implements Format<GenericRecord> , InitConfiguration<Blo
         this.useMetadata = configuration.isWithMetadata();
         this.useHumanReadableMessageId = configuration.isUseHumanReadableMessageId();
         this.useHumanReadableSchemaVersion = configuration.isUseHumanReadableSchemaVersion();
+        this.includeTopicToMetadata = configuration.isIncludeTopicToMetadata();
         String codecName = configuration.getAvroCodec();
         if (codecName == null) {
             this.codecFactory = CodecFactory.nullCodec();
@@ -86,7 +88,7 @@ public class AvroFormat implements Format<GenericRecord> , InitConfiguration<Blo
         rootAvroSchema = AvroRecordUtil.convertToAvroSchema(schema);
         if (useMetadata){
             rootAvroSchema = MetadataUtil.setMetadataSchema(rootAvroSchema,
-                    useHumanReadableMessageId, useHumanReadableSchemaVersion);
+                    useHumanReadableMessageId, useHumanReadableSchemaVersion, includeTopicToMetadata);
         }
 
         LOGGER.debug("Using avro schema: {}", rootAvroSchema);
@@ -124,7 +126,7 @@ public class AvroFormat implements Format<GenericRecord> , InitConfiguration<Blo
                 if (useMetadata) {
                     org.apache.avro.generic.GenericRecord metadataRecord =
                             MetadataUtil.extractedMetadataRecord(next,
-                                    useHumanReadableMessageId, useHumanReadableSchemaVersion);
+                                    useHumanReadableMessageId, useHumanReadableSchemaVersion, includeTopicToMetadata);
                     writeRecord.put(MetadataUtil.MESSAGE_METADATA_KEY, metadataRecord);
                 }
                 fileWriter.append(writeRecord);
