@@ -35,7 +35,7 @@ jobs:
             PULSAR_VERSION=`mvn -q -Dexec.executable=echo -Dexec.args='${pulsar.version}' --non-recursive exec:exec 2>/dev/null`
             REPO=`mvn -q -Dexec.executable=echo -Dexec.args='${project.artifactId}' --non-recursive exec:exec 2>/dev/null`
             IMAGE_REPO=streamnative/${REPO}
-            RUNNER_IMAGE=docker.cloudsmith.io/streamnative/staging/pulsar-functions-java-runner:${PULSAR_VERSION}
+            RUNNER_IMAGE=streamnative/pulsar-functions-java-runner:${PULSAR_VERSION}
             docker pull ${RUNNER_IMAGE}
             docker build --build-arg PULSAR_VERSION="$PULSAR_VERSION" -t ${IMAGE_REPO}:${CONNECTOR_VERSION} -f ./image/Dockerfile ./
             docker push ${IMAGE_REPO}:${CONNECTOR_VERSION}
