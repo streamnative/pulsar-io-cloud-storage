@@ -307,7 +307,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                 int uploadSize = singleTopicRecordsToInsert.size();
                 long uploadBytes = getBytesSum(singleTopicRecordsToInsert);
                 log.info("Uploading blob {} from partition {} uploadSize {} out of currentBatchSize {} "
-                        + " uploadBytes {} out of currcurrentBatchBytes {}",
+                        + " uploadBytes {} out of currentBatchBytes {}",
                         filepath, entry.getKey(),
                         uploadSize, currentBatchSize.get(),
                         uploadBytes, currentBatchBytes.get());
