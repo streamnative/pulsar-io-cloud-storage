@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -76,8 +76,9 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
     private final ScheduledExecutorService flushExecutor =
             Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder()
-                .setNameFormat("pulsar-io-cloud-storage-sink-flush-%d")
-                .build());;
+                    .setNameFormat("pulsar-io-cloud-storage-sink-flush-%d")
+                    .build());
+    ;
 
     private String pathPrefix;
 
@@ -104,7 +105,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         format = buildFormat(sinkConfig);
         if (format instanceof InitConfiguration) {
             InitConfiguration<BlobStoreAbstractConfig> formatConfigInitializer =
-                (InitConfiguration<BlobStoreAbstractConfig>) format;
+                    (InitConfiguration<BlobStoreAbstractConfig>) format;
             formatConfigInitializer.configure(sinkConfig);
         }
         partitioner = buildPartitioner(sinkConfig);
@@ -115,7 +116,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         long batchTimeMs = sinkConfig.getBatchTimeMs();
         maxBatchSize = sinkConfig.getBatchSize();
         maxBatchBytes = sinkConfig.getMaxBatchBytes();
-        flushExecutor.scheduleWithFixedDelay(this::flush, batchTimeMs, batchTimeMs, TimeUnit.MILLISECONDS);
+        flushExecutor.scheduleWithFixedDelay(() -> this.flush(true), batchTimeMs, batchTimeMs, TimeUnit.MILLISECONDS);
         isRunning = true;
         this.sinkContext = sinkContext;
         this.blobWriter = initBlobWriter(sinkConfig);
@@ -126,7 +127,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
             return;
         }
         if (force || currentBatchSize.get() >= maxBatchSize || currentBatchBytes.get() >= maxBatchBytes) {
-            flushExecutor.submit(this::flush);
+            flushExecutor.submit(() -> flush(false));
         }
     }
 
@@ -215,14 +216,19 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
     }
 
 
-    private void flush() {
+    private void flush(boolean force) {
         if (log.isDebugEnabled()) {
             log.debug("flush requested, pending: {} ({} bytes), batchSize: {}, maxBatchBytes: {}",
-                currentBatchSize.get(), currentBatchBytes.get(), maxBatchSize, maxBatchBytes);
+                    currentBatchSize.get(), currentBatchBytes.get(), maxBatchSize, maxBatchBytes);
         }
 
         if (pendingFlushQueue.isEmpty()) {
             log.debug("Skip flushing because the pending flush queue is empty...");
+            return;
+        }
+
+        if (!force && currentBatchSize.get() < maxBatchSize && currentBatchBytes.get() < maxBatchBytes) {
+            log.debug("Skip flushing because the batch is not full.");
             return;
         }
 
@@ -257,7 +263,8 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         }
         currentBatchBytes.addAndGet(-1 * recordsToInsertBytes);
         currentBatchSize.addAndGet(-1 * recordsToInsert.size());
-        log.info("Flushing {} buffered records to blob store", recordsToInsert.size());
+        log.info("Flushing {} buffered records to blob store. recordsToInsertBytes = {}", recordsToInsert.size(),
+                recordsToInsertBytes);
         if (log.isDebugEnabled()) {
             log.debug("buffered records {}", recordsToInsert);
         }
@@ -307,7 +314,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                 int uploadSize = singleTopicRecordsToInsert.size();
                 long uploadBytes = getBytesSum(singleTopicRecordsToInsert);
                 log.info("Uploading blob {} from partition {} uploadSize {} out of currentBatchSize {} "
-                        + " uploadBytes {} out of currcurrentBatchBytes {}",
+                                + " uploadBytes {} out of currcurrentBatchBytes {}",
                         filepath, entry.getKey(),
                         uploadSize, currentBatchSize.get(),
                         uploadBytes, currentBatchBytes.get());
@@ -321,8 +328,8 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                     sinkContext.recordMetric(METRICS_LATEST_UPLOAD_ELAPSED_TIME, elapsedMs);
                 }
                 log.info("Successfully uploaded blob {} from partition {} uploadSize {} uploadBytes {}",
-                    filepath, entry.getKey(),
-                    uploadSize, uploadBytes);
+                        filepath, entry.getKey(),
+                        uploadSize, uploadBytes);
             } catch (Exception e) {
                 if (e instanceof ContainerNotFoundException) {
                     log.error("Blob {} is not found", filepath, e);
