@@ -76,8 +76,8 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
     private final ScheduledExecutorService flushExecutor =
             Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder()
-                    .setNameFormat("pulsar-io-cloud-storage-sink-flush-%d")
-                    .build());
+                .setNameFormat("pulsar-io-cloud-storage-sink-flush-%d")
+                .build());;
 
     private String pathPrefix;
 
@@ -104,7 +104,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         format = buildFormat(sinkConfig);
         if (format instanceof InitConfiguration) {
             InitConfiguration<BlobStoreAbstractConfig> formatConfigInitializer =
-                    (InitConfiguration<BlobStoreAbstractConfig>) format;
+                (InitConfiguration<BlobStoreAbstractConfig>) format;
             formatConfigInitializer.configure(sinkConfig);
         }
         partitioner = buildPartitioner(sinkConfig);
@@ -218,7 +218,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
     private void flush(boolean force) {
         if (log.isDebugEnabled()) {
             log.debug("flush requested, pending: {} ({} bytes), batchSize: {}, maxBatchBytes: {}",
-                    currentBatchSize.get(), currentBatchBytes.get(), maxBatchSize, maxBatchBytes);
+                currentBatchSize.get(), currentBatchBytes.get(), maxBatchSize, maxBatchBytes);
         }
 
         if (pendingFlushQueue.isEmpty()) {
@@ -313,7 +313,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                 int uploadSize = singleTopicRecordsToInsert.size();
                 long uploadBytes = getBytesSum(singleTopicRecordsToInsert);
                 log.info("Uploading blob {} from partition {} uploadSize {} out of currentBatchSize {} "
-                                + " uploadBytes {} out of currcurrentBatchBytes {}",
+                        + " uploadBytes {} out of currentBatchBytes {}",
                         filepath, entry.getKey(),
                         uploadSize, currentBatchSize.get(),
                         uploadBytes, currentBatchBytes.get());
@@ -327,8 +327,8 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                     sinkContext.recordMetric(METRICS_LATEST_UPLOAD_ELAPSED_TIME, elapsedMs);
                 }
                 log.info("Successfully uploaded blob {} from partition {} uploadSize {} uploadBytes {}",
-                        filepath, entry.getKey(),
-                        uploadSize, uploadBytes);
+                    filepath, entry.getKey(),
+                    uploadSize, uploadBytes);
             } catch (Exception e) {
                 if (e instanceof ContainerNotFoundException) {
                     log.error("Blob {} is not found", filepath, e);
