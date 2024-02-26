@@ -125,7 +125,9 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         if (isFlushRunning.get()) {
             return;
         }
-        if (force || currentBatchSize.get() >= maxBatchSize || currentBatchBytes.get() >= maxBatchBytes) {
+        if (force) {
+            flushExecutor.submit(() -> flush(true));
+        } else if (currentBatchSize.get() >= maxBatchSize || currentBatchBytes.get() >= maxBatchBytes) {
             flushExecutor.submit(() -> flush(false));
         }
     }
