@@ -121,13 +121,17 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         this.blobWriter = initBlobWriter(sinkConfig);
     }
 
+    private boolean isCurrentBatchThresholdReached() {
+        return currentBatchSize.get() >= maxBatchSize || currentBatchBytes.get() >= maxBatchBytes;
+    }
+
     private void flushIfNeeded(boolean force) {
         if (isFlushRunning.get()) {
             return;
         }
         if (force) {
             flushExecutor.submit(() -> flush(true));
-        } else if (currentBatchSize.get() >= maxBatchSize || currentBatchBytes.get() >= maxBatchBytes) {
+        } else if (isCurrentBatchThresholdReached()) {
             flushExecutor.submit(() -> flush(false));
         }
     }
@@ -228,7 +232,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
             return;
         }
 
-        if (!force && currentBatchSize.get() < maxBatchSize && currentBatchBytes.get() < maxBatchBytes) {
+        if (!force && !isCurrentBatchThresholdReached()) {
             log.debug("Skip flushing because the batch is not full.");
             return;
         }
