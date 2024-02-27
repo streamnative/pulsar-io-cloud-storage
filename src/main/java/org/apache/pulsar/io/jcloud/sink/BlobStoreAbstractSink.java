@@ -115,18 +115,24 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         long batchTimeMs = sinkConfig.getBatchTimeMs();
         maxBatchSize = sinkConfig.getBatchSize();
         maxBatchBytes = sinkConfig.getMaxBatchBytes();
-        flushExecutor.scheduleWithFixedDelay(this::flush, batchTimeMs, batchTimeMs, TimeUnit.MILLISECONDS);
+        flushExecutor.scheduleWithFixedDelay(() -> this.flush(true), batchTimeMs, batchTimeMs, TimeUnit.MILLISECONDS);
         isRunning = true;
         this.sinkContext = sinkContext;
         this.blobWriter = initBlobWriter(sinkConfig);
+    }
+
+    private boolean isCurrentBatchThresholdReached() {
+        return currentBatchSize.get() >= maxBatchSize || currentBatchBytes.get() >= maxBatchBytes;
     }
 
     private void flushIfNeeded(boolean force) {
         if (isFlushRunning.get()) {
             return;
         }
-        if (force || currentBatchSize.get() >= maxBatchSize || currentBatchBytes.get() >= maxBatchBytes) {
-            flushExecutor.submit(this::flush);
+        if (force) {
+            flushExecutor.submit(() -> flush(true));
+        } else if (isCurrentBatchThresholdReached()) {
+            flushExecutor.submit(() -> flush(false));
         }
     }
 
@@ -215,7 +221,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
     }
 
 
-    private void flush() {
+    private void flush(boolean force) {
         if (log.isDebugEnabled()) {
             log.debug("flush requested, pending: {} ({} bytes), batchSize: {}, maxBatchBytes: {}",
                 currentBatchSize.get(), currentBatchBytes.get(), maxBatchSize, maxBatchBytes);
@@ -223,6 +229,11 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
         if (pendingFlushQueue.isEmpty()) {
             log.debug("Skip flushing because the pending flush queue is empty...");
+            return;
+        }
+
+        if (!force && !isCurrentBatchThresholdReached()) {
+            log.debug("Skip flushing because the batch is not full.");
             return;
         }
 
@@ -257,7 +268,8 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         }
         currentBatchBytes.addAndGet(-1 * recordsToInsertBytes);
         currentBatchSize.addAndGet(-1 * recordsToInsert.size());
-        log.info("Flushing {} buffered records to blob store", recordsToInsert.size());
+        log.info("Flushing {} buffered records to blob store. recordsToInsertBytes = {}", recordsToInsert.size(),
+                recordsToInsertBytes);
         if (log.isDebugEnabled()) {
             log.debug("buffered records {}", recordsToInsert);
         }
