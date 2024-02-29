@@ -18,5 +18,5 @@
 #
 
 ARG PULSAR_VERSION
-FROM streamnative/pulsar-functions-java-runner:${PULSAR_VERSION}
+FROM snstage/pulsar-functions-java-runner:${PULSAR_VERSION}
 COPY --chown=$UID:$GID target/*.nar /pulsar/connectors/
