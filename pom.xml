@@ -43,8 +43,9 @@
     <testRetryCount>2</testRetryCount>
 
     <!-- connector dependencies -->
-    <jackson.version>2.14.2</jackson.version>
-    <lombok.version>1.16.22</lombok.version>
+    <jackson.version>2.13.2</jackson.version>
+    <jackson-databind.version>2.13.4.2</jackson-databind.version>
+    <lombok.version>1.18.20</lombok.version>
     <pulsar.version>2.10.3.6</pulsar.version>
     <parquet.version>1.12.2</parquet.version>
     <awsjavasdk.version>1.12.148</awsjavasdk.version>
