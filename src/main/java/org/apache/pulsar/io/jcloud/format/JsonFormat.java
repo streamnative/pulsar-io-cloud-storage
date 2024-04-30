@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.google.protobuf.DynamicMessage;
@@ -125,11 +126,13 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
         return ByteBuffer.wrap(stringBuilder.toString().getBytes(StandardCharsets.UTF_8));
     }
 
-    private Map<String, Object> convertRecordToObject(GenericRecord record, Schema<?> schema) throws IOException {
+    protected Map<String, Object> convertRecordToObject(GenericRecord record, Schema<?> schema) throws IOException {
         if (record.getSchemaType().isStruct()) {
             switch (record.getSchemaType()) {
-                case AVRO:
                 case JSON:
+                    JsonNode nativeObject = (JsonNode) record.getNativeObject();
+                    return JSON_MAPPER.get().convertValue(nativeObject, TYPEREF);
+                case AVRO:
                 case PROTOBUF: {
                     List<Field> fields = record.getFields();
                     Map<String, Object> result = new LinkedHashMap<>(fields.size());
@@ -138,6 +141,9 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
                         Object value = record.getField(field);
                         if (value instanceof GenericRecord) {
                             value = convertRecordToObject((GenericRecord) value, schema);
+                        }
+                        if (value == null) {
+                            log.warn("Get filed:{} values is null, maybe data and schema are incompatible", name);
                         }
                         result.put(name, value);
                     }
