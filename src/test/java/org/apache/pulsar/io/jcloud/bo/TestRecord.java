@@ -40,6 +40,7 @@ public class TestRecord {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class TestSubRecord {
+        public static final String FILE_NAME = "name";
         private String name;
     }
 }
