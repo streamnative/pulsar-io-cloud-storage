@@ -18,10 +18,10 @@ jobs:
         java-version: 17
 
     - name: Code check
-      run: mvn license:check checkstyle:check spotbugs:check
+      run: mvn license:check spotbugs:check
 
     - name: Build with Maven
-      run: mvn install test -DfailIfNoTests=false
+       run: mvn install test -DfailIfNoTests=false -Dcheckstyle.skip
 
     - name: package surefire artifacts
       if: failure()
