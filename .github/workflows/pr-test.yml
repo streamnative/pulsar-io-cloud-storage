@@ -21,7 +21,7 @@ jobs:
       run: mvn license:check spotbugs:check
 
     - name: Build with Maven
-       run: mvn install test -DfailIfNoTests=false -Dcheckstyle.skip
+      run: mvn install test -DfailIfNoTests=false -Dcheckstyle.skip
 
     - name: package surefire artifacts
       if: failure()
