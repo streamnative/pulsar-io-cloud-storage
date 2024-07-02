@@ -37,6 +37,7 @@ import org.apache.pulsar.client.api.Producer;
 import org.apache.pulsar.client.api.PulsarClient;
 import org.apache.pulsar.client.api.PulsarClientException;
 import org.apache.pulsar.client.api.Schema;
+import org.apache.pulsar.client.api.SubscriptionInitialPosition;
 import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.common.schema.KeyValue;
 import org.apache.pulsar.common.schema.SchemaType;
@@ -117,13 +118,74 @@ public abstract class PulsarTestBase {
         return sendTypedMessages(topic, type, messages, partition, null);
     }
 
-    @SuppressWarnings("unchecked")
+
     public static <T> List<MessageId> sendTypedMessages(
             String topic,
             SchemaType type,
             List<T> messages,
             Optional<Integer> partition,
             Class<T> tClass) throws PulsarClientException {
+
+        Schema<?> schema;
+
+        switch (type) {
+            case BOOLEAN:
+                schema = Schema.BOOL;
+                break;
+            case BYTES:
+                schema = Schema.BYTES;
+                break;
+            case DATE:
+                schema = Schema.DATE;
+                break;
+            case STRING:
+                schema = Schema.STRING;
+                break;
+            case TIMESTAMP:
+                schema = Schema.TIMESTAMP;
+                break;
+            case INT8:
+                schema = Schema.INT8;
+                break;
+            case DOUBLE:
+                schema = Schema.DOUBLE;
+                break;
+            case FLOAT:
+                schema = Schema.FLOAT;
+                break;
+            case INT32:
+                schema = Schema.INT32;
+                break;
+            case INT16:
+                schema = Schema.INT16;
+                break;
+            case INT64:
+                schema = Schema.INT64;
+                break;
+            case AVRO:
+                schema = Schema.AVRO(tClass);
+                break;
+            case JSON:
+                schema = Schema.JSON(tClass);
+                break;
+            case KEY_VALUE:
+                final KeyValue kvMessage = (KeyValue) messages.get(0);
+                schema = Schema.KeyValue(kvMessage.getKey().getClass(),
+                        kvMessage.getValue().getClass());
+                break;
+            default:
+                throw new NotImplementedException("Unsupported type " + type);
+        }
+        return sendTypedMessages(topic, messages, schema, partition);
+
+    }
+    @SuppressWarnings("unchecked")
+    public static <T> List<MessageId> sendTypedMessages(
+            String topic,
+            List<T> messages,
+            Schema produceSchema,
+            Optional<Integer> partition) throws PulsarClientException {
+
 
         String topicName;
         if (partition.isPresent()) {
@@ -138,56 +200,7 @@ public abstract class PulsarTestBase {
 
         try {
             client = PulsarClient.builder().serviceUrl(getServiceUrl()).build();
-
-            switch (type) {
-                case BOOLEAN:
-                    producer = (Producer<T>) client.newProducer(Schema.BOOL).topic(topicName).create();
-                    break;
-                case BYTES:
-                    producer = (Producer<T>) client.newProducer(Schema.BYTES).topic(topicName).create();
-                    break;
-                case DATE:
-                    producer = (Producer<T>) client.newProducer(Schema.DATE).topic(topicName).create();
-                    break;
-                case STRING:
-                    producer = (Producer<T>) client.newProducer(Schema.STRING).topic(topicName).create();
-                    break;
-                case TIMESTAMP:
-                    producer = (Producer<T>) client.newProducer(Schema.TIMESTAMP).topic(topicName).create();
-                    break;
-                case INT8:
-                    producer = (Producer<T>) client.newProducer(Schema.INT8).topic(topicName).create();
-                    break;
-                case DOUBLE:
-                    producer = (Producer<T>) client.newProducer(Schema.DOUBLE).topic(topicName).create();
-                    break;
-                case FLOAT:
-                    producer = (Producer<T>) client.newProducer(Schema.FLOAT).topic(topicName).create();
-                    break;
-                case INT32:
-                    producer = (Producer<T>) client.newProducer(Schema.INT32).topic(topicName).create();
-                    break;
-                case INT16:
-                    producer = (Producer<T>) client.newProducer(Schema.INT16).topic(topicName).create();
-                    break;
-                case INT64:
-                    producer = (Producer<T>) client.newProducer(Schema.INT64).topic(topicName).create();
-                    break;
-                case AVRO:
-                    producer = (Producer<T>) client.newProducer(Schema.AVRO(tClass)).topic(topicName).create();
-                    break;
-                case JSON:
-                    producer = (Producer<T>) client.newProducer(Schema.JSON(tClass)).topic(topicName).create();
-                    break;
-                case KEY_VALUE:
-                    final KeyValue kvMessage = (KeyValue) messages.get(0);
-                    producer = (Producer<T>) client.newProducer(Schema.KeyValue(kvMessage.getKey().getClass(),
-                            kvMessage.getValue().getClass())).topic(topicName).create();
-                    break;
-
-                default:
-                    throw new NotImplementedException("Unsupported type " + type);
-            }
+            producer = client.newProducer(produceSchema).topic(topicName).create();
 
             for (T message : messages) {
                 MessageId mid = producer.send(message);
@@ -264,12 +277,14 @@ public abstract class PulsarTestBase {
 
             consumer = client.newConsumer(schema)
                     .topic(topic)
+                    .subscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
                     .subscriptionName("test")
                     .subscribe();
             int receiveCount = 0;
             while (receiveCount < count) {
                 final CompletableFuture<Message<T>> receiveAsync = consumer.receiveAsync();
                 final Message<T> message = receiveAsync.get(timeout, TimeUnit.MILLISECONDS);
+                System.out.println("received message " + message);
                 handler.accept(message);
                 consumer.acknowledge(message);
                 receiveCount += 1;
