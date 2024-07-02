@@ -47,8 +47,8 @@
     <!-- connector dependencies -->
     <jackson.version>2.13.2</jackson.version>
     <jackson-databind.version>2.13.4.2</jackson-databind.version>
-    <lombok.version>1.18.20</lombok.version>
     <pulsar.version>3.0.4.1</pulsar.version>
+    <lombok.version>1.18.32</lombok.version>
     <avro.version>1.11.3</avro.version>
     <hadoop.version>3.3.6</hadoop.version>
     <parquet.version>1.13.1</parquet.version>
