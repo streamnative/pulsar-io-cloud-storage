@@ -31,10 +31,10 @@ public interface Partitioner {
      * The partition method takes a list of records and returns a map. Each key in the map represents a
      * unique partition, and the corresponding value is a list of records that belong to that partition.
      *
-     * @param records A list of records to be partitioned. Each record is of the type GenericRecord.
+     * @param topicRecords A Map<TopicName, List<Record>> of records to be partitioned. Each record is of the type GenericRecord.
      * @return A map where keys represent unique partitions and values are lists of records
      * associated with their respective partitions. The unique partition is consistently used as a file path in the
      * cloud storage system.
      */
-    Map<String, List<Record<GenericRecord>>> partition(List<Record<GenericRecord>> records);
+    Map<String, List<Record<GenericRecord>>> partition(Map<String, List<Record<GenericRecord>>> topicRecords);
 }

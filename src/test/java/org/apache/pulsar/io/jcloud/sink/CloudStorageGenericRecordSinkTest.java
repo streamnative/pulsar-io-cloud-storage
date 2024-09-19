@@ -171,8 +171,8 @@ public class CloudStorageGenericRecordSinkTest {
         sendMockRecord(1);
         await().atMost(Duration.ofSeconds(10)).untilAsserted(
                 () -> {
-                    Assert.assertEquals(0, this.sink.currentBatchBytes.get());
-                    Assert.assertEquals(0, this.sink.currentBatchSize.get());
+                    Assert.assertEquals(0, this.sink.batchManager.getCurrentBatchBytes("test-topic"));
+                    Assert.assertEquals(0, this.sink.batchManager.getCurrentBatchSize("test-topic"));
                 }
         );
     }

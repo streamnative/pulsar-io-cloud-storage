@@ -19,6 +19,7 @@
 package org.apache.pulsar.io.jcloud.partitioner;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +34,9 @@ import org.apache.pulsar.functions.api.Record;
  */
 public class TopicPartitioner implements Partitioner {
     @Override
-    public Map<String, List<Record<GenericRecord>>> partition(List<Record<GenericRecord>> records) {
+    public Map<String, List<Record<GenericRecord>>> partition(Map<String, List<Record<GenericRecord>>> topicRecords) {
+        List<Record<GenericRecord>> records = new ArrayList<>();
+        topicRecords.values().forEach(records::addAll);
         return records.stream()
                 .collect(Collectors.groupingBy(record -> record.getTopicName()
                         .orElseThrow(() -> new RuntimeException("Topic name is not present in record."))))

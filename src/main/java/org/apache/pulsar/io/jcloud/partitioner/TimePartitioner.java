@@ -18,6 +18,7 @@
  */
 package org.apache.pulsar.io.jcloud.partitioner;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -32,11 +33,13 @@ public class TimePartitioner implements Partitioner {
      * Partitions a list of records into a map, where the key is the current system time in milliseconds
      * and the value is the list of records.
      *
-     * @param records A list of records of type GenericRecord that need to be partitioned.
+     * @param topicRecords A list of records of type GenericRecord that need to be partitioned.
      * @return A map where the key is the current system time in milliseconds and the value is the list of records.
      */
     @Override
-    public Map<String, List<Record<GenericRecord>>> partition(List<Record<GenericRecord>> records) {
-        return Collections.singletonMap(Long.toString(System.currentTimeMillis()), records);
+    public Map<String, List<Record<GenericRecord>>> partition(Map<String, List<Record<GenericRecord>>> topicRecords) {
+        List<Record<GenericRecord>> allRecords = new ArrayList<>();
+        topicRecords.values().forEach(allRecords::addAll);
+        return Collections.singletonMap(Long.toString(System.currentTimeMillis()), allRecords);
     }
 }
