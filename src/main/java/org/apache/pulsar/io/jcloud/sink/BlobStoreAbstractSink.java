@@ -228,7 +228,11 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
     private void unsafeFlush() {
         Map<String, List<Record<GenericRecord>>> recordsToInsertByTopic = batchManager.poolFlushData();
-        for (Map.Entry<String, List<Record<GenericRecord>>> entry : recordsToInsertByTopic.entrySet()) {
+
+        final Map<String, List<Record<GenericRecord>>> recordsToInsertByFilePath =
+                partitioner.partition(recordsToInsertByTopic);
+        
+        for (Map.Entry<String, List<Record<GenericRecord>>> entry : recordsToInsertByFilePath.entrySet()) {
             String topicName = entry.getKey();
             List<Record<GenericRecord>> singleTopicRecordsToInsert = entry.getValue();
             Record<GenericRecord> firstRecord = singleTopicRecordsToInsert.get(0);
@@ -237,13 +241,13 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                 schema = getPulsarSchema(firstRecord);
             } catch (Exception e) {
                 log.error("Failed to retrieve message schema", e);
-                bulkHandleFailedRecords(topicName, singleTopicRecordsToInsert);
+                bulkHandleFailedRecords(singleTopicRecordsToInsert);
                 return;
             }
 
             if (!format.doSupportPulsarSchemaType(schema.getSchemaInfo().getType())) {
                 log.warn("sink does not support schema type {}", schema.getSchemaInfo().getType());
-                bulkHandleFailedRecords(topicName, singleTopicRecordsToInsert);
+                bulkHandleFailedRecords(singleTopicRecordsToInsert);
                 return;
             }
 
@@ -259,7 +263,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                 }
             } catch (Exception e) {
                 log.error("Failed to generate file path", e);
-                bulkHandleFailedRecords(topicName, singleTopicRecordsToInsert);
+                bulkHandleFailedRecords(singleTopicRecordsToInsert);
                 return;
             }
 
@@ -270,7 +274,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                 ByteBuffer payload = bindValue(iter, format);
                 int uploadSize = singleTopicRecordsToInsert.size();
                 long uploadBytes = getBytesSum(singleTopicRecordsToInsert);
-                log.info("Uploading blob {} from topic {} uploadSize {} out of currentBatchSize {} "
+                log.info("Uploading blob {} from partition {} uploadSize {} out of currentBatchSize {} "
                         + " uploadBytes {} out of currentBatchBytes {}",
                         filepath, topicName,
                         uploadSize, batchManager.getCurrentBatchSize(topicName),
@@ -297,12 +301,12 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                 } else {
                     log.error("Encountered unknown error writing to blob {}", filepath, e);
                 }
-                bulkHandleFailedRecords(topicName, singleTopicRecordsToInsert);
+                bulkHandleFailedRecords(singleTopicRecordsToInsert);
             }
         }
     }
 
-    private void bulkHandleFailedRecords(String topicName, List<Record<GenericRecord>> failedRecords) {
+    private void bulkHandleFailedRecords(List<Record<GenericRecord>> failedRecords) {
         if (sinkConfig.isSkipFailedMessages()) {
             failedRecords.forEach(Record::ack);
         } else {

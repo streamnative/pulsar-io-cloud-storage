@@ -39,12 +39,12 @@ public class LegacyPartitioner implements Partitioner {
      * This method partitions a list of records into a map where the keys are the topic names and the values are lists
      * of records.
      *
-     * @param records A list of records of type GenericRecord that need to be partitioned.
+     * @param topicRecords A list of records of type GenericRecord that need to be partitioned.
      * @return A map where the keys are the topic names and the values are lists of records.
      */
     @Override
-    public Map<String, List<Record<GenericRecord>>> partition(List<Record<GenericRecord>> records) {
-        return records.stream().collect(Collectors.groupingBy(record -> record.getTopicName().get()));
+    public Map<String, List<Record<GenericRecord>>> partition(Map<String, List<Record<GenericRecord>>> topicRecords) {
+        return topicRecords;
     }
 
     public String buildPartitionPath(Record<GenericRecord> message, String pathPrefix,
