@@ -75,13 +75,13 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
             Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder()
                 .setNameFormat("pulsar-io-cloud-storage-sink-flush-%d")
                 .build());;
+    protected BatchManager batchManager;
 
     private String pathPrefix;
 
     private final AtomicBoolean isFlushRunning = new AtomicBoolean(false);
     private SinkContext sinkContext;
     private volatile boolean isRunning = false;
-    private BatchManager batchManager;
 
     private BlobWriter blobWriter;
 
@@ -280,8 +280,6 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                 elapsedMs = System.currentTimeMillis() - elapsedMs;
                 log.debug("Uploading blob {} elapsed time in ms: {}", filepath, elapsedMs);
                 singleTopicRecordsToInsert.forEach(Record::ack);
-                batchManager.updateCurrentBatchBytes(topicName, -1 * uploadBytes);
-                batchManager.updateCurrentBatchSize(topicName, -1 * uploadSize);
                 if (sinkContext != null) {
                     sinkContext.recordMetric(METRICS_TOTAL_SUCCESS, singleTopicRecordsToInsert.size());
                     sinkContext.recordMetric(METRICS_LATEST_UPLOAD_ELAPSED_TIME, elapsedMs);
@@ -310,8 +308,6 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         } else {
             failedRecords.forEach(Record::fail);
         }
-        batchManager.updateCurrentBatchBytes(topicName, -1 * getBytesSum(failedRecords));
-        batchManager.updateCurrentBatchSize(topicName,  -1 * failedRecords.size());
         if (sinkContext != null) {
             sinkContext.recordMetric(METRICS_TOTAL_FAILURE, failedRecords.size());
         }

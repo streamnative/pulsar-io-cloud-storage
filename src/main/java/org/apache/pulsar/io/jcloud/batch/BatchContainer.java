@@ -88,6 +88,8 @@ public class BatchContainer {
                 needFlushRecords.add(r);
             }
         }
+        updateCurrentBatchBytes(-1 * recordsToInsertBytes);
+        updateCurrentBatchSize(-1 * needFlushRecords.size());
         return needFlushRecords;
     }
 
