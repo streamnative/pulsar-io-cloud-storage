@@ -50,7 +50,7 @@
     <lombok.version>1.18.32</lombok.version>
     <pulsar.version>3.2.2.1</pulsar.version>
     <avro.version>1.11.4</avro.version>
-    <hadoop.version>3.3.6</hadoop.version>
+    <hadoop.version>3.4.0</hadoop.version>
     <parquet.version>1.13.1</parquet.version>
     <awsjavasdk.version>1.12.698</awsjavasdk.version>
     <aws.java.sdk2.version>2.16.104</aws.java.sdk2.version>
