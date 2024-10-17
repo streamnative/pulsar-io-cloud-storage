@@ -25,7 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.pulsar.io.common.IOConfigUtils;
 import org.apache.pulsar.io.core.SinkContext;
-import org.apache.pulsar.io.jcloud.partitioner.legacy.LegacyPartitionerType;
+import org.apache.pulsar.io.jcloud.partitioner.PartitionerType;
 import org.apache.pulsar.io.jcloud.sink.CloudStorageSinkConfig;
 import org.junit.Assert;
 import org.junit.Test;
@@ -51,7 +51,6 @@ public class ConnectorConfigTest {
         config.put("timePartitionPattern", "yyyy-MM-dd");
         config.put("timePartitionDuration", "2d");
         config.put("batchSize", 10);
-        config.put("partitioner", "topic");
         CloudStorageSinkConfig cloudStorageSinkConfig = CloudStorageSinkConfig.load(config);
         cloudStorageSinkConfig.validate();
 
@@ -65,8 +64,6 @@ public class ConnectorConfigTest {
         Assert.assertEquals(config.get("timePartitionPattern"), cloudStorageSinkConfig.getTimePartitionPattern());
         Assert.assertEquals(config.get("timePartitionDuration"), cloudStorageSinkConfig.getTimePartitionDuration());
         Assert.assertEquals(config.get("batchSize"), cloudStorageSinkConfig.getBatchSize());
-        Assert.assertEquals(config.get("partitioner"),
-                cloudStorageSinkConfig.getPartitioner().toString().toLowerCase());
         Assert.assertEquals((int) config.get("batchSize"), cloudStorageSinkConfig.getPendingQueueSize());
         Assert.assertEquals(10000000L, cloudStorageSinkConfig.getMaxBatchBytes());
     }
@@ -292,7 +289,7 @@ public class ConnectorConfigTest {
         config.put("partitionerType", "default");
         cloudStorageSinkConfig = CloudStorageSinkConfig.load(config);
         cloudStorageSinkConfig.validate();
-        for (LegacyPartitionerType value : LegacyPartitionerType.values()) {
+        for (PartitionerType value : PartitionerType.values()) {
             config.put("partitionerType", value);
             cloudStorageSinkConfig = CloudStorageSinkConfig.load(config);
             cloudStorageSinkConfig.validate();

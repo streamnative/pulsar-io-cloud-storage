@@ -34,6 +34,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -50,13 +51,10 @@ import org.apache.pulsar.io.jcloud.format.Format;
 import org.apache.pulsar.io.jcloud.format.InitConfiguration;
 import org.apache.pulsar.io.jcloud.format.JsonFormat;
 import org.apache.pulsar.io.jcloud.format.ParquetFormat;
-import org.apache.pulsar.io.jcloud.partitioner.LegacyPartitioner;
+import org.apache.pulsar.io.jcloud.partitioner.Partitioner;
 import org.apache.pulsar.io.jcloud.partitioner.PartitionerType;
-import org.apache.pulsar.io.jcloud.partitioner.TopicPartitioner;
-import org.apache.pulsar.io.jcloud.partitioner.legacy.LegacyPartitionerType;
-import org.apache.pulsar.io.jcloud.partitioner.legacy.Partitioner;
-import org.apache.pulsar.io.jcloud.partitioner.legacy.SimplePartitioner;
-import org.apache.pulsar.io.jcloud.partitioner.legacy.TimePartitioner;
+import org.apache.pulsar.io.jcloud.partitioner.SimplePartitioner;
+import org.apache.pulsar.io.jcloud.partitioner.TimePartitioner;
 import org.apache.pulsar.io.jcloud.writer.BlobWriter;
 import org.jclouds.blobstore.ContainerNotFoundException;
 
@@ -69,8 +67,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
     private V sinkConfig;
 
-    protected Partitioner<GenericRecord> legacyPartitioner;
-    protected org.apache.pulsar.io.jcloud.partitioner.Partitioner partitioner;
+    protected Partitioner<GenericRecord> partitioner;
 
     protected Format<GenericRecord> format;
 
@@ -108,9 +105,6 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
             formatConfigInitializer.configure(sinkConfig);
         }
         partitioner = buildPartitioner(sinkConfig);
-        if (partitioner instanceof LegacyPartitioner) {
-            legacyPartitioner = buildLegacyPartitioner(sinkConfig);
-        }
         pathPrefix = StringUtils.trimToEmpty(sinkConfig.getPathPrefix());
         long batchTimeMs = sinkConfig.getBatchTimeMs();
         maxBatchSize = sinkConfig.getBatchSize();
@@ -136,12 +130,11 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         }
     }
 
-    private Partitioner<GenericRecord> buildLegacyPartitioner(V sinkConfig) {
+    private Partitioner<GenericRecord> buildPartitioner(V sinkConfig) {
         Partitioner<GenericRecord> partitioner;
         String partitionerTypeName = sinkConfig.getPartitionerType();
-        LegacyPartitionerType partitionerType =
-                EnumUtils.getEnumIgnoreCase(LegacyPartitionerType.class, partitionerTypeName,
-                        LegacyPartitionerType.PARTITION);
+        PartitionerType partitionerType =
+                EnumUtils.getEnumIgnoreCase(PartitionerType.class, partitionerTypeName, PartitionerType.PARTITION);
         switch (partitionerType) {
             case TIME:
                 partitioner = new TimePartitioner<>();
@@ -153,18 +146,6 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         }
         partitioner.configure(sinkConfig);
         return partitioner;
-    }
-
-    private org.apache.pulsar.io.jcloud.partitioner.Partitioner buildPartitioner(V sinkConfig) {
-        PartitionerType partitionerType = sinkConfig.getPartitioner();
-        switch (partitionerType) {
-            case TOPIC:
-                return new TopicPartitioner();
-            case TIME:
-                return new org.apache.pulsar.io.jcloud.partitioner.TimePartitioner();
-            default:
-                return new LegacyPartitioner();
-        }
     }
 
     private Format<GenericRecord> buildFormat(V sinkConfig) {
@@ -274,8 +255,10 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
             log.debug("buffered records {}", recordsToInsert);
         }
 
+        // all output blobs of the same batch should have the same partitioning timestamp
+        final long timeStampForPartitioning = System.currentTimeMillis();
         final Map<String, List<Record<GenericRecord>>> recordsToInsertByTopic =
-                partitioner.partition(recordsToInsert);
+                recordsToInsert.stream().collect(Collectors.groupingBy(record -> record.getTopicName().get()));
 
         for (Map.Entry<String, List<Record<GenericRecord>>> entry : recordsToInsertByTopic.entrySet()) {
             List<Record<GenericRecord>> singleTopicRecordsToInsert = entry.getValue();
@@ -295,26 +278,11 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                 return;
             }
 
-            String filepath;
-            try {
-                if (partitioner instanceof LegacyPartitioner) {
-                    // all output blobs of the same batch should have the same partitioning timestamp
-                    final long timeStampForPartitioning = System.currentTimeMillis();
-                    filepath = ((LegacyPartitioner) partitioner).buildPartitionPath(firstRecord, pathPrefix,
-                            legacyPartitioner, format, timeStampForPartitioning);
-                } else {
-                    filepath = pathPrefix + entry.getKey() + format.getExtension();
-                }
-            } catch (Exception e) {
-                log.error("Failed to generate file path", e);
-                bulkHandleFailedRecords(singleTopicRecordsToInsert);
-                return;
-            }
-
+            String filepath = "";
             try {
                 format.initSchema(schema);
                 final Iterator<Record<GenericRecord>> iter = singleTopicRecordsToInsert.iterator();
-
+                filepath = buildPartitionPath(firstRecord, partitioner, format, timeStampForPartitioning);
                 ByteBuffer payload = bindValue(iter, format);
                 int uploadSize = singleTopicRecordsToInsert.size();
                 long uploadBytes = getBytesSum(singleTopicRecordsToInsert);
@@ -332,7 +300,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                     sinkContext.recordMetric(METRICS_TOTAL_SUCCESS, singleTopicRecordsToInsert.size());
                     sinkContext.recordMetric(METRICS_LATEST_UPLOAD_ELAPSED_TIME, elapsedMs);
                 }
-                log.info("Successfully uploaded blob {} from partition {} uploadSize {} uploadBytes {}",
+                log.info("Successfully uploaded blob {} from topic {} uploadSize {} uploadBytes {}",
                     filepath, entry.getKey(),
                     uploadSize, uploadBytes);
             } catch (Exception e) {
@@ -364,6 +332,18 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
     public ByteBuffer bindValue(Iterator<Record<GenericRecord>> message,
                                 Format<GenericRecord> format) throws Exception {
         return format.recordWriterBuf(message);
+    }
+
+    public String buildPartitionPath(Record<GenericRecord> message,
+                                     Partitioner<GenericRecord> partitioner,
+                                     Format<?> format,
+                                     long partitioningTimestamp) {
+
+        String encodePartition = partitioner.encodePartition(message, partitioningTimestamp);
+        String partitionedPath = partitioner.generatePartitionedPath(message.getTopicName().get(), encodePartition);
+        String path = pathPrefix + partitionedPath + format.getExtension();
+        log.info("generate message[recordSequence={}] savePath: {}", message.getRecordSequence().get(), path);
+        return path;
     }
 
     private long getBytesSum(List<Record<GenericRecord>> records) {

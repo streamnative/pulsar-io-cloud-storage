@@ -16,4 +16,19 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.pulsar.io.jcloud.partitioner.legacy;
+package org.apache.pulsar.io.jcloud.partitioner;
+
+import org.apache.pulsar.functions.api.Record;
+
+/**
+ * use topic partition strategy.
+ *
+ * @param <T> config
+ */
+public class SimplePartitioner<T> extends AbstractPartitioner<T> {
+
+    @Override
+    public String encodePartition(Record<T> sinkRecord) {
+        return Long.toString(getMessageOffset(sinkRecord));
+    }
+}
