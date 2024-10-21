@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.pulsar.io.jcloud.bo;
+package org.apache.pulsar.io.jcloud.format;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

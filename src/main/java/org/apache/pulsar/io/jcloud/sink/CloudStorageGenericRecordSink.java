@@ -46,7 +46,10 @@ public class CloudStorageGenericRecordSink extends BlobStoreAbstractSink<CloudSt
 
     @Override
     public CloudStorageSinkConfig loadConfig(Map<String, Object> config, SinkContext sinkContext) throws IOException {
-        return IOConfigUtils.loadWithSecrets(config, CloudStorageSinkConfig.class, sinkContext);
+        CloudStorageSinkConfig sinkConfig =
+                IOConfigUtils.loadWithSecrets(config, CloudStorageSinkConfig.class, sinkContext);
+        sinkConfig.validate();
+        return sinkConfig;
     }
 
     @Override

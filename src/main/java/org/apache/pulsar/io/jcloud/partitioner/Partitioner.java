@@ -19,6 +19,8 @@
 package org.apache.pulsar.io.jcloud.partitioner;
 
 import java.io.File;
+import org.apache.commons.lang3.EnumUtils;
+import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 
@@ -31,6 +33,24 @@ import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 public interface Partitioner<T> {
 
     String PATH_SEPARATOR = File.separator;
+
+    static Partitioner<GenericRecord> buildPartitioner(BlobStoreAbstractConfig sinkConfig) {
+        Partitioner<GenericRecord> partitioner;
+        String partitionerTypeName = sinkConfig.getPartitionerType();
+        PartitionerType partitionerType =
+                EnumUtils.getEnumIgnoreCase(PartitionerType.class, partitionerTypeName, PartitionerType.PARTITION);
+        switch (partitionerType) {
+            case TIME:
+                partitioner = new TimePartitioner<>();
+                break;
+            case PARTITION:
+            default:
+                partitioner = new SimplePartitioner<>();
+                break;
+        }
+        partitioner.configure(sinkConfig);
+        return partitioner;
+    }
 
 
     void configure(BlobStoreAbstractConfig config);

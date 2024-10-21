@@ -28,7 +28,6 @@ import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.client.api.schema.GenericRecordBuilder;
 import org.apache.pulsar.client.impl.schema.generic.GenericJsonSchema;
 import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
-import org.apache.pulsar.io.jcloud.bo.TestRecord;
 import org.junit.Assert;
 import org.junit.Test;
 

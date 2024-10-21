@@ -47,8 +47,6 @@ import org.apache.pulsar.common.schema.KeyValue;
 import org.apache.pulsar.common.schema.KeyValueEncodingType;
 import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
-import org.apache.pulsar.io.jcloud.PulsarTestBase;
-import org.apache.pulsar.io.jcloud.bo.TestRecord;
 import org.apache.pulsar.io.jcloud.schema.proto.Test.TestMessage;
 import org.apache.pulsar.io.jcloud.util.MetadataUtil;
 import org.junit.Assert;

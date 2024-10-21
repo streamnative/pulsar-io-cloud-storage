@@ -20,15 +20,44 @@ package org.apache.pulsar.io.jcloud.format;
 
 import java.nio.ByteBuffer;
 import java.util.Iterator;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.client.api.Schema;
+import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.functions.api.Record;
+import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 import org.apache.pulsar.jcloud.shade.com.google.common.io.ByteSource;
 
 /**
  * output record format.
  */
 public interface Format<T> {
+
+    static Format<GenericRecord> buildFormat(BlobStoreAbstractConfig sinkConfig) {
+        String formatType = StringUtils.defaultIfBlank(sinkConfig.getFormatType(), "json");
+        Format<GenericRecord> format;
+        switch (formatType) {
+            case "avro":
+                format = new AvroFormat();
+                break;
+            case "parquet":
+                format = new ParquetFormat();
+                break;
+            case "json":
+                format = new JsonFormat();
+                break;
+            case "bytes":
+                format = new BytesFormat();
+                break;
+            default:
+                throw new RuntimeException("not support formatType " + formatType);
+        }
+        InitConfiguration<BlobStoreAbstractConfig> formatConfigInitializer =
+                (InitConfiguration<BlobStoreAbstractConfig>) format;
+        formatConfigInitializer.configure(sinkConfig);
+        return format;
+    }
+
     /**
      * get format extension.
      *

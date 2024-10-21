@@ -20,6 +20,7 @@ package org.apache.pulsar.io.jcloud;
 
 import static org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig.PROVIDER_AWSS3;
 import static org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig.PROVIDER_AZURE;
+import static org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig.PROVIDER_GCS;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,7 +35,7 @@ import org.mockito.Mockito;
 /**
  * connector config test.
  */
-public class ConnectorConfigTest {
+public class BlobStoreAbstractConfigTest {
 
     @Test
     public void loadBasicConfigTest() throws IOException {
@@ -357,6 +358,37 @@ public class ConnectorConfigTest {
         cloudStorageSinkConfig.validate();
         Assert.assertNull(cloudStorageSinkConfig.getAvroCodec());
         Assert.assertNull(cloudStorageSinkConfig.getParquetCodec());
+    }
+
+    @Test
+    public void loadGoogleCloudStorageProviderTest() throws IOException {
+        Map<String, Object> config = new HashMap<>();
+        config.put("provider", PROVIDER_GCS);
+        config.put("gcsServiceAccountKeyFilePath", "/tmp/gcs.json");
+        config.put("bucket", "testbucket");
+        config.put("region", "localhost");
+        config.put("endpoint", "https://us-standard");
+        config.put("pathPrefix", "pulsar/");
+        config.put("formatType", "avro");
+        config.put("partitionerType", "default");
+        config.put("timePartitionPattern", "yyyy-MM-dd");
+        config.put("timePartitionDuration", "2d");
+        config.put("batchSize", 10);
+        config.put("maxBatchBytes", 10000L);
+        CloudStorageSinkConfig cloudStorageSinkConfig = CloudStorageSinkConfig.load(config);
+        cloudStorageSinkConfig.validate();
+
+        Assert.assertEquals(PROVIDER_GCS, cloudStorageSinkConfig.getProvider());
+        Assert.assertEquals(config.get("gcsServiceAccountKeyFilePath"),
+                cloudStorageSinkConfig.getGcsServiceAccountKeyFilePath());
+        Assert.assertEquals(config.get("bucket"), cloudStorageSinkConfig.getBucket());
+        Assert.assertEquals(config.get("region"), cloudStorageSinkConfig.getRegion());
+        Assert.assertEquals(config.get("formatType"), cloudStorageSinkConfig.getFormatType());
+        Assert.assertEquals(config.get("partitionerType"), cloudStorageSinkConfig.getPartitionerType());
+        Assert.assertEquals(config.get("timePartitionPattern"), cloudStorageSinkConfig.getTimePartitionPattern());
+        Assert.assertEquals(config.get("timePartitionDuration"), cloudStorageSinkConfig.getTimePartitionDuration());
+        Assert.assertEquals(config.get("batchSize"), cloudStorageSinkConfig.getBatchSize());
+        Assert.assertEquals(config.get("maxBatchBytes"), cloudStorageSinkConfig.getMaxBatchBytes());
     }
 
 }
