@@ -20,7 +20,6 @@ package org.apache.pulsar.io.jcloud.sink;
 
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
@@ -36,6 +35,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.client.api.Schema;
 import org.apache.pulsar.client.api.schema.GenericRecord;
@@ -46,6 +46,7 @@ import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.core.SinkContext;
 import org.apache.pulsar.io.jcloud.format.Format;
+import org.apache.pulsar.io.jcloud.partitioner.Partitioner;
 import org.apache.pulsar.io.jcloud.writer.BlobWriter;
 import org.junit.After;
 import org.junit.Assert;
@@ -57,7 +58,7 @@ import org.mockito.stubbing.Answer;
 /**
  * Test for {@link CloudStorageGenericRecordSink}.
  */
-public class CloudStorageGenericRecordSinkTest {
+public class CloudStorageSinkBatchBlendTest {
 
     private static final int PAYLOAD_BYTES = 100;
 
@@ -83,18 +84,20 @@ public class CloudStorageGenericRecordSinkTest {
         this.config.put("bucket", "just/a/test");
         this.config.put("formatType", "bytes");
         this.config.put("partitionerType", "default");
+        this.config.put("batchModel", "BLEND");
 
         this.sink = spy(new CloudStorageGenericRecordSink());
         this.mockSinkContext = mock(SinkContext.class);
         this.mockBlobWriter = mock(BlobWriter.class);
         this.mockRecord = mock(Record.class);
 
+        doReturn("a/test.json").when(sink)
+                .buildPartitionPath(any(Record.class), any(Partitioner.class), any(Format.class), any(Long.class));
         doReturn(mockBlobWriter).when(sink).initBlobWriter(any(CloudStorageSinkConfig.class));
         doReturn(ByteBuffer.wrap(new byte[]{0x0})).when(sink).bindValue(any(Iterator.class), any(Format.class));
 
         Message mockMessage = mock(Message.class);
         when(mockMessage.size()).thenReturn(PAYLOAD_BYTES);
-
 
         GenericSchema<GenericRecord> schema = createTestSchema();
         GenericRecord genericRecord = spy(createTestRecord(schema));
@@ -104,7 +107,6 @@ public class CloudStorageGenericRecordSinkTest {
         when(mockRecord.getValue()).thenReturn(genericRecord);
         when(mockRecord.getSchema()).thenAnswer((Answer<Schema>) invocationOnMock -> schema);
         when(mockRecord.getMessage()).thenReturn(Optional.of(mockMessage));
-        when(mockRecord.getRecordSequence()).thenReturn(Optional.of(1L));
     }
 
     @After
@@ -160,6 +162,33 @@ public class CloudStorageGenericRecordSinkTest {
     }
 
     @Test
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public void repeatedlyFlushOnMultiConditionTest() throws Exception {
+        this.config.put("pendingQueueSize", 100); // accept high number of messages
+        this.config.put("batchTimeMs", 1000);
+        this.config.put("maxBatchBytes", 10 * PAYLOAD_BYTES);
+        this.config.put("batchSize", 5);
+        this.sink.open(this.config, this.mockSinkContext);
+
+        // Gen random message size
+        Message randomMessage = mock(Message.class);
+        when(randomMessage.size()).thenAnswer((Answer<Integer>) invocation -> {
+            int randomMultiplier = ThreadLocalRandom.current().nextInt(1, 6);
+            return PAYLOAD_BYTES * randomMultiplier;
+        });
+        when(mockRecord.getMessage()).thenReturn(Optional.of(randomMessage));
+
+        int numberOfRecords = 100;
+        for (int i = 0; i < numberOfRecords; i++) {
+            this.sink.write(mockRecord);
+            Thread.sleep(ThreadLocalRandom.current().nextInt(1, 500));
+        }
+        await().atMost(Duration.ofSeconds(60)).untilAsserted(
+                () -> verify(mockRecord, times(numberOfRecords)).ack()
+        );
+    }
+
+    @Test
     public void testBatchCleanupWhenFlushCrashed() throws Exception {
         this.config.put("pendingQueueSize", 1000);
         this.config.put("batchTimeMs", 1000);
@@ -171,44 +200,10 @@ public class CloudStorageGenericRecordSinkTest {
         sendMockRecord(1);
         await().atMost(Duration.ofSeconds(10)).untilAsserted(
                 () -> {
-                    Assert.assertEquals(0, this.sink.currentBatchBytes.get());
-                    Assert.assertEquals(0, this.sink.currentBatchSize.get());
+                    Assert.assertEquals(0, this.sink.batchManager.getCurrentBatchBytes("test-topic"));
+                    Assert.assertEquals(0, this.sink.batchManager.getCurrentBatchSize("test-topic"));
                 }
         );
-    }
-
-    private void verifyPartitionerSinkFlush(String prefix) throws Exception {
-        this.sink.open(this.config, this.mockSinkContext);
-
-        sendMockRecord(5);
-        await().atMost(Duration.ofSeconds(10)).untilAsserted(
-                () -> verify(mockBlobWriter, atLeastOnce()).uploadBlob(
-                        argThat((String s) -> s.matches(prefix + "(\\d+)\\.json")), any(ByteBuffer.class))
-        );
-    }
-
-    @Test
-    public void testTimePartitioner() throws Exception {
-        this.config.put("batchTimeMs", 60000); // set high batchTimeMs to prevent scheduled flush
-        this.config.put("maxBatchBytes", 10000); // set high maxBatchBytes to prevent flush
-        this.config.put("batchSize", 5); // force flush after 5 messages
-        this.config.put("pathPrefix", "time/");
-        this.config.put("partitioner", "time");
-        this.config.put("formatType", "json");
-
-        verifyPartitionerSinkFlush("time/");
-    }
-
-    @Test
-    public void testTopicPartitioner() throws Exception {
-        this.config.put("batchTimeMs", 60000); // set high batchTimeMs to prevent scheduled flush
-        this.config.put("maxBatchBytes", 10000); // set high maxBatchBytes to prevent flush
-        this.config.put("batchSize", 5); // force flush after 5 messages
-        this.config.put("pathPrefix", "topic/");
-        this.config.put("partitioner", "topic");
-        this.config.put("formatType", "json");
-
-        verifyPartitionerSinkFlush("topic/public/default/test-topic/");
     }
 
     private void verifyRecordAck(int numberOfRecords) throws Exception {

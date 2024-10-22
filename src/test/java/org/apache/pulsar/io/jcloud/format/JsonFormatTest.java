@@ -38,7 +38,6 @@ import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.functions.api.Record;
-import org.apache.pulsar.io.jcloud.bo.TestRecord;
 import org.apache.pulsar.jcloud.shade.com.google.common.io.ByteSource;
 import org.junit.Assert;
 import org.junit.Test;

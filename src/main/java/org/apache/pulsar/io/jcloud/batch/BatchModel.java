@@ -16,31 +16,23 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.pulsar.io.jcloud.bo;
-
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+package org.apache.pulsar.io.jcloud.batch;
 
 /**
- * test use class.
+ * Enum representing the different batch models.
  */
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class TestRecord {
-    private String name;
-    private int number;
-    private TestSubRecord subRecord;
-
+public enum BatchModel {
     /**
-     * test use class.
+     * BlendBatchManager is a type of BatchManager that uses a single BatchContainer
+     * for all topics. This means that all records, regardless of topic, are batched together.
      */
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class TestSubRecord {
-        public static final String FILE_NAME = "name";
-        private String name;
-    }
+    BLEND,
+    /**
+     * PartitionedBatchManager is a type of BatchManager that uses separate BatchContainers
+     * for each topic. This means that records are batched separately for each topic.
+     * Note: When set to PARTITIONED, the connector will cache data up to the size of the
+     *   number of subscribed topics multiplied by maxBatchBytes. This means you need to anticipate the connector
+     *   memory requirements in advance.
+     */
+    PARTITIONED
 }

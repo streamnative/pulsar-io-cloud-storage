@@ -37,7 +37,6 @@ import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.jcloud.schema.proto.Test;
-import org.apache.pulsar.io.jcloud.support.ParquetInputFile;
 import org.apache.pulsar.jcloud.shade.com.google.common.io.ByteSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

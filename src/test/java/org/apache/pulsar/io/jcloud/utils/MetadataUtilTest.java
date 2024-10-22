@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.pulsar.io.jcloud;
+package org.apache.pulsar.io.jcloud.utils;
 
 import static org.apache.pulsar.io.jcloud.util.MetadataUtil.METADATA_MESSAGE_ID_KEY;
 import static org.apache.pulsar.io.jcloud.util.MetadataUtil.METADATA_SCHEMA_VERSION_KEY;

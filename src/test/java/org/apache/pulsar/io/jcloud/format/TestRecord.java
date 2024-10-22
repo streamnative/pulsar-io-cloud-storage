@@ -16,21 +16,31 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.pulsar.io.jcloud.partitioner;
+package org.apache.pulsar.io.jcloud.format;
 
-import static org.junit.Assert.assertEquals;
-import org.apache.commons.lang3.EnumUtils;
-import org.apache.pulsar.io.jcloud.partitioner.legacy.LegacyPartitionerType;
-import org.junit.Test;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
- * partitionerType unit test.
+ * test use class.
  */
-public class LegacyPartitionerTypeTest {
-    @Test
-    public void testValueOf() {
-        assertEquals(
-                LegacyPartitionerType.PARTITION, EnumUtils.getEnumIgnoreCase(LegacyPartitionerType.class, "partition"));
-        assertEquals(LegacyPartitionerType.TIME, EnumUtils.getEnumIgnoreCase(LegacyPartitionerType.class, "time"));
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class TestRecord {
+    private String name;
+    private int number;
+    private TestSubRecord subRecord;
+
+    /**
+     * test use class.
+     */
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class TestSubRecord {
+        public static final String FILE_NAME = "name";
+        private String name;
     }
 }
