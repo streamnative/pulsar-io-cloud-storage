@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.pulsar.io.jcloud;
+package org.apache.pulsar.io.jcloud.format;
 
 import static java.time.temporal.ChronoUnit.SECONDS;
 import static org.testcontainers.containers.PulsarContainer.BROKER_HTTP_PORT;
@@ -41,7 +41,7 @@ import org.apache.pulsar.client.api.SubscriptionInitialPosition;
 import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.common.schema.KeyValue;
 import org.apache.pulsar.common.schema.SchemaType;
-import org.apache.pulsar.io.jcloud.container.PulsarContainer;
+import org.apache.pulsar.io.jcloud.PulsarContainer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.testcontainers.containers.output.Slf4jLogConsumer;

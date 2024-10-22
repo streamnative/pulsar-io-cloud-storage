@@ -18,20 +18,10 @@
  */
 package org.apache.pulsar.io.jcloud.partitioner;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-
+/**
+ * partitioner types.
+ */
 public enum PartitionerType {
-    LEGACY,
-    TIME,
-    TOPIC;
-
-    @JsonCreator
-    public static PartitionerType forValue(String value) {
-        for (PartitionerType partitionerType : PartitionerType.values()) {
-            if (partitionerType.name().equalsIgnoreCase(value)) {
-                return partitionerType;
-            }
-        }
-        throw new IllegalArgumentException("Invalid partitionerType value: " + value);
-    }
+    PARTITION,
+    TIME;
 }

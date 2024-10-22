@@ -36,13 +36,13 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.pulsar.io.jcloud.batch.BatchModel;
 import org.apache.pulsar.io.jcloud.format.AvroFormat;
 import org.apache.pulsar.io.jcloud.format.BytesFormat;
 import org.apache.pulsar.io.jcloud.format.Format;
 import org.apache.pulsar.io.jcloud.format.JsonFormat;
 import org.apache.pulsar.io.jcloud.format.ParquetFormat;
 import org.apache.pulsar.io.jcloud.partitioner.PartitionerType;
-import org.apache.pulsar.io.jcloud.partitioner.legacy.LegacyPartitionerType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,55 +70,48 @@ public class BlobStoreAbstractConfig implements Serializable {
     public static final String PROVIDER_GCS = "google-cloud-storage";
     public static final String PROVIDER_AZURE = "azure-blob-storage";
 
+    // #### bucket configuration ####
     private String provider;
-
     private String bucket;
-
     private String region;
-
     private String endpoint;
 
-    private String pathPrefix;
-
-    private String formatType;
-
-    @Deprecated // Use partitioner instead
-    private String partitionerType = "partition";
-    private PartitionerType partitioner = PartitionerType.LEGACY;
-
-    private boolean partitionerUseIndexAsOffset;
-
-    // The AVRO codec.
-    // Options: none, deflate, bzip2, xz, zstandard, snappy
-    private String avroCodec = "snappy";
-
-    // The Parquet codec.
-    // Options: none, snappy, gzip, lzo, brotli, lz4, zstd
-    private String parquetCodec = "gzip";
-
-    private String timePartitionPattern;
-
-    private String timePartitionDuration;
-
-    private boolean sliceTopicPartitionPath;
-
-    private long maxBatchBytes = 10_000_000;
-    private int batchSize = 10;
-    private int pendingQueueSize = -1;
-
-    private long batchTimeMs = 1000;
-
+    // #### common configuration ####
     private boolean usePathStyleUrl = true;
     private String awsCannedAcl = "";
+    private boolean skipFailedMessages = false;
 
+    // #### partitioner configuration ####
+    // Options: PARTITION, TIME
+    private String partitionerType;
+    private String pathPrefix;
+    private boolean withTopicPartitionNumber = true;
+    private boolean partitionerUseIndexAsOffset;
+    private String timePartitionPattern;
+    private String timePartitionDuration;
+    private boolean sliceTopicPartitionPath;
+
+    // #### format configuration ####
+    private String formatType;
+    // The AVRO codec: none, deflate, bzip2, xz, zstandard, snappy
+    private String avroCodec = "snappy";
+    // The Parquet codec: none, snappy, gzip, lzo, brotli, lz4, zstd
+    private String parquetCodec = "gzip";
+    private String bytesFormatTypeSeparator = "0x10";
+    private boolean jsonAllowNaN = false;
+
+    // #### batch configuration ####
+    private long maxBatchBytes = 10_000_000;
+    private int batchSize = 10;
+    private long batchTimeMs = 1000;
+    private BatchModel batchModel = BatchModel.BLEND;
+    private int pendingQueueSize = -1;
+
+    // #### metadata configuration ####
     private boolean withMetadata;
     private boolean useHumanReadableMessageId;
     private boolean useHumanReadableSchemaVersion;
     private boolean includeTopicToMetadata;
-    private boolean withTopicPartitionNumber = true;
-    private String bytesFormatTypeSeparator = "0x10";
-    private boolean skipFailedMessages = false;
-    private boolean jsonAllowNaN = false;
 
     public void validate() {
         checkNotNull(provider, "provider not set.");
@@ -136,18 +129,18 @@ public class BlobStoreAbstractConfig implements Serializable {
         }
 
         if (partitionerType == null
-                || (EnumUtils.getEnumIgnoreCase(LegacyPartitionerType.class, partitionerType) == null
+                || (EnumUtils.getEnumIgnoreCase(PartitionerType.class, partitionerType) == null
                 && !partitionerType.equalsIgnoreCase("default"))) {
             // `default` option is for backward compatibility
             throw new IllegalArgumentException(
                     "partitionerType property not set properly, available options: "
-                            + Arrays.stream(LegacyPartitionerType.values())
+                            + Arrays.stream(PartitionerType.values())
                             .map(Enum::name)
                             .map(String::toLowerCase)
                             .collect(Collectors.joining(","))
             );
         }
-        if (LegacyPartitionerType.TIME.name().equalsIgnoreCase(partitionerType)) {
+        if (PartitionerType.TIME.name().equalsIgnoreCase(partitionerType)) {
             if (StringUtils.isNoneBlank(timePartitionPattern)) {
                 LOGGER.info("test timePartitionPattern is ok {} {}",
                         timePartitionPattern,
@@ -168,6 +161,7 @@ public class BlobStoreAbstractConfig implements Serializable {
             checkArgument(StringUtils.endsWith(pathPrefix, "/"),
                     "pathPrefix must end with '/',the style is 'xx/xxx/'.");
         }
+        pathPrefix = StringUtils.trimToEmpty(pathPrefix);
 
         if ("bytes".equalsIgnoreCase(formatType)) {
             checkArgument(StringUtils.isNotEmpty(bytesFormatTypeSeparator),

@@ -45,10 +45,10 @@ import org.apache.pulsar.common.protocol.schema.ProtobufNativeSchemaData;
 import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
-import org.apache.pulsar.io.jcloud.BytesOutputStream;
 import org.apache.pulsar.io.jcloud.format.parquet.ProtobufParquetWriter;
 import org.apache.pulsar.io.jcloud.format.parquet.proto.Metadata;
 import org.apache.pulsar.io.jcloud.util.AvroRecordUtil;
+import org.apache.pulsar.io.jcloud.util.BytesOutputStream;
 import org.apache.pulsar.io.jcloud.util.MetadataUtil;
 
 /**

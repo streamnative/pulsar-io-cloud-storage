@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.pulsar.io.jcloud;
+package org.apache.pulsar.io.jcloud.util;
 
 import java.io.IOException;
 import org.apache.commons.io.output.ByteArrayOutputStream;
