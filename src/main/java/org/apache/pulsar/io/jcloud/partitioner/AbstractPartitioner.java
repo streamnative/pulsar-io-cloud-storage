@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.client.api.Message;
+import org.apache.pulsar.client.api.MessageId;
+import org.apache.pulsar.client.api.MessageIdAdv;
 import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
@@ -92,7 +94,19 @@ public abstract class AbstractPartitioner<T> implements Partitioner<T> {
                         message.getMessageId());
             }
         }
-        return record.getRecordSequence()
-                .orElseThrow(() -> new RuntimeException("found empty recordSequence"));
+        return record.getMessage()
+                .map(msg -> getSequenceId(msg.getMessageId()))
+                .orElseThrow(() -> new RuntimeException("found empty message"));
     }
+
+    public static final long getSequenceId(MessageId messageId) {
+        MessageIdAdv msgId = (MessageIdAdv) messageId;
+        long ledgerId = msgId.getLedgerId();
+        long entryId = msgId.getEntryId();
+        int batchIndex = msgId.getBatchIndex();
+        return batchIndex == -1
+                ? (ledgerId << 28) | entryId
+                : (ledgerId << 36) | (entryId << 8) | (batchIndex & 0xFF);
+    }
+
 }
