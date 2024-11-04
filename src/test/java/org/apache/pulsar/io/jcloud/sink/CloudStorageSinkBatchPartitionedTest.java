@@ -42,6 +42,7 @@ import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.client.api.schema.GenericSchema;
 import org.apache.pulsar.client.api.schema.RecordSchemaBuilder;
 import org.apache.pulsar.client.api.schema.SchemaBuilder;
+import org.apache.pulsar.client.impl.MessageIdImpl;
 import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.core.SinkContext;
@@ -103,20 +104,23 @@ public class CloudStorageSinkBatchPartitionedTest {
 
         Message mockMessage = mock(Message.class);
         when(mockMessage.size()).thenReturn(PAYLOAD_BYTES);
+        when(mockMessage.getMessageId()).thenReturn(new MessageIdImpl(12, 11, 1));
+
+        Message mockMessage2 = mock(Message.class);
+        when(mockMessage2.size()).thenReturn(PAYLOAD_BYTES);
+        when(mockMessage2.getMessageId()).thenReturn(new MessageIdImpl(12, 34, 1));
 
         this.mockRecordTopic1 = mock(Record.class);
         when(mockRecordTopic1.getTopicName()).thenReturn(Optional.of("topic-1"));
         when(mockRecordTopic1.getValue()).thenReturn(genericRecord);
         when(mockRecordTopic1.getSchema()).thenAnswer((Answer<Schema>) invocationOnMock -> schema);
         when(mockRecordTopic1.getMessage()).thenReturn(Optional.of(mockMessage));
-        when(mockRecordTopic1.getRecordSequence()).thenReturn(Optional.of(100L));
 
         this.mockRecordTopic2 = mock(Record.class);
         when(mockRecordTopic2.getTopicName()).thenReturn(Optional.of("topic-2"));
         when(mockRecordTopic2.getValue()).thenReturn(genericRecord);
         when(mockRecordTopic2.getSchema()).thenAnswer((Answer<Schema>) invocationOnMock -> schema);
-        when(mockRecordTopic2.getMessage()).thenReturn(Optional.of(mockMessage));
-        when(mockRecordTopic2.getRecordSequence()).thenReturn(Optional.of(200L));
+        when(mockRecordTopic2.getMessage()).thenReturn(Optional.of(mockMessage2));
     }
 
     @After
@@ -168,30 +172,30 @@ public class CloudStorageSinkBatchPartitionedTest {
         }
         await().atMost(Duration.ofSeconds(10)).pollInterval(Duration.ofMillis(10)).untilAsserted(
                 () -> verify(mockBlobWriter, times(1))
-                        .uploadBlob(eq("public/default/topic-1/100.raw"), any(ByteBuffer.class))
+                        .uploadBlob(eq("public/default/topic-1/12:11:1.raw"), any(ByteBuffer.class))
         );
-        verify(mockBlobWriter, never()).uploadBlob(eq("public/default/topic-2/200.raw"), any(ByteBuffer.class));
+        verify(mockBlobWriter, never()).uploadBlob(eq("public/default/topic-2/12:34:1.raw"), any(ByteBuffer.class));
 
         // 3. Write 2 message for topic-1 again and assert not message need flush(no timeout)
         for (int i = 0; i < 2; i++) {
             sink.write(mockRecordTopic1);
         }
         clearInvocations(mockBlobWriter);
-        verify(mockBlobWriter, never()).uploadBlob(eq("public/default/topic-1/100.raw"), any(ByteBuffer.class));
+        verify(mockBlobWriter, never()).uploadBlob(eq("public/default/topic-1/12:11:1.raw"), any(ByteBuffer.class));
 
         // 4. Second sleep maxBatchTimeout / 2 again, and assert topic-2 data need flush
         //    and topic-1 no need flush(no timeout)
         Thread.sleep(maxBatchTimeout / 2 + 100);
         await().atMost(Duration.ofSeconds(10)).pollInterval(Duration.ofMillis(10)).untilAsserted(
                 () -> verify(mockBlobWriter, times(1))
-                        .uploadBlob(eq("public/default/topic-2/200.raw"), any(ByteBuffer.class))
+                        .uploadBlob(eq("public/default/topic-2/12:34:1.raw"), any(ByteBuffer.class))
         );
-        verify(mockBlobWriter, never()).uploadBlob(eq("public/default/topic-1/100.raw"), any(ByteBuffer.class));
+        verify(mockBlobWriter, never()).uploadBlob(eq("public/default/topic-1/12:11:1.raw"), any(ByteBuffer.class));
 
         // 5. Assert for topic-1 flush data step-3 write data.
         await().atMost(Duration.ofSeconds(10)).untilAsserted(
                 () -> verify(mockBlobWriter, times(1))
-                        .uploadBlob(eq("public/default/topic-1/100.raw"), any(ByteBuffer.class))
+                        .uploadBlob(eq("public/default/topic-1/12:11:1.raw"), any(ByteBuffer.class))
         );
 
         // 6. Assert all message has been ack
@@ -238,6 +242,7 @@ public class CloudStorageSinkBatchPartitionedTest {
             int randomMultiplier = ThreadLocalRandom.current().nextInt(1, 6);
             return PAYLOAD_BYTES * randomMultiplier;
         });
+        when(randomMessage.getMessageId()).thenReturn(new MessageIdImpl(12, 34, 1));
         when(mockRecordTopic1.getMessage()).thenReturn(Optional.of(randomMessage));
         when(mockRecordTopic2.getMessage()).thenReturn(Optional.of(randomMessage));
 
@@ -308,7 +313,7 @@ public class CloudStorageSinkBatchPartitionedTest {
 
         await().atMost(Duration.ofSeconds(10)).untilAsserted(
                 () -> verify(mockBlobWriter, times(1))
-                        .uploadBlob(eq("public/default/topic-2/200.raw"), any(ByteBuffer.class))
+                        .uploadBlob(eq("public/default/topic-2/12:34:1.raw"), any(ByteBuffer.class))
         );
         await().atMost(Duration.ofSeconds(30)).untilAsserted(
                 () -> verify(mockRecordTopic2, times(5)).ack()
@@ -317,7 +322,7 @@ public class CloudStorageSinkBatchPartitionedTest {
         this.sink.write(mockRecordTopic1);
         await().atMost(Duration.ofSeconds(10)).untilAsserted(
                 () -> verify(mockBlobWriter, times(1))
-                        .uploadBlob(eq("public/default/topic-1/100.raw"), any(ByteBuffer.class))
+                        .uploadBlob(eq("public/default/topic-1/12:11:1.raw"), any(ByteBuffer.class))
         );
         await().atMost(Duration.ofSeconds(30)).untilAsserted(
                 () -> verify(mockRecordTopic1, times(5)).ack()

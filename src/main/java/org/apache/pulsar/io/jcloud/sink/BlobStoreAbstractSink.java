@@ -224,7 +224,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         String encodePartition = partitioner.encodePartition(message, partitioningTimestamp);
         String partitionedPath = partitioner.generatePartitionedPath(message.getTopicName().get(), encodePartition);
         String path = sinkConfig.getPathPrefix() + partitionedPath + format.getExtension();
-        log.info("generate message[recordSequence={}] savePath: {}", message.getRecordSequence().get(), path);
+        log.info("generate message[messageId={}] savePath: {}", message.getMessage().get().getMessageId(), path);
         return path;
     }
 }

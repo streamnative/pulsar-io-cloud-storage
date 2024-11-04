@@ -73,7 +73,7 @@ public abstract class AbstractPartitioner<T> implements Partitioner<T> {
         return StringUtils.join(joinList, PATH_SEPARATOR);
     }
 
-    protected long getMessageOffset(Record<T> record) {
+    protected String getFileName(Record<T> record) {
         if (useIndexAsOffset && record.getMessage().isPresent()) {
             final Message<T> message = record.getMessage().get();
             // Use index added by org.apache.pulsar.common.intercept.AppendIndexMetadataInterceptor if present.
@@ -81,7 +81,7 @@ public abstract class AbstractPartitioner<T> implements Partitioner<T> {
             if (message.hasIndex()) {
                 final Optional<Long> index = message.getIndex();
                 if (index.isPresent()) {
-                    return index.get();
+                    return String.valueOf(index.get());
                 } else {
                     LOGGER.warn("Found message {} with hasIndex=true but index is empty, using recordSequence",
                             message.getMessageId());
@@ -92,7 +92,9 @@ public abstract class AbstractPartitioner<T> implements Partitioner<T> {
                         message.getMessageId());
             }
         }
-        return record.getRecordSequence()
-                .orElseThrow(() -> new RuntimeException("found empty recordSequence"));
+        return record.getMessage()
+                .map(msg -> msg.getMessageId().toString())
+                .orElseThrow(() -> new RuntimeException("found empty message"));
     }
+
 }
