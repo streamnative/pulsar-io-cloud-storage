@@ -172,30 +172,30 @@ public class CloudStorageSinkBatchPartitionedTest {
         }
         await().atMost(Duration.ofSeconds(10)).pollInterval(Duration.ofMillis(10)).untilAsserted(
                 () -> verify(mockBlobWriter, times(1))
-                        .uploadBlob(eq("public/default/topic-1/12:11:1.raw"), any(ByteBuffer.class))
+                        .uploadBlob(eq("public/default/topic-1/12.11.-1.raw"), any(ByteBuffer.class))
         );
-        verify(mockBlobWriter, never()).uploadBlob(eq("public/default/topic-2/12:34:1.raw"), any(ByteBuffer.class));
+        verify(mockBlobWriter, never()).uploadBlob(eq("public/default/topic-2/12.34.-1.raw"), any(ByteBuffer.class));
 
         // 3. Write 2 message for topic-1 again and assert not message need flush(no timeout)
         for (int i = 0; i < 2; i++) {
             sink.write(mockRecordTopic1);
         }
         clearInvocations(mockBlobWriter);
-        verify(mockBlobWriter, never()).uploadBlob(eq("public/default/topic-1/12:11:1.raw"), any(ByteBuffer.class));
+        verify(mockBlobWriter, never()).uploadBlob(eq("public/default/topic-1/12.11.-1.raw"), any(ByteBuffer.class));
 
         // 4. Second sleep maxBatchTimeout / 2 again, and assert topic-2 data need flush
         //    and topic-1 no need flush(no timeout)
         Thread.sleep(maxBatchTimeout / 2 + 100);
         await().atMost(Duration.ofSeconds(10)).pollInterval(Duration.ofMillis(10)).untilAsserted(
                 () -> verify(mockBlobWriter, times(1))
-                        .uploadBlob(eq("public/default/topic-2/12:34:1.raw"), any(ByteBuffer.class))
+                        .uploadBlob(eq("public/default/topic-2/12.34.-1.raw"), any(ByteBuffer.class))
         );
-        verify(mockBlobWriter, never()).uploadBlob(eq("public/default/topic-1/12:11:1.raw"), any(ByteBuffer.class));
+        verify(mockBlobWriter, never()).uploadBlob(eq("public/default/topic-1/12.11.-1.raw"), any(ByteBuffer.class));
 
         // 5. Assert for topic-1 flush data step-3 write data.
         await().atMost(Duration.ofSeconds(10)).untilAsserted(
                 () -> verify(mockBlobWriter, times(1))
-                        .uploadBlob(eq("public/default/topic-1/12:11:1.raw"), any(ByteBuffer.class))
+                        .uploadBlob(eq("public/default/topic-1/12.11.-1.raw"), any(ByteBuffer.class))
         );
 
         // 6. Assert all message has been ack
@@ -313,7 +313,7 @@ public class CloudStorageSinkBatchPartitionedTest {
 
         await().atMost(Duration.ofSeconds(10)).untilAsserted(
                 () -> verify(mockBlobWriter, times(1))
-                        .uploadBlob(eq("public/default/topic-2/12:34:1.raw"), any(ByteBuffer.class))
+                        .uploadBlob(eq("public/default/topic-2/12.34.-1.raw"), any(ByteBuffer.class))
         );
         await().atMost(Duration.ofSeconds(30)).untilAsserted(
                 () -> verify(mockRecordTopic2, times(5)).ack()
@@ -322,7 +322,7 @@ public class CloudStorageSinkBatchPartitionedTest {
         this.sink.write(mockRecordTopic1);
         await().atMost(Duration.ofSeconds(10)).untilAsserted(
                 () -> verify(mockBlobWriter, times(1))
-                        .uploadBlob(eq("public/default/topic-1/12:11:1.raw"), any(ByteBuffer.class))
+                        .uploadBlob(eq("public/default/topic-1/12.11.-1.raw"), any(ByteBuffer.class))
         );
         await().atMost(Duration.ofSeconds(30)).untilAsserted(
                 () -> verify(mockRecordTopic1, times(5)).ack()

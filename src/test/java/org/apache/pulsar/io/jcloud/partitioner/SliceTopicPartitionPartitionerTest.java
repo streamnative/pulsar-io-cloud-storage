@@ -55,6 +55,7 @@ public class SliceTopicPartitionPartitionerTest extends TestCase {
     public Record<Object> pulsarRecord;
 
     private static final MessageId testMessageId = new MessageIdImpl(12, 34, 1);
+    private static final String testMsgIdFileName = "12.34.-1";
 
     @Parameterized.Parameters
     public static Object[][] data() {
@@ -84,44 +85,44 @@ public class SliceTopicPartitionPartitionerTest extends TestCase {
         return new Object[][]{
                 new Object[]{
                         simplePartitioner,
-                        testMessageId.toString(),
-                        "public/default/test" + Partitioner.PATH_SEPARATOR + testMessageId,
+                        testMsgIdFileName,
+                        "public/default/test" + Partitioner.PATH_SEPARATOR + testMsgIdFileName,
                         getTopic()
                 },
                 new Object[]{
                         dayPartitioner,
-                        "2020-09-08" + Partitioner.PATH_SEPARATOR + testMessageId,
-                        "public/default/test/2020-09-08" + Partitioner.PATH_SEPARATOR + testMessageId,
+                        "2020-09-08" + Partitioner.PATH_SEPARATOR + testMsgIdFileName,
+                        "public/default/test/2020-09-08" + Partitioner.PATH_SEPARATOR + testMsgIdFileName,
                         getTopic()
                 },
                 new Object[]{
                         hourPartitioner,
-                        "2020-09-08-12" + Partitioner.PATH_SEPARATOR + testMessageId,
-                        "public/default/test/2020-09-08-12" + Partitioner.PATH_SEPARATOR + testMessageId
+                        "2020-09-08-12" + Partitioner.PATH_SEPARATOR + testMsgIdFileName,
+                        "public/default/test/2020-09-08-12" + Partitioner.PATH_SEPARATOR + testMsgIdFileName
                         , getTopic()
                 },
                 new Object[]{
                         simplePartitioner,
-                        testMessageId.toString(),
-                        "public/default/test/1" + Partitioner.PATH_SEPARATOR + testMessageId,
+                        testMsgIdFileName,
+                        "public/default/test/1" + Partitioner.PATH_SEPARATOR + testMsgIdFileName,
                         getPartitionedTopic()
                 },
                 new Object[]{
                         dayPartitioner,
-                        "2020-09-08" + Partitioner.PATH_SEPARATOR + testMessageId,
-                        "public/default/test/1/2020-09-08" + Partitioner.PATH_SEPARATOR + testMessageId,
+                        "2020-09-08" + Partitioner.PATH_SEPARATOR + testMsgIdFileName,
+                        "public/default/test/1/2020-09-08" + Partitioner.PATH_SEPARATOR + testMsgIdFileName,
                         getPartitionedTopic()
                 },
                 new Object[]{
                         hourPartitioner,
-                        "2020-09-08-12" + Partitioner.PATH_SEPARATOR + testMessageId,
-                        "public/default/test/1/2020-09-08-12" + Partitioner.PATH_SEPARATOR + testMessageId
+                        "2020-09-08-12" + Partitioner.PATH_SEPARATOR + testMsgIdFileName,
+                        "public/default/test/1/2020-09-08-12" + Partitioner.PATH_SEPARATOR + testMsgIdFileName
                         , getPartitionedTopic()
                 },
                 new Object[]{
                         noPartitionNumberPartitioner,
-                        testMessageId.toString(),
-                        "public/default/test" + Partitioner.PATH_SEPARATOR + testMessageId,
+                        testMsgIdFileName,
+                        "public/default/test" + Partitioner.PATH_SEPARATOR + testMsgIdFileName,
                         getPartitionedTopic()
                 },
         };

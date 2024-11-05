@@ -42,20 +42,20 @@ public class AbstractPartitionerTest {
             }
         };
 
-        BatchMessageIdImpl batchId1 = new BatchMessageIdImpl(12, 34, 1, 1);
+        BatchMessageIdImpl batchId1 = new BatchMessageIdImpl(12, 34, -1, 1);
         Record<Object> message1 = getMessageRecord(batchId1);
         String fileName1 = abstractPartitioner.getFileName(message1);
 
-        BatchMessageIdImpl batchId2 = new BatchMessageIdImpl(12, 34, 1, 2);
+        BatchMessageIdImpl batchId2 = new BatchMessageIdImpl(12, 34, -1, 2);
         Record<Object> message2 = getMessageRecord(batchId2);
         String fileName2 = abstractPartitioner.getFileName(message2);
 
-        Assert.assertEquals(fileName1, batchId1.toString());
-        Assert.assertEquals(fileName2, batchId2.toString());
+        Assert.assertEquals(fileName1, "12.34.1");
+        Assert.assertEquals(fileName2, "12.34.2");
         Assert.assertNotEquals(fileName1, fileName2);
 
         MessageIdImpl id3 = new MessageIdImpl(12, 34, 1);
-        Assert.assertEquals(abstractPartitioner.getFileName(getMessageRecord(id3)), "12:34:1");
+        Assert.assertEquals(abstractPartitioner.getFileName(getMessageRecord(id3)), "12.34.-1");
     }
 
     public static Record<Object> getMessageRecord(MessageId msgId) {
