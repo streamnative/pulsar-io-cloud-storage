@@ -70,6 +70,7 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
     private boolean useHumanReadableMessageId;
     private boolean useHumanReadableSchemaVersion;
     private boolean includeTopicToMetadata;
+    private boolean includePublishTimeToMetadata;
 
     @Override
     public String getExtension() {
@@ -82,6 +83,7 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
         this.useHumanReadableMessageId = configuration.isUseHumanReadableMessageId();
         this.useHumanReadableSchemaVersion = configuration.isUseHumanReadableSchemaVersion();
         this.includeTopicToMetadata = configuration.isIncludeTopicToMetadata();
+        this.includePublishTimeToMetadata = configuration.isIncludePublishTimeToMetadata();
 
         if (configuration.isJsonAllowNaN()) {
             JSON_MAPPER.get().enable(ALLOW_NON_NUMERIC_NUMBERS.mappedFeature());
@@ -117,11 +119,11 @@ public class JsonFormat implements Format<GenericRecord>, InitConfiguration<Blob
             GenericRecord val = next.getValue();
             final Schema<GenericRecord> schema = next.getSchema();
             log.debug("next record {} schema {} val {}", next, schema, val);
-            Map<String, Object> writeValue = convertRecordToObject(next.getValue(), schema);
+            Map<String, Object> writeValue = convertRecordToObject(val, schema);
             if (useMetadata) {
                 writeValue.put(MetadataUtil.MESSAGE_METADATA_KEY,
                         MetadataUtil.extractedMetadata(next, useHumanReadableMessageId, useHumanReadableSchemaVersion,
-                                includeTopicToMetadata));
+                                includeTopicToMetadata, includePublishTimeToMetadata));
             }
             String recordAsString = JSON_MAPPER.get().writeValueAsString(writeValue);
             stringBuilder.append(recordAsString).append("\n");

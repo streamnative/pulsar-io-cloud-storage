@@ -42,6 +42,7 @@ public class MetadataUtil {
     public static final String METADATA_SCHEMA_VERSION_KEY = "schemaVersion";
     public static final String METADATA_MESSAGE_ID_KEY = "messageId";
     public static final String METADATA_TOPIC = "topic";
+    public static final String METADATA_PUBLISH_TIME = "publishTime";
     public static final String MESSAGE_METADATA_KEY = "__message_metadata__";
     public static final String MESSAGE_METADATA_NAME = "messageMetadata";
     public static final Schema MESSAGE_METADATA = buildMetadataSchema();
@@ -51,11 +52,12 @@ public class MetadataUtil {
     public static org.apache.avro.generic.GenericRecord extractedMetadataRecord(Record<GenericRecord> next,
                                                                                 boolean useHumanReadableMessageId,
                                                                                 boolean useHumanReadableSchemaVersion,
-                                                                                boolean includeTopicToMetadata) {
+                                                                                boolean includeTopicToMetadata,
+                                                                                boolean includePublishTimeToMetadata) {
         final Message<GenericRecord> message = next.getMessage().get();
 
-        GenericData.Record record = new GenericData.Record(buildMetadataSchema(
-                useHumanReadableMessageId, useHumanReadableSchemaVersion, includeTopicToMetadata));
+        GenericData.Record record = new GenericData.Record(buildMetadataSchema(useHumanReadableMessageId,
+                useHumanReadableSchemaVersion, includeTopicToMetadata, includePublishTimeToMetadata));
         record.put(METADATA_PROPERTIES_KEY, message.getProperties());
         if (useHumanReadableSchemaVersion) {
             record.put(METADATA_SCHEMA_VERSION_KEY,
@@ -71,21 +73,17 @@ public class MetadataUtil {
         if (includeTopicToMetadata) {
             record.put(METADATA_TOPIC, message.getTopicName());
         }
+        if (includePublishTimeToMetadata) {
+            record.put(METADATA_PUBLISH_TIME, message.getPublishTime());
+        }
         return record;
-    }
-
-    public static org.apache.avro.generic.GenericRecord extractedMetadataRecord(Record<GenericRecord> next) {
-        return extractedMetadataRecord(next, false, false, false);
-    }
-
-    public static Map<String, Object> extractedMetadata(Record<GenericRecord> next) {
-        return extractedMetadata(next, false, false, false);
     }
 
     public static Map<String, Object> extractedMetadata(Record<GenericRecord> next,
                                                         boolean useHumanReadableMessageId,
                                                         boolean useHumanReadableSchemaVersion,
-                                                        boolean includeTopicToMetadata) {
+                                                        boolean includeTopicToMetadata,
+                                                        boolean includePublishTimeToMetadata) {
         Map<String, Object> metadata = new HashMap<>();
         final Message<GenericRecord> message = next.getMessage().get();
         metadata.put(METADATA_PROPERTIES_KEY, message.getProperties());
@@ -102,6 +100,9 @@ public class MetadataUtil {
         }
         if (includeTopicToMetadata) {
             metadata.put(METADATA_TOPIC, message.getTopicName());
+        }
+        if (includePublishTimeToMetadata) {
+            metadata.put(METADATA_PUBLISH_TIME, message.getPublishTime());
         }
         return metadata;
     }
@@ -124,14 +125,15 @@ public class MetadataUtil {
     public static Schema setMetadataSchema(Schema schema,
                                            boolean useHumanReadableMessageId,
                                            boolean useHumanReadableSchemaVersion,
-                                           boolean includeTopicToMetadata) {
+                                           boolean includeTopicToMetadata,
+                                           boolean includePublishTimeToMetadata) {
         final List<Schema.Field> fieldWithMetadata = schemaFieldThreadLocal.get();
         fieldWithMetadata.clear();
         schema.getFields().forEach(f -> {
             fieldWithMetadata.add(new Schema.Field(f, f.schema()));
         });
-        fieldWithMetadata.add(new Schema.Field(MESSAGE_METADATA_KEY, buildMetadataSchema(
-                useHumanReadableMessageId, useHumanReadableSchemaVersion, includeTopicToMetadata)));
+        fieldWithMetadata.add(new Schema.Field(MESSAGE_METADATA_KEY, buildMetadataSchema(useHumanReadableMessageId,
+                useHumanReadableSchemaVersion, includeTopicToMetadata, includePublishTimeToMetadata)));
         return Schema.createRecord(schema.getName(),
                 schema.getDoc(),
                 schema.getNamespace(),
@@ -141,12 +143,13 @@ public class MetadataUtil {
     }
 
     private static Schema buildMetadataSchema(){
-        return buildMetadataSchema(false, false, false);
+        return buildMetadataSchema(false, false, false, false);
     }
 
     private static Schema buildMetadataSchema(boolean useHumanReadableMessageId,
                                               boolean useHumanReadableSchemaVersion,
-                                              boolean includeTopicToMetadata) {
+                                              boolean includeTopicToMetadata,
+                                              boolean includePublishTimeToMetadata) {
         List<Schema.Field> fields = new ArrayList<>();
         fields.add(new Schema.Field(METADATA_PROPERTIES_KEY,
                 Schema.createUnion(
@@ -172,6 +175,10 @@ public class MetadataUtil {
             fields.add(new Schema.Field(METADATA_TOPIC, Schema.createUnion(
                     Schema.create(Schema.Type.NULL), Schema.create(Schema.Type.STRING))));
         }
+        if (includePublishTimeToMetadata) {
+            fields.add(new Schema.Field(METADATA_PUBLISH_TIME, Schema.createUnion(
+                    Schema.create(Schema.Type.NULL), Schema.create(Schema.Type.LONG))));
+        }
         return Schema.createRecord(MESSAGE_METADATA_NAME,
                 null,
                 null,
@@ -187,7 +194,9 @@ public class MetadataUtil {
 
     public static Metadata.PulsarIOCSCProtobufMessageMetadata getMetadataFromMessage(Record<GenericRecord> next,
                                                                           boolean useHumanReadableMessageId,
-                                                                          boolean useHumanReadableSchemaVersion) {
+                                                                          boolean useHumanReadableSchemaVersion,
+                                                                          boolean includeTopicToMetadata,
+                                                                          boolean includePublishTimeToMetadata) {
         Metadata.PulsarIOCSCProtobufMessageMetadata.Builder metadataBuilder =
                 Metadata.PulsarIOCSCProtobufMessageMetadata.newBuilder();
         final Message<GenericRecord> message = next.getMessage().get();
@@ -203,6 +212,12 @@ public class MetadataUtil {
             metadataBuilder.setMessageId(message.getMessageId().toString());
         } else {
             metadataBuilder.setMessageIdBytes(ByteString.copyFrom(message.getMessageId().toByteArray()));
+        }
+        if (includeTopicToMetadata) {
+            metadataBuilder.setTopic(message.getTopicName());
+        }
+        if (includePublishTimeToMetadata) {
+            metadataBuilder.setPublishTime(message.getPublishTime());
         }
         return metadataBuilder.build();
     }
