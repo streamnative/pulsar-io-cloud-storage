@@ -29,6 +29,6 @@ public class SimplePartitioner<T> extends AbstractPartitioner<T> {
 
     @Override
     public String encodePartition(Record<T> sinkRecord) {
-        return Long.toString(getMessageOffset(sinkRecord));
+        return getFileName(sinkRecord);
     }
 }

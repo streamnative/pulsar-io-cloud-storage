@@ -42,6 +42,7 @@ import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.client.api.schema.GenericSchema;
 import org.apache.pulsar.client.api.schema.RecordSchemaBuilder;
 import org.apache.pulsar.client.api.schema.SchemaBuilder;
+import org.apache.pulsar.client.impl.MessageIdImpl;
 import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.core.SinkContext;
@@ -98,6 +99,7 @@ public class CloudStorageSinkBatchBlendTest {
 
         Message mockMessage = mock(Message.class);
         when(mockMessage.size()).thenReturn(PAYLOAD_BYTES);
+        when(mockMessage.getMessageId()).thenReturn(new MessageIdImpl(12, 34, 1));
 
         GenericSchema<GenericRecord> schema = createTestSchema();
         GenericRecord genericRecord = spy(createTestRecord(schema));

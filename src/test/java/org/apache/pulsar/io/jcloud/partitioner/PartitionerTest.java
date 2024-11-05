@@ -25,6 +25,7 @@ import java.text.MessageFormat;
 import java.util.Optional;
 import junit.framework.TestCase;
 import org.apache.pulsar.client.api.Message;
+import org.apache.pulsar.client.api.MessageId;
 import org.apache.pulsar.client.impl.MessageIdImpl;
 import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.functions.api.Record;
@@ -52,6 +53,9 @@ public class PartitionerTest extends TestCase {
 
     @Parameterized.Parameter(3)
     public Record<Object> pulsarRecord;
+
+    private static final MessageId testMessageId = new MessageIdImpl(12, 34, 1);
+    private static final String testMsgIdFileName = "12.34.-1";
 
     @Parameterized.Parameters
     public static Object[][] data() {
@@ -89,8 +93,8 @@ public class PartitionerTest extends TestCase {
         return new Object[][]{
                 new Object[]{
                         simplePartitioner,
-                        "3221225506",
-                        "public/default/test" + Partitioner.PATH_SEPARATOR + "3221225506",
+                        testMsgIdFileName,
+                        "public/default/test" + Partitioner.PATH_SEPARATOR + testMsgIdFileName,
                         getTopic()
                 },
                 new Object[]{
@@ -101,44 +105,45 @@ public class PartitionerTest extends TestCase {
                 },
                 new Object[]{
                         dayPartitioner,
-                        "2020-09-08" + Partitioner.PATH_SEPARATOR + "3221225506",
-                        "public/default/test/2020-09-08" + Partitioner.PATH_SEPARATOR + "3221225506",
+                        "2020-09-08" + Partitioner.PATH_SEPARATOR + testMsgIdFileName,
+                        "public/default/test/2020-09-08" + Partitioner.PATH_SEPARATOR + testMsgIdFileName,
                         getTopic()
                 },
                 new Object[]{
                         hourPartitioner,
-                        "2020-09-08-12" + Partitioner.PATH_SEPARATOR + "3221225506",
-                        "public/default/test/2020-09-08-12" + Partitioner.PATH_SEPARATOR + "3221225506"
+                        "2020-09-08-12" + Partitioner.PATH_SEPARATOR + testMsgIdFileName,
+                        "public/default/test/2020-09-08-12" + Partitioner.PATH_SEPARATOR + testMsgIdFileName
                         , getTopic()
                 },
                 new Object[]{
                         simplePartitioner,
-                        "3221225506",
-                        "public/default/test-partition-1" + Partitioner.PATH_SEPARATOR + "3221225506",
+                        testMsgIdFileName,
+                        "public/default/test-partition-1" + Partitioner.PATH_SEPARATOR + testMsgIdFileName,
                         getPartitionedTopic()
                 },
                 new Object[]{
                         dayPartitioner,
-                        "2020-09-08" + Partitioner.PATH_SEPARATOR + "3221225506",
-                        "public/default/test-partition-1/2020-09-08" + Partitioner.PATH_SEPARATOR + "3221225506",
+                        "2020-09-08" + Partitioner.PATH_SEPARATOR + testMsgIdFileName,
+                        "public/default/test-partition-1/2020-09-08" + Partitioner.PATH_SEPARATOR + testMsgIdFileName,
                         getPartitionedTopic()
                 },
                 new Object[]{
                         hourPartitioner,
-                        "2020-09-08-12" + Partitioner.PATH_SEPARATOR + "3221225506",
-                        "public/default/test-partition-1/2020-09-08-12" + Partitioner.PATH_SEPARATOR + "3221225506"
+                        "2020-09-08-12" + Partitioner.PATH_SEPARATOR + testMsgIdFileName,
+                        "public/default/test-partition-1/2020-09-08-12" + Partitioner.PATH_SEPARATOR + testMsgIdFileName
                         , getPartitionedTopic()
                 },
                 new Object[]{
                         noPartitionNumberPartitioner,
-                        "3221225506",
-                        "public/default/test" + Partitioner.PATH_SEPARATOR + "3221225506",
+                        testMsgIdFileName,
+                        "public/default/test" + Partitioner.PATH_SEPARATOR + testMsgIdFileName,
                         getPartitionedTopic()
                 },
                 new Object[]{
                         numberPartitioner,
-                        "2020-09-08-14" + Partitioner.PATH_SEPARATOR + "3221225506",
-                        "public/default/test-partition-1/2020-09-08-14" + Partitioner.PATH_SEPARATOR + "3221225506",
+                        "2020-09-08-14" + Partitioner.PATH_SEPARATOR + testMsgIdFileName,
+                        "public/default/test-partition-1/2020-09-08-14"
+                                + Partitioner.PATH_SEPARATOR + testMsgIdFileName,
                         getPartitionedTopic()
                 },
         };
@@ -148,14 +153,13 @@ public class PartitionerTest extends TestCase {
         @SuppressWarnings("unchecked")
         Message<Object> mock = mock(Message.class);
         when(mock.getPublishTime()).thenReturn(1599578218610L);
-        when(mock.getMessageId()).thenReturn(new MessageIdImpl(12, 34, 1));
+        when(mock.getMessageId()).thenReturn(testMessageId);
         String topic = TopicName.get("test-partition-1").toString();
         Record<Object> mockRecord = mock(Record.class);
         when(mockRecord.getTopicName()).thenReturn(Optional.of(topic));
         when(mockRecord.getPartitionIndex()).thenReturn(Optional.of(1));
         when(mockRecord.getMessage()).thenReturn(Optional.of(mock));
         when(mockRecord.getPartitionId()).thenReturn(Optional.of(String.format("%s-%s", topic, 1)));
-        when(mockRecord.getRecordSequence()).thenReturn(Optional.of(3221225506L));
         return mockRecord;
     }
 
@@ -163,7 +167,7 @@ public class PartitionerTest extends TestCase {
         @SuppressWarnings("unchecked")
         Message<Object> mock = mock(Message.class);
         when(mock.getPublishTime()).thenReturn(1599578218610L);
-        when(mock.getMessageId()).thenReturn(new MessageIdImpl(12, 34, 1));
+        when(mock.getMessageId()).thenReturn(testMessageId);
         when(mock.hasIndex()).thenReturn(true);
         when(mock.getIndex()).thenReturn(Optional.of(11115506L));
 
@@ -173,7 +177,6 @@ public class PartitionerTest extends TestCase {
         when(mockRecord.getPartitionIndex()).thenReturn(Optional.of(1));
         when(mockRecord.getMessage()).thenReturn(Optional.of(mock));
         when(mockRecord.getPartitionId()).thenReturn(Optional.of(String.format("%s-%s", topic, 1)));
-        when(mockRecord.getRecordSequence()).thenReturn(Optional.of(3221225506L));
         return mockRecord;
     }
 

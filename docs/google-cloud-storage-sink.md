@@ -222,9 +222,8 @@ There are two types of partitioner:
 - **PARTITION**: This is the default partitioning method based on Pulsar partitions. In other words, data is
   partitioned according to the pre-existing partitions in Pulsar topics. For instance, a message for the
   topic `public/default/my-topic-partition-0` would be directed to the
-  file `public/default/my-topic-partition-0/xxx.json`, where `xxx` signifies the earliest message offset in this file.
+  file `public/default/my-topic-partition-0/xxx.json`, where `xxx` signifies the earliest messageId(Format: `ledgerId.entryId.batchIndex`)/offset(Enable config: `partitionerUseIndexAsOffset`) in this file.
 
 - **TIME**: Data is partitioned according to the time it was flushed. Using the previous message as an
   example, if it was received on 2023-12-20, it would be directed
-  to `public/default/my-topic-partition-0/2023-12-20/xxx.json`, where `xxx` also denotes the earliest message offset in
-  this file.
+  to `public/default/my-topic-partition-0/2023-12-20/xxx.json`, where `xxx` also denotes the earliest messageId(Format: `ledgerId.entryId.batchIndex`)/offset(Enable config: `partitionerUseIndexAsOffset`) in this file.

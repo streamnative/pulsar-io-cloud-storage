@@ -96,7 +96,7 @@ public class TimePartitioner<T> extends AbstractPartitioner<T> {
         String timeString = dateTimeFormatter.format(Instant.ofEpochMilli(parsed).atOffset(ZoneOffset.UTC));
         final String result = timeString
                 + PATH_SEPARATOR
-                + getMessageOffset(sinkRecord);
+                + getFileName(sinkRecord);
         return result;
     }
 
