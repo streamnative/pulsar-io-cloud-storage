@@ -112,6 +112,7 @@ public class BlobStoreAbstractConfig implements Serializable {
     private boolean useHumanReadableMessageId;
     private boolean useHumanReadableSchemaVersion;
     private boolean includeTopicToMetadata;
+    private boolean includePublishTimeToMetadata;
 
     public void validate() {
         checkNotNull(provider, "provider not set.");

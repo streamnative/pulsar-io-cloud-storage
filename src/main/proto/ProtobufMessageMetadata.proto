@@ -26,5 +26,7 @@ message PulsarIOCSCProtobufMessageMetadata {
   map<string, string> properties = 1;
   string schema_version = 2;
   string message_id = 3;
+  string topic = 4;
+  int64 publish_time = 5;
 }
 
