@@ -63,7 +63,11 @@ public class AzureBlobWriter implements BlobWriter {
     @Override
     public void uploadBlob(String key, ByteBuffer payload) throws IOException {
         BlobClient blobClient = this.containerClient.getBlobClient(key);
-        blobClient.upload(BinaryData.fromBytes(payload.array()));
+        // Allow overwriting files. In extreme cases, if the connector restarts,
+        // some messages may have been written to storage but not yet acknowledged.
+        // Then will receive again, the same file names might be generated.
+        // Overwriting these files ensures that messages are not lost and are successfully written.
+        blobClient.upload(BinaryData.fromBytes(payload.array()), true);
     }
 
     @Override
