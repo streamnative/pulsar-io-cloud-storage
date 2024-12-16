@@ -155,13 +155,14 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                 schema = getPulsarSchema(firstRecord);
             } catch (Exception e) {
                 log.error("Failed to retrieve message schema", e);
-                bulkHandleFailedRecords(singleTopicRecordsToInsert);
+                bulkHandleFailedRecords(e, singleTopicRecordsToInsert);
                 return;
             }
 
             if (!format.doSupportPulsarSchemaType(schema.getSchemaInfo().getType())) {
-                log.warn("sink does not support schema type {}", schema.getSchemaInfo().getType());
-                bulkHandleFailedRecords(singleTopicRecordsToInsert);
+                String errorMsg = "Sink does not support schema type of pulsar: " + schema.getSchemaInfo().getType();
+                log.error(errorMsg);
+                bulkHandleFailedRecords(new UnsupportedOperationException(errorMsg), singleTopicRecordsToInsert);
                 return;
             }
 
@@ -197,15 +198,16 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                 } else {
                     log.error("Encountered unknown error writing to blob {}", filepath, e);
                 }
-                bulkHandleFailedRecords(singleTopicRecordsToInsert);
+                bulkHandleFailedRecords(e, singleTopicRecordsToInsert);
             }
         }
     }
 
-    private void bulkHandleFailedRecords(List<Record<GenericRecord>> failedRecords) {
+    private void bulkHandleFailedRecords(Throwable t, List<Record<GenericRecord>> failedRecords) {
         if (sinkConfig.isSkipFailedMessages()) {
             failedRecords.forEach(Record::ack);
         } else {
+            sinkContext.fatal(t);
             failedRecords.forEach(Record::fail);
         }
         sinkContext.recordMetric(METRICS_TOTAL_FAILURE, failedRecords.size());
