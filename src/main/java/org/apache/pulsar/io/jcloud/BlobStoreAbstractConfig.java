@@ -105,7 +105,10 @@ public class BlobStoreAbstractConfig implements Serializable {
     private int batchSize = 10;
     private long batchTimeMs = 1000;
     private BatchModel batchModel = BatchModel.BLEND;
+    @Deprecated // never to use
     private int pendingQueueSize = -1;
+    @Deprecated // never to use
+    private String partitioner;
 
     // #### metadata configuration ####
     private boolean withMetadata;
@@ -175,13 +178,6 @@ public class BlobStoreAbstractConfig implements Serializable {
             checkArgument(formatType.equalsIgnoreCase("json"), "jsonAllowNaN can only be true "
                     + "when formatType is 'json'.");
         }
-
-        if (pendingQueueSize <= 0) {
-            pendingQueueSize = batchSize;
-        }
-        checkArgument(pendingQueueSize > 0, "pendingQueueSize must be a positive integer.");
-        checkArgument(pendingQueueSize >= batchSize, "pendingQueueSize must be larger than or "
-                + "equal to batchSize");
 
         if (avroCodec != null && (avroCodec.isEmpty() || avroCodec.equals("none"))) {
             avroCodec = null;
