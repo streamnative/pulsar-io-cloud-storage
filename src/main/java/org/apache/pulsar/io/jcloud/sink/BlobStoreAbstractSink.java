@@ -27,10 +27,9 @@ import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pulsar.client.api.Schema;
 import org.apache.pulsar.client.api.schema.GenericRecord;
@@ -55,10 +54,10 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
     private static final String METRICS_TOTAL_FAILURE = "_cloud_storage_sink_total_failure_";
     private static final String METRICS_LATEST_UPLOAD_ELAPSED_TIME = "_cloud_storage_latest_upload_elapsed_time_";
 
-    private final ScheduledExecutorService flushExecutor =
-            Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder()
-                    .setNameFormat("pulsar-io-cloud-storage-sink-flush-%d")
-                    .build());;
+    private final ExecutorService flushExecutor = Executors.newSingleThreadExecutor(
+            new ThreadFactoryBuilder()
+                    .setNameFormat("pulsar-io-cloud-storage-sink-flush-thread")
+                    .build());
 
     protected Partitioner<GenericRecord> partitioner;
     protected Format<GenericRecord> format;
@@ -67,7 +66,6 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
     private V sinkConfig;
     private SinkContext sinkContext;
     private volatile boolean isRunning = false;
-    private final AtomicBoolean isFlushRunning = new AtomicBoolean(false);
 
     @Override
     public void open(Map<String, Object> config, SinkContext sinkContext) throws Exception {
@@ -78,8 +76,21 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         this.isRunning = true;
         this.blobWriter = initBlobWriter(sinkConfig);
         this.batchManager = BatchManager.createBatchManager(sinkConfig);
-        flushExecutor.scheduleWithFixedDelay(this::flush, sinkConfig.getBatchTimeMs() / 2 ,
-                sinkConfig.getBatchTimeMs() / 2, TimeUnit.MILLISECONDS);
+        flushExecutor.submit(() -> {
+            while (isRunning) {
+                try {
+                    Map<String, List<Record<GenericRecord>>> recordsToInsertByTopic = batchManager.pollNeedFlushData();
+                    if (recordsToInsertByTopic.isEmpty()) {
+                        log.debug("Skip flushing because the need flush data is empty...");
+                        Thread.sleep(100);
+                    }
+                    flush(recordsToInsertByTopic);
+                } catch (Throwable t) {
+                    log.error("Caught unexpected exception: ", t);
+                    sinkContext.fatal(t);
+                }
+            }
+        });
     }
 
     protected abstract V loadConfig(Map<String, Object> config, SinkContext sinkContext) throws IOException;
@@ -87,19 +98,11 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
 
     @Override
     public void write(Record<GenericRecord> record) throws Exception {
-        if (log.isDebugEnabled()) {
-            log.debug("write record={}.", record);
-        }
-
         if (!isRunning) {
-            log.warn("sink is stopped and cannot send the record {}", record);
-            record.fail();
-            return;
+            throw new RuntimeException("sink is stopped and cannot send the record");
         }
-
         checkArgument(record.getMessage().isPresent());
         batchManager.add(record);
-        flushIfNeeded();
     }
 
     @Override
@@ -112,40 +115,8 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         blobWriter.close();
     }
 
-    private void flushIfNeeded() {
-        if (isFlushRunning.get()) {
-            return;
-        }
-        if (batchManager.needFlush()) {
-            flushExecutor.submit(this::flush);
-        }
-    }
-
-    private void flush() {
-
-        if (batchManager.isEmpty()) {
-            log.debug("Skip flushing because the pending flush queue is empty...");
-            return;
-        }
-
-        if (!isFlushRunning.compareAndSet(false, true)) {
-            log.info("Skip flushing because there is an outstanding flush...");
-            return;
-        }
-
-        try {
-            unsafeFlush();
-        } catch (Throwable t) {
-            log.error("Caught unexpected exception: ", t);
-        } finally {
-            isFlushRunning.compareAndSet(true, false);
-        }
-        flushIfNeeded();
-    }
-
-    private void unsafeFlush() {
+    private void flush(Map<String, List<Record<GenericRecord>>> recordsToInsertByTopic) {
         final long timeStampForPartitioning = System.currentTimeMillis();
-        Map<String, List<Record<GenericRecord>>> recordsToInsertByTopic = batchManager.pollNeedFlushData();
         for (Map.Entry<String, List<Record<GenericRecord>>> entry : recordsToInsertByTopic.entrySet()) {
             String topicName = entry.getKey();
             List<Record<GenericRecord>> singleTopicRecordsToInsert = entry.getValue();

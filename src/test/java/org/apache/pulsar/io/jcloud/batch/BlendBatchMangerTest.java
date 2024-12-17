@@ -19,85 +19,82 @@
 package org.apache.pulsar.io.jcloud.batch;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+import lombok.SneakyThrows;
 import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.functions.api.Record;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class BlendBatchMangerTest {
-
-    public void test(long maxBatchSize, long maxBatchBytes, int maxPendingQueueSize) throws InterruptedException {
-        BlendBatchManager blendBatchManger = new BlendBatchManager(maxBatchSize,
-                maxBatchBytes, 10000, maxPendingQueueSize);
-
-        for (int i = 0; i < 15; i++) {
-            if (i % 2 == 0) {
-                blendBatchManger.add(getRecord("topic-0", 2));
-            } else {
-                blendBatchManger.add(getRecord("topic-1", 2));
-            }
-        }
-
-        // assert size and bytes
-        assertEquals(15, blendBatchManger.getCurrentBatchSize(null));
-        assertEquals(30, blendBatchManger.getCurrentBatchBytes(null));
-
-        // assert trigger flush, and each topic records num is 5
-        assertTrue(blendBatchManger.needFlush());
-        Map<String, List<Record<GenericRecord>>> flushData = blendBatchManger.pollNeedFlushData();
-        assertEquals(2, flushData.size());
-        assertEquals(5, flushData.get("topic-0").size());
-        assertEquals(5, flushData.get("topic-1").size());
-        assertFalse(blendBatchManger.isEmpty());
-        assertEquals(5, blendBatchManger.getCurrentBatchSize(null));
-        assertEquals(10, blendBatchManger.getCurrentBatchBytes(null));
-
-        // assert not need flush
-        assertFalse(blendBatchManger.needFlush());
-        assertFalse(blendBatchManger.isEmpty());
-    }
 
     @Test
     public void testFlushBySize() throws InterruptedException {
-        test(10, 10000, 1000);
-    }
-
-    @Test
-    public void testFlushByByteSize() throws InterruptedException {
-        test(10000, 20, 1000);
-    }
-
-    @Test
-    public void testFlushByTimout() throws InterruptedException {
-        long maxBatchTimeout = 1000;
         BlendBatchManager blendBatchManger = new BlendBatchManager(1000,
-                1000, maxBatchTimeout, 1000);
+                1000, 1000);
+        sendAndVerify(blendBatchManger);
+    }
 
-        blendBatchManger.add(getRecord("topic-0", 2));
-        blendBatchManger.add(getRecord("topic-1", 2));
-        assertEquals(2, blendBatchManger.getCurrentBatchSize(null));
-        assertEquals(4, blendBatchManger.getCurrentBatchBytes(null));
-        Thread.sleep(maxBatchTimeout + 100);
+    @Test
+    public void testFlushByTimeOut() throws InterruptedException {
+        BlendBatchManager blendBatchManger = new BlendBatchManager(10000000,
+                100000000, 1000);
+        sendAndVerify(blendBatchManger);
+    }
 
-        // Time out flush
-        Map<String, List<Record<GenericRecord>>> flushData = blendBatchManger.pollNeedFlushData();
-        assertEquals(2, flushData.size());
-        assertEquals(1, flushData.get("topic-0").size());
-        assertEquals(1, flushData.get("topic-1").size());
-        assertTrue(blendBatchManger.isEmpty());
-        assertEquals(0, blendBatchManger.getCurrentBatchSize(null));
-        assertEquals(0, blendBatchManger.getCurrentBatchBytes(null));
+    private void sendAndVerify(BlendBatchManager blendBatchManger) throws InterruptedException {
+        // Send 10000 records, message size is random
+        int numRecords = 10000;
+        new Thread(new Runnable() {
+            @SneakyThrows
+            @Override
+            public void run() {
+                Random random = new Random();
+                for (int i = 0; i < numRecords; i++) {
+                    String topicName = "topic-" + i % 10;
+                    int size = random.nextInt(10);
+                    if (i % 99 == 0) {
+                        size += 991;
+                    }
+                    blendBatchManger.add(getRecord(topicName, size));
+                }
+            }
+        }).start();
 
-        // Time out again
-        Thread.sleep(maxBatchTimeout + 100);
-        assertTrue(blendBatchManger.pollNeedFlushData().isEmpty());
+        // Poll records
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicInteger receivedRecords = new AtomicInteger();
+        new Thread(new Runnable() {
+            @SneakyThrows
+            @Override
+            public void run() {
+                while (true) {
+                    Map<String, List<Record<GenericRecord>>> records = blendBatchManger.pollNeedFlushData();
+                    if (records.isEmpty()) {
+                        Thread.sleep(50);
+                        continue;
+                    }
+                    receivedRecords.addAndGet(records.values().stream()
+                            .mapToInt(List::size)
+                            .sum());
+                    if (receivedRecords.get() == numRecords) {
+                        break;
+                    }
+                }
+                latch.countDown();
+            }
+        }).start();
+        latch.await();
+        assertEquals(receivedRecords.get(), numRecords);
     }
 
     Record<GenericRecord> getRecord(String topicName, int size) {

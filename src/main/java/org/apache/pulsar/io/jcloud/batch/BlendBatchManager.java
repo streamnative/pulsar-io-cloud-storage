@@ -36,8 +36,8 @@ public class BlendBatchManager implements BatchManager {
 
     private final BatchContainer batchContainer;
 
-    public BlendBatchManager(long maxBatchSize, long maxBatchBytes, long maxBatchTimeMs, int maxPendingQueueSize) {
-        batchContainer = new BatchContainer(maxBatchSize, maxBatchBytes, maxBatchTimeMs, maxPendingQueueSize);
+    public BlendBatchManager(long maxBatchSize, long maxBatchBytes, long maxBatchTimeMs) {
+        batchContainer = new BatchContainer(maxBatchSize, maxBatchBytes, maxBatchTimeMs);
     }
 
     @Override
@@ -61,29 +61,7 @@ public class BlendBatchManager implements BatchManager {
     }
 
     @Override
-    public void updateCurrentBatchSize(String topicName, long delta) {
-        batchContainer.updateCurrentBatchSize(delta);
-    }
-
-    @Override
-    public void updateCurrentBatchBytes(String topicName, long delta) {
-        batchContainer.updateCurrentBatchBytes(delta);
-    }
-
-    @Override
-    public boolean isEmpty() {
-        return batchContainer.isEmpty();
-    }
-
-    @Override
-    public boolean needFlush() {
-        return batchContainer.needFlush();
-    }
-
     public Map<String, List<Record<GenericRecord>>> pollNeedFlushData() {
-        if (!needFlush()) {
-            return Map.of();
-        }
         List<Record<GenericRecord>> records = batchContainer.pollNeedFlushRecords();
         return records.stream().collect(Collectors.groupingBy(record -> record.getTopicName().get()));
     }
