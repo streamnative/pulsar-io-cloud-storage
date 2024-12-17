@@ -308,7 +308,7 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                 }
             } catch (Exception e) {
                 log.error("Failed to generate file path", e);
-                bulkHandleFailedRecords(e,singleTopicRecordsToInsert);
+                bulkHandleFailedRecords(e, singleTopicRecordsToInsert);
                 return;
             }
 
