@@ -20,6 +20,7 @@ package org.apache.pulsar.io.jcloud.batch;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
@@ -49,7 +50,7 @@ public class BatchContainer {
         this.maxBatchBytes = maxBatchBytes;
         this.maxBatchTimeMs = maxBatchTimeMs;
         this.lastPollRecordsTime = System.currentTimeMillis();
-        this.pendingFlushList = new ArrayList<>((int) maxBatchSize);
+        this.pendingFlushList = new LinkedList<>();
     }
 
     public void add(Record<GenericRecord> record) throws InterruptedException {
