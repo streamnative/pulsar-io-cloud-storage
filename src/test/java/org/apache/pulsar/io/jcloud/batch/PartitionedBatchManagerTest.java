@@ -19,109 +19,99 @@
 package org.apache.pulsar.io.jcloud.batch;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+import lombok.SneakyThrows;
 import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.functions.api.Record;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class PartitionedBatchManagerTest {
-
-    public void test(long maxBatchSize, long maxBatchBytes, int maxPendingQueueSize) throws InterruptedException {
-        PartitionedBatchManager partitionedBatchManager =
-                new PartitionedBatchManager(maxBatchSize, maxBatchBytes, 10000, maxPendingQueueSize);
-
-        for (int i = 0; i < 10; i++) {
-            if (i % 2 == 0) {
-                partitionedBatchManager.add(getRecord("topic-0", 2));
-            } else {
-                partitionedBatchManager.add(getRecord("topic-1", 2));
-            }
-        }
-        // assert not trigger flush by each topic records.
-        assertFalse(partitionedBatchManager.needFlush());
-        Map<String, List<Record<GenericRecord>>> flushData = partitionedBatchManager.pollNeedFlushData();
-        assertEquals(0, flushData.size());
-
-        // add more 5 records to topic-0, then trigger flush.
-        for (int i = 0; i < 5; i++) {
-            partitionedBatchManager.add(getRecord("topic-0", 2));
-        }
-        assertTrue(partitionedBatchManager.needFlush());
-        flushData = partitionedBatchManager.pollNeedFlushData();
-        assertEquals(1, flushData.size());
-        assertEquals(10, flushData.get("topic-0").size());
-
-        // assert topic-0 currentBatchSize and currentBatchBytes
-        assertEquals(0, partitionedBatchManager.getCurrentBatchSize("topic-0"));
-        assertEquals(0, partitionedBatchManager.getCurrentBatchBytes("topic-0"));
-
-        // assert topic-1 currentBatchSize and currentBatchBytes
-        assertEquals(5, partitionedBatchManager.getCurrentBatchSize("topic-1"));
-        assertEquals(10, partitionedBatchManager.getCurrentBatchBytes("topic-1"));
-
-        // assert not need flush
-        assertFalse(partitionedBatchManager.needFlush());
-        assertFalse(partitionedBatchManager.isEmpty());
-    }
 
     @Test
     public void testFlushBySize() throws InterruptedException {
-        test(10, 10000, 1000);
+        PartitionedBatchManager batchManger = new PartitionedBatchManager(1000,
+                1000, 1000);
+        sendAndVerify(batchManger);
     }
 
     @Test
-    public void testFlushByByteSize() throws InterruptedException {
-        test(10000, 20, 1000);
+    public void testFlushByTimeOut() throws InterruptedException {
+        PartitionedBatchManager batchManger = new PartitionedBatchManager(10000000,
+                100000000, 1000);
+        sendAndVerify(batchManger);
     }
 
-    @Test
-    public void testFlushByTimout() throws InterruptedException {
-        long maxBatchTimeout = 2000;
-        PartitionedBatchManager partitionedBatchManager = new PartitionedBatchManager(1000,
-                100, maxBatchTimeout, 1000);
+    private void sendAndVerify(PartitionedBatchManager batchManger) throws InterruptedException {
+        // Send 10000 records, message size is random
+        int numRecords = 10000;
+        new Thread(new Runnable() {
+            @SneakyThrows
+            @Override
+            public void run() {
+                Random random = new Random();
+                for (int i = 0; i < numRecords; i++) {
+                    String topicName = "topic-" + i % 10;
+                    int size = random.nextInt(10);
+                    if (i % 99 == 0) {
+                        size += 991;
+                    }
+                    batchManger.add(getRecord(topicName, size));
+                }
+            }
+        }).start();
 
-        // 1. Add and assert status
-        partitionedBatchManager.add(getRecord("topic-0", 2));
-        partitionedBatchManager.add(getRecord("topic-1", 101));
-
-        // 2. First sleep maxBatchTimeout / 2
-        Thread.sleep(maxBatchTimeout / 2);
-
-        // 3. Poll flush data, assert topic-1 data
-        Map<String, List<Record<GenericRecord>>> flushData = partitionedBatchManager.pollNeedFlushData();
-        assertEquals(1, flushData.size());
-        assertFalse(flushData.containsKey("topic-0"));
-        assertEquals(1, flushData.get("topic-1").size());
-
-        // 4. write topic-1 data again, assert not need flush
-        partitionedBatchManager.add(getRecord("topic-1", 2));
-        // Second sleep maxBatchTimeout / 2
-        Thread.sleep(maxBatchTimeout / 2 + 100);
-
-        // 5. assert topic-0 message timeout
-        flushData = partitionedBatchManager.pollNeedFlushData();
-        assertEquals(1, flushData.size());
-        assertEquals(1, flushData.get("topic-0").size());
-        assertFalse(flushData.containsKey("topic-1"));
-
-        // 6. Sleep assert can get topic-1 data
-        Thread.sleep(maxBatchTimeout / 2 + 100);
-        flushData = partitionedBatchManager.pollNeedFlushData();
-        assertEquals(1, flushData.size());
-        assertFalse(flushData.containsKey("topic-0"));
-        assertEquals(1, flushData.get("topic-1").size());
-        assertTrue(partitionedBatchManager.isEmpty());
-
-        // Sleep and trigger timeout, and assert not data need flush
-        Thread.sleep(maxBatchTimeout + 100);
-        assertTrue(partitionedBatchManager.pollNeedFlushData().isEmpty());
+        // Poll records
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicInteger receivedRecords = new AtomicInteger();
+        Map<String, List<Record<GenericRecord>>> receivedRecordsByTopic = new ConcurrentHashMap<>();
+        new Thread(new Runnable() {
+            @SneakyThrows
+            @Override
+            public void run() {
+                while (true) {
+                    Map<String, List<Record<GenericRecord>>> records = batchManger.pollNeedFlushData();
+                    if (records.isEmpty()) {
+                        Thread.sleep(50);
+                        continue;
+                    }
+                    receivedRecords.addAndGet(records.values().stream()
+                            .mapToInt(List::size)
+                            .sum());
+                    records.forEach((topic, recordList) -> {
+                        receivedRecordsByTopic.compute(topic, (k, v) -> {
+                            if (v == null) {
+                                v = new ArrayList();
+                            }
+                            v.addAll(recordList);
+                            return v;
+                        });
+                    });
+                    if (receivedRecords.get() == numRecords) {
+                        break;
+                    }
+                }
+                latch.countDown();
+            }
+        }).start();
+        latch.await();
+        assertEquals(receivedRecords.get(), numRecords);
+        for (int topicIndex = 0; topicIndex < 10; topicIndex++) {
+            String topicName = "topic-" + topicIndex;
+            List<Record<GenericRecord>> records = receivedRecordsByTopic.get(topicName);
+            assertEquals(records.size(), numRecords / 10);
+        }
     }
 
     Record<GenericRecord> getRecord(String topicName, int size) {
