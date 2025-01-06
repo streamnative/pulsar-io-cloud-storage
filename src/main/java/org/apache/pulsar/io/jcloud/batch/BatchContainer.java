@@ -18,10 +18,13 @@
  */
 package org.apache.pulsar.io.jcloud.batch;
 
-import com.google.common.collect.Lists;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.functions.api.Record;
 
@@ -37,21 +40,35 @@ public class BatchContainer {
     private final long maxBatchTimeMs;
     private final AtomicLong currentBatchSize = new AtomicLong(0L);
     private final AtomicLong currentBatchBytes = new AtomicLong(0L);
-    private final ArrayBlockingQueue<Record<GenericRecord>> pendingFlushQueue;
-    private volatile long lastPoolRecordsTime;
+    private volatile long lastPollRecordsTime;
+    private final List<Record<GenericRecord>> pendingFlushList;
+    private final ReentrantLock lock = new ReentrantLock();
+    private final Condition notFull = lock.newCondition();
 
-    public BatchContainer(long maxBatchSize, long maxBatchBytes, long maxBatchTimeMs, int maxPendingQueueSize) {
+    public BatchContainer(long maxBatchSize, long maxBatchBytes, long maxBatchTimeMs) {
         this.maxBatchSize = maxBatchSize;
         this.maxBatchBytes = maxBatchBytes;
         this.maxBatchTimeMs = maxBatchTimeMs;
-        this.pendingFlushQueue = new ArrayBlockingQueue<>(maxPendingQueueSize);
-        this.lastPoolRecordsTime = System.currentTimeMillis();
+        this.lastPollRecordsTime = System.currentTimeMillis();
+        this.pendingFlushList = new LinkedList<>();
     }
 
     public void add(Record<GenericRecord> record) throws InterruptedException {
-        pendingFlushQueue.put(record);
-        updateCurrentBatchSize(1);
-        updateCurrentBatchBytes(record.getMessage().get().size());
+        lock.lock();
+        try {
+            // Allow exceeding the maximum value once
+            long recordSize = record.getMessage().get().size();
+            pendingFlushList.add(record);
+            currentBatchSize.incrementAndGet();
+            currentBatchBytes.addAndGet(recordSize);
+
+            // Wait if the batch needs to be flushed
+            while (needFlush()) {
+                notFull.await();
+            }
+        } finally {
+            lock.unlock();
+        }
     }
 
     public long getCurrentBatchSize() {
@@ -62,42 +79,32 @@ public class BatchContainer {
         return currentBatchBytes.get();
     }
 
-    public void updateCurrentBatchSize(long delta) {
-        currentBatchSize.addAndGet(delta);
+    public List<Record<GenericRecord>> pollNeedFlushRecords() {
+        if (currentBatchSize.get() == 0) {
+            return Collections.emptyList();
+        }
+        lock.lock();
+        try {
+            if (!needFlush()) {
+                return Collections.emptyList();
+            }
+            List<Record<GenericRecord>> needFlushRecords = new ArrayList<>(pendingFlushList);
+            pendingFlushList.clear();
+            // Clear the pending list
+            currentBatchSize.set(0);
+            currentBatchBytes.set(0);
+            lastPollRecordsTime = System.currentTimeMillis();
+            return needFlushRecords;
+        } finally {
+            notFull.signalAll();
+            lock.unlock();
+        }
     }
 
-    public void updateCurrentBatchBytes(long delta) {
-        currentBatchBytes.addAndGet(delta);
-    }
-
-    public boolean isEmpty() {
-        return pendingFlushQueue.isEmpty();
-    }
-
-    public boolean needFlush() {
+    private boolean needFlush() {
         long currentTime = System.currentTimeMillis();
         return currentBatchSize.get() >= maxBatchSize
                 || currentBatchBytes.get() >= maxBatchBytes
-                || (currentTime - lastPoolRecordsTime) >= maxBatchTimeMs;
-    }
-
-    public List<Record<GenericRecord>> pollNeedFlushRecords() {
-        final List<Record<GenericRecord>> needFlushRecords = Lists.newArrayList();
-        long recordsToInsertBytes = 0;
-        while (!pendingFlushQueue.isEmpty() && needFlushRecords.size() < maxBatchSize
-                && recordsToInsertBytes < maxBatchBytes) {
-            Record<GenericRecord> r = pendingFlushQueue.poll();
-            if (r != null) {
-                if (r.getMessage().isPresent()) {
-                    long recordBytes = r.getMessage().get().size();
-                    recordsToInsertBytes += recordBytes;
-                }
-                needFlushRecords.add(r);
-            }
-        }
-        updateCurrentBatchBytes(-1 * recordsToInsertBytes);
-        updateCurrentBatchSize(-1 * needFlushRecords.size());
-        lastPoolRecordsTime = System.currentTimeMillis();
-        return needFlushRecords;
+                || (currentTime - lastPollRecordsTime) >= maxBatchTimeMs;
     }
 }

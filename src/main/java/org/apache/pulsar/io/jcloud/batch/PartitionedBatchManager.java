@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.functions.api.Record;
 import reactor.util.function.Tuple2;
@@ -36,28 +37,29 @@ public class PartitionedBatchManager implements BatchManager {
     private final long maxBatchSize;
     private final long maxBatchBytes;
     private final long maxBatchTimeMs;
-    private final int maxPendingQueueSize;
     private final Map<String, BatchContainer> topicBatchContainer;
 
     public PartitionedBatchManager(long maxBatchSize, long maxBatchBytes,
-                                   long maxBatchTimeMs, int maxPendingQueueSize) {
+                                   long maxBatchTimeMs) {
         this.maxBatchSize = maxBatchSize;
         this.maxBatchBytes = maxBatchBytes;
         this.maxBatchTimeMs = maxBatchTimeMs;
-        this.maxPendingQueueSize = maxPendingQueueSize;
         this.topicBatchContainer = new ConcurrentHashMap<>();
     }
 
+    @Override
     public void add(Record<GenericRecord> record) throws InterruptedException {
         String topicName = record.getTopicName()
                 .orElseThrow(() -> new IllegalArgumentException("Topic name cannot be null"));
         getBatchContainer(topicName).add(record);
     }
 
+    @Override
     public long getCurrentBatchSize(String topicName) {
         return getBatchContainer(topicName).getCurrentBatchSize();
     }
 
+    @Override
     public long getCurrentBatchBytes(String topicName) {
         return getBatchContainer(topicName).getCurrentBatchBytes();
     }
@@ -73,37 +75,16 @@ public class PartitionedBatchManager implements BatchManager {
         return stats;
     }
 
-    public void updateCurrentBatchSize(String topicName, long delta) {
-        getBatchContainer(topicName).updateCurrentBatchSize(delta);
-    }
-
-    public void updateCurrentBatchBytes(String topicName, long delta) {
-        getBatchContainer(topicName).updateCurrentBatchBytes(delta);
-    }
-
-    public boolean isEmpty() {
-        return topicBatchContainer.values().stream().allMatch(BatchContainer::isEmpty);
-    }
-
-    public boolean needFlush() {
-        return topicBatchContainer.values().stream().anyMatch(BatchContainer::needFlush);
-    }
-
+    @Override
     public Map<String, List<Record<GenericRecord>>> pollNeedFlushData() {
-        Map<String, List<Record<GenericRecord>>> flushData = new HashMap<>();
-        topicBatchContainer.forEach((topicName, batchContainer) -> {
-            if (batchContainer.needFlush()) {
-                List<Record<GenericRecord>> records = batchContainer.pollNeedFlushRecords();
-                if (!records.isEmpty()) {
-                    flushData.put(topicName, records);
-                }
-            }
-        });
-        return flushData;
+        return topicBatchContainer.entrySet().stream()
+                .map(entry -> Map.entry(entry.getKey(), entry.getValue().pollNeedFlushRecords()))
+                .filter(entry -> !entry.getValue().isEmpty())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     private BatchContainer getBatchContainer(String topicName) {
         return topicBatchContainer.computeIfAbsent(topicName,
-                k -> new BatchContainer(maxBatchSize, maxBatchBytes, maxBatchTimeMs, maxPendingQueueSize));
+                k -> new BatchContainer(maxBatchSize, maxBatchBytes, maxBatchTimeMs));
     }
 }

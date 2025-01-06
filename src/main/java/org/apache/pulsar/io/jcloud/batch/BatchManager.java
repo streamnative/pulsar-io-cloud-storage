@@ -43,10 +43,10 @@ public interface BatchManager {
         switch (config.getBatchModel()) {
             case BLEND:
                 return new BlendBatchManager(config.getBatchSize(), config.getMaxBatchBytes(),
-                        config.getBatchTimeMs(), config.getPendingQueueSize());
+                        config.getBatchTimeMs());
             case PARTITIONED:
                 return new PartitionedBatchManager(config.getBatchSize(), config.getMaxBatchBytes(),
-                        config.getBatchTimeMs(), config.getPendingQueueSize());
+                        config.getBatchTimeMs());
             default:
                 throw new IllegalArgumentException("Unsupported batch model: " + config.getBatchModel());
         }
@@ -73,12 +73,6 @@ public interface BatchManager {
      * @throws InterruptedException if the adding process is interrupted
      */
     void add(Record<GenericRecord> record) throws InterruptedException;
-
-    /**
-     * Determines whether the current batch needs to be flushed.
-     * @return true if the batch needs to be flushed, false otherwise
-     */
-    boolean needFlush();
 
     /**
      * Retrieves the data that needs to be flushed.
@@ -124,25 +118,4 @@ public interface BatchManager {
         sb.append("}");
         return sb.toString();
     }
-
-
-    /**
-     * Updates the current batch size for a given topic.
-     * @param topicName the name of the topic
-     * @param delta the amount to add to the current batch size
-     */
-    void updateCurrentBatchSize(String topicName, long delta);
-
-    /**
-     * Updates the current batch bytes for a given topic.
-     * @param topicName the name of the topic
-     * @param delta the amount to add to the current batch bytes
-     */
-    void updateCurrentBatchBytes(String topicName, long delta);
-
-    /**
-     * Determines whether the batch manager is currently empty.
-     * @return true if the batch manager is empty, false otherwise
-     */
-    boolean isEmpty();
 }
