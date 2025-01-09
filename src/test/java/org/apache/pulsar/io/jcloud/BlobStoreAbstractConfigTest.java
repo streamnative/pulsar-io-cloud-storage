@@ -65,6 +65,7 @@ public class BlobStoreAbstractConfigTest {
         Assert.assertEquals(config.get("timePartitionPattern"), cloudStorageSinkConfig.getTimePartitionPattern());
         Assert.assertEquals(config.get("timePartitionDuration"), cloudStorageSinkConfig.getTimePartitionDuration());
         Assert.assertEquals(config.get("batchSize"), cloudStorageSinkConfig.getBatchSize());
+        Assert.assertTrue(cloudStorageSinkConfig.isPartitionerWithTopicName());
         Assert.assertEquals(10000000L, cloudStorageSinkConfig.getMaxBatchBytes());
     }
 
@@ -243,6 +244,7 @@ public class BlobStoreAbstractConfigTest {
         config.put("timePartitionDuration", "2d");
         config.put("batchSize", 10);
         config.put("bytesFormatTypeSeparator", "0x10");
+        config.put("partitionerWithTopicName", "false");
         CloudStorageSinkConfig cloudStorageSinkConfig = CloudStorageSinkConfig.load(config);
         cloudStorageSinkConfig.validate();
 
@@ -258,6 +260,7 @@ public class BlobStoreAbstractConfigTest {
         Assert.assertEquals(config.get("batchSize"), cloudStorageSinkConfig.getBatchSize());
         Assert.assertEquals(config.get("bytesFormatTypeSeparator"),
                 cloudStorageSinkConfig.getBytesFormatTypeSeparator());
+        Assert.assertFalse(cloudStorageSinkConfig.isPartitionerWithTopicName());
     }
 
     @Test
