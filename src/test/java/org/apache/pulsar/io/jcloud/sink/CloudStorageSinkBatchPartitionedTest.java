@@ -146,6 +146,79 @@ public class CloudStorageSinkBatchPartitionedTest {
     }
 
     @Test
+    public void flushOnBatchSizeWithOutTopicNameTests() throws Exception {
+        this.config.put("batchTimeMs", 60000); // set high batchTimeMs to prevent scheduled flush
+        this.config.put("maxBatchBytes", 10000); // set high maxBatchBytes to prevent flush
+        this.config.put("batchSize", 5); // force flush after 5 messages
+        this.config.put("partitionerWithTopicName", "false");
+
+        this.sink.open(this.config, this.mockSinkContext);
+
+        for (int i = 0; i < 4; i++) {
+            this.sink.write(mockRecordTopic1);
+        }
+        verify(mockBlobWriter, never()).uploadBlob(any(String.class), any(ByteBuffer.class));
+
+        for (int i = 0; i < 5; i++) {
+            this.sink.write(mockRecordTopic2);
+        }
+
+        await().atMost(Duration.ofSeconds(10)).untilAsserted(
+                () -> verify(mockBlobWriter, times(1))
+                        .uploadBlob(eq("12.34.-1.raw"), any(ByteBuffer.class))
+        );
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(
+                () -> verify(mockRecordTopic2, times(5)).ack()
+        );
+
+        this.sink.write(mockRecordTopic1);
+        await().atMost(Duration.ofSeconds(10)).untilAsserted(
+                () -> verify(mockBlobWriter, times(1))
+                        .uploadBlob(eq("12.11.-1.raw"), any(ByteBuffer.class))
+        );
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(
+                () -> verify(mockRecordTopic1, times(5)).ack()
+        );
+    }
+
+    @Test
+    public void flushOnBatchSizeWithOutTopicNamePathPrefixTests() throws Exception {
+        this.config.put("batchTimeMs", 60000); // set high batchTimeMs to prevent scheduled flush
+        this.config.put("maxBatchBytes", 10000); // set high maxBatchBytes to prevent flush
+        this.config.put("batchSize", 5); // force flush after 5 messages
+        this.config.put("partitionerWithTopicName", "false");
+        this.config.put("pathPrefix", "testPrefix/");
+
+        this.sink.open(this.config, this.mockSinkContext);
+
+        for (int i = 0; i < 4; i++) {
+            this.sink.write(mockRecordTopic1);
+        }
+        verify(mockBlobWriter, never()).uploadBlob(any(String.class), any(ByteBuffer.class));
+
+        for (int i = 0; i < 5; i++) {
+            this.sink.write(mockRecordTopic2);
+        }
+
+        await().atMost(Duration.ofSeconds(10)).untilAsserted(
+                () -> verify(mockBlobWriter, times(1))
+                        .uploadBlob(eq("testPrefix/12.34.-1.raw"), any(ByteBuffer.class))
+        );
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(
+                () -> verify(mockRecordTopic2, times(5)).ack()
+        );
+
+        this.sink.write(mockRecordTopic1);
+        await().atMost(Duration.ofSeconds(10)).untilAsserted(
+                () -> verify(mockBlobWriter, times(1))
+                        .uploadBlob(eq("testPrefix/12.11.-1.raw"), any(ByteBuffer.class))
+        );
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(
+                () -> verify(mockRecordTopic1, times(5)).ack()
+        );
+    }
+
+    @Test
     public void flushOnTimeOutTests() throws Exception {
         long maxBatchTimeout = 2000;
         this.config.put("batchTimeMs", maxBatchTimeout); // set high batchTimeMs to prevent scheduled flush
