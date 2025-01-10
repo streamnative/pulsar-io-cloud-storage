@@ -90,6 +90,18 @@ public class PartitionerTest extends TestCase {
         numberConfig.setTimePartitionPattern("yyyy-MM-dd-HH");
         TimePartitioner<Object> numberPartitioner = new TimePartitioner<>();
         numberPartitioner.configure(numberConfig);
+
+        BlobStoreAbstractConfig withoutTopicNameConfig = new BlobStoreAbstractConfig();
+        withoutTopicNameConfig.setPartitionerWithTopicName(false);
+        SimplePartitioner<Object> simpleWithoutTopicNamePartitioner = new SimplePartitioner<>();
+        simpleWithoutTopicNamePartitioner.configure(withoutTopicNameConfig);
+
+        BlobStoreAbstractConfig withoutTopicNameConfig2 = new BlobStoreAbstractConfig();
+        withoutTopicNameConfig2.setPartitionerWithTopicName(false);
+        withoutTopicNameConfig2.setTimePartitionDuration("7200000");
+        withoutTopicNameConfig2.setTimePartitionPattern("yyyy-MM-dd-HH");
+        TimePartitioner<Object> timeWithoutTopicNamePartitioner = new TimePartitioner<>();
+        timeWithoutTopicNamePartitioner.configure(withoutTopicNameConfig2);
         return new Object[][]{
                 new Object[]{
                         simplePartitioner,
@@ -144,6 +156,18 @@ public class PartitionerTest extends TestCase {
                         "2020-09-08-14" + Partitioner.PATH_SEPARATOR + testMsgIdFileName,
                         "public/default/test-partition-1/2020-09-08-14"
                                 + Partitioner.PATH_SEPARATOR + testMsgIdFileName,
+                        getPartitionedTopic()
+                },
+                new Object[]{
+                        simpleWithoutTopicNamePartitioner,
+                        testMsgIdFileName,
+                        testMsgIdFileName,
+                        getTopic()
+                },
+                new Object[]{
+                        timeWithoutTopicNamePartitioner,
+                        "2020-09-08-14" + Partitioner.PATH_SEPARATOR + testMsgIdFileName,
+                        "2020-09-08-14" + Partitioner.PATH_SEPARATOR + testMsgIdFileName,
                         getPartitionedTopic()
                 },
         };

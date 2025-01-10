@@ -41,6 +41,7 @@ public abstract class AbstractPartitioner<T> implements Partitioner<T> {
 
     private boolean sliceTopicPartitionPath;
     private boolean withTopicPartitionNumber;
+    private boolean partitionerWithTopicName;
     private boolean useIndexAsOffset;
 
     @Override
@@ -48,27 +49,28 @@ public abstract class AbstractPartitioner<T> implements Partitioner<T> {
         this.sliceTopicPartitionPath = config.isSliceTopicPartitionPath();
         this.withTopicPartitionNumber = config.isWithTopicPartitionNumber();
         this.useIndexAsOffset = config.isPartitionerUseIndexAsOffset();
+        this.partitionerWithTopicName = config.isPartitionerWithTopicName();
     }
 
     @Override
     public String generatePartitionedPath(String topic, String encodedPartition) {
-
         List<String> joinList = new ArrayList<>();
-        TopicName topicName = TopicName.get(topic);
-        joinList.add(topicName.getTenant());
-        joinList.add(topicName.getNamespacePortion());
-
-        if (topicName.isPartitioned() && withTopicPartitionNumber) {
-            if (sliceTopicPartitionPath) {
+        if (partitionerWithTopicName) {
+            TopicName topicName = TopicName.get(topic);
+            joinList.add(topicName.getTenant());
+            joinList.add(topicName.getNamespacePortion());
+            if (topicName.isPartitioned() && withTopicPartitionNumber) {
+                if (sliceTopicPartitionPath) {
+                    TopicName newTopicName = TopicName.get(topicName.getPartitionedTopicName());
+                    joinList.add(newTopicName.getLocalName());
+                    joinList.add(Integer.toString(topicName.getPartitionIndex()));
+                } else {
+                    joinList.add(topicName.getLocalName());
+                }
+            } else {
                 TopicName newTopicName = TopicName.get(topicName.getPartitionedTopicName());
                 joinList.add(newTopicName.getLocalName());
-                joinList.add(Integer.toString(topicName.getPartitionIndex()));
-            } else {
-                joinList.add(topicName.getLocalName());
             }
-        } else {
-            TopicName newTopicName = TopicName.get(topicName.getPartitionedTopicName());
-            joinList.add(newTopicName.getLocalName());
         }
         joinList.add(encodedPartition);
         return StringUtils.join(joinList, PATH_SEPARATOR);

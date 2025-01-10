@@ -86,6 +86,7 @@ public class BlobStoreAbstractConfig implements Serializable {
     private String partitionerType;
     private String pathPrefix;
     private boolean withTopicPartitionNumber = true;
+    private boolean partitionerWithTopicName = true;
     private boolean partitionerUseIndexAsOffset;
     private String timePartitionPattern;
     private String timePartitionDuration;
