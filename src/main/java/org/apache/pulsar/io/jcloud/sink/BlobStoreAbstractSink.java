@@ -24,12 +24,14 @@ import static org.apache.pulsar.io.jcloud.util.AvroRecordUtil.getPulsarSchema;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pulsar.client.api.Schema;
 import org.apache.pulsar.client.api.schema.GenericRecord;
@@ -119,57 +121,65 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         final long timeStampForPartitioning = System.currentTimeMillis();
         for (Map.Entry<String, List<Record<GenericRecord>>> entry : recordsToInsertByTopic.entrySet()) {
             String topicName = entry.getKey();
-            List<Record<GenericRecord>> singleTopicRecordsToInsert = entry.getValue();
-            Record<GenericRecord> firstRecord = singleTopicRecordsToInsert.get(0);
-            Schema<GenericRecord> schema;
-            try {
-                schema = getPulsarSchema(firstRecord);
-            } catch (Exception e) {
-                log.error("Failed to retrieve message schema", e);
-                bulkHandleFailedRecords(e, singleTopicRecordsToInsert);
-                return;
-            }
-
-            if (!format.doSupportPulsarSchemaType(schema.getSchemaInfo().getType())) {
-                String errorMsg = "Sink does not support schema type of pulsar: " + schema.getSchemaInfo().getType();
-                log.error(errorMsg);
-                bulkHandleFailedRecords(new UnsupportedOperationException(errorMsg), singleTopicRecordsToInsert);
-                return;
-            }
-
-            String filepath = "";
-            try {
-                format.initSchema(schema);
-                final Iterator<Record<GenericRecord>> iter = singleTopicRecordsToInsert.iterator();
-                filepath = buildPartitionPath(firstRecord, partitioner, format, timeStampForPartitioning);
-                ByteBuffer payload = bindValue(iter, format);
-                int uploadSize = singleTopicRecordsToInsert.size();
-                long uploadBytes = getBytesSum(singleTopicRecordsToInsert);
-                log.info("Uploading blob {} from topic {} uploadSize:{} uploadBytes:{} currentBatchStatus:{}",
-                        filepath, topicName, uploadSize, uploadBytes, batchManager.getCurrentStatsStr());
-                long elapsedMs = System.currentTimeMillis();
-                blobWriter.uploadBlob(filepath, payload);
-                elapsedMs = System.currentTimeMillis() - elapsedMs;
-                log.debug("Uploading blob {} elapsed time in ms: {}", filepath, elapsedMs);
-                singleTopicRecordsToInsert.forEach(Record::ack);
-                if (sinkContext != null) {
-                    sinkContext.recordMetric(METRICS_TOTAL_SUCCESS, singleTopicRecordsToInsert.size());
-                    sinkContext.recordMetric(METRICS_LATEST_UPLOAD_ELAPSED_TIME, elapsedMs);
+            Map<String, List<Record<GenericRecord>>> schemaVersionMap = entry.getValue().stream()
+                    .collect(Collectors.groupingBy(r -> {
+                            byte[] schemaVersionBytes = r.getValue().getSchemaVersion();
+                            return schemaVersionBytes != null ? Arrays.toString(schemaVersionBytes) : "null";
+                        }
+                    ));
+            for (List<Record<GenericRecord>> singleTopicRecordsToInsert : schemaVersionMap.values()) {
+                Record<GenericRecord> firstRecord = singleTopicRecordsToInsert.get(0);
+                Schema<GenericRecord> schema;
+                try {
+                    schema = getPulsarSchema(firstRecord);
+                } catch (Exception e) {
+                    log.error("Failed to retrieve message schema", e);
+                    bulkHandleFailedRecords(e, singleTopicRecordsToInsert);
+                    return;
                 }
-                log.info("Successfully uploaded blob {} from topic {} uploadSize {} uploadBytes {}",
-                    filepath, entry.getKey(),
-                    uploadSize, uploadBytes);
-            } catch (Exception e) {
-                if (e instanceof ContainerNotFoundException) {
-                    log.error("Blob {} is not found", filepath, e);
-                } else if (e instanceof IOException) {
-                    log.error("Failed to write to blob {}", filepath, e);
-                } else if (e instanceof UnsupportedOperationException || e instanceof IllegalArgumentException) {
-                    log.error("Failed to handle message schema {}", schema, e);
-                } else {
-                    log.error("Encountered unknown error writing to blob {}", filepath, e);
+
+                if (!format.doSupportPulsarSchemaType(schema.getSchemaInfo().getType())) {
+                    String errorMsg = "Sink does not support schema type of pulsar: "
+                            + schema.getSchemaInfo().getType();
+                    log.error(errorMsg);
+                    bulkHandleFailedRecords(new UnsupportedOperationException(errorMsg), singleTopicRecordsToInsert);
+                    return;
                 }
-                bulkHandleFailedRecords(e, singleTopicRecordsToInsert);
+
+                String filepath = "";
+                try {
+                    format.initSchema(schema);
+                    final Iterator<Record<GenericRecord>> iter = singleTopicRecordsToInsert.iterator();
+                    filepath = buildPartitionPath(firstRecord, partitioner, format, timeStampForPartitioning);
+                    ByteBuffer payload = bindValue(iter, format);
+                    int uploadSize = singleTopicRecordsToInsert.size();
+                    long uploadBytes = getBytesSum(singleTopicRecordsToInsert);
+                    log.info("Uploading blob {} from topic {} uploadSize:{} uploadBytes:{} currentBatchStatus:{}",
+                            filepath, topicName, uploadSize, uploadBytes, batchManager.getCurrentStatsStr());
+                    long elapsedMs = System.currentTimeMillis();
+                    blobWriter.uploadBlob(filepath, payload);
+                    elapsedMs = System.currentTimeMillis() - elapsedMs;
+                    log.debug("Uploading blob {} elapsed time in ms: {}", filepath, elapsedMs);
+                    singleTopicRecordsToInsert.forEach(Record::ack);
+                    if (sinkContext != null) {
+                        sinkContext.recordMetric(METRICS_TOTAL_SUCCESS, singleTopicRecordsToInsert.size());
+                        sinkContext.recordMetric(METRICS_LATEST_UPLOAD_ELAPSED_TIME, elapsedMs);
+                    }
+                    log.info("Successfully uploaded blob {} from topic {} uploadSize {} uploadBytes {}",
+                            filepath, topicName,
+                            uploadSize, uploadBytes);
+                } catch (Exception e) {
+                    if (e instanceof ContainerNotFoundException) {
+                        log.error("Blob {} is not found", filepath, e);
+                    } else if (e instanceof IOException) {
+                        log.error("Failed to write to blob {}", filepath, e);
+                    } else if (e instanceof UnsupportedOperationException || e instanceof IllegalArgumentException) {
+                        log.error("Failed to handle message schema {}", schema, e);
+                    } else {
+                        log.error("Encountered unknown error writing to blob {}", filepath, e);
+                    }
+                    bulkHandleFailedRecords(e, singleTopicRecordsToInsert);
+                }
             }
         }
     }

@@ -20,6 +20,7 @@ package org.apache.pulsar.io.jcloud.sink;
 
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
@@ -70,7 +71,9 @@ public class CloudStorageSinkBatchBlendTest {
     private BlobWriter mockBlobWriter;
 
     @Mock
-    private Record<GenericRecord> mockRecord;
+    private Record<GenericRecord> mockRecordSchemaV1;
+
+    private Record<GenericRecord> mockRecordSchemaV2;
 
     private Map<String, Object> config;
 
@@ -90,7 +93,8 @@ public class CloudStorageSinkBatchBlendTest {
         this.sink = spy(new CloudStorageGenericRecordSink());
         this.mockSinkContext = mock(SinkContext.class);
         this.mockBlobWriter = mock(BlobWriter.class);
-        this.mockRecord = mock(Record.class);
+        this.mockRecordSchemaV1 = mock(Record.class);
+        this.mockRecordSchemaV2 = mock(Record.class);
 
         doReturn("a/test.json").when(sink)
                 .buildPartitionPath(any(Record.class), any(Partitioner.class), any(Format.class), any(Long.class));
@@ -105,10 +109,17 @@ public class CloudStorageSinkBatchBlendTest {
         GenericRecord genericRecord = spy(createTestRecord(schema));
         doReturn(new byte[]{0x1}).when(genericRecord).getSchemaVersion();
 
-        when(mockRecord.getTopicName()).thenReturn(Optional.of("test-topic"));
-        when(mockRecord.getValue()).thenReturn(genericRecord);
-        when(mockRecord.getSchema()).thenAnswer((Answer<Schema>) invocationOnMock -> schema);
-        when(mockRecord.getMessage()).thenReturn(Optional.of(mockMessage));
+        when(mockRecordSchemaV1.getTopicName()).thenReturn(Optional.of("test-topic"));
+        when(mockRecordSchemaV1.getValue()).thenReturn(genericRecord);
+        when(mockRecordSchemaV1.getSchema()).thenAnswer((Answer<Schema>) invocationOnMock -> schema);
+        when(mockRecordSchemaV1.getMessage()).thenReturn(Optional.of(mockMessage));
+
+        GenericRecord genericRecord2 = spy(createTestRecord(schema));
+        doReturn(new byte[]{0x2}).when(genericRecord2).getSchemaVersion();
+        when(mockRecordSchemaV2.getTopicName()).thenReturn(Optional.of("test-topic"));
+        when(mockRecordSchemaV2.getValue()).thenReturn(genericRecord2);
+        when(mockRecordSchemaV2.getSchema()).thenAnswer((Answer<Schema>) invocationOnMock -> schema);
+        when(mockRecordSchemaV2.getMessage()).thenReturn(Optional.of(mockMessage));
     }
 
     @After
@@ -178,15 +189,15 @@ public class CloudStorageSinkBatchBlendTest {
             int randomMultiplier = ThreadLocalRandom.current().nextInt(1, 6);
             return PAYLOAD_BYTES * randomMultiplier;
         });
-        when(mockRecord.getMessage()).thenReturn(Optional.of(randomMessage));
+        when(mockRecordSchemaV1.getMessage()).thenReturn(Optional.of(randomMessage));
 
         int numberOfRecords = 100;
         for (int i = 0; i < numberOfRecords; i++) {
-            this.sink.write(mockRecord);
+            this.sink.write(mockRecordSchemaV1);
             Thread.sleep(ThreadLocalRandom.current().nextInt(1, 500));
         }
         await().atMost(Duration.ofSeconds(60)).untilAsserted(
-                () -> verify(mockRecord, times(numberOfRecords)).ack()
+                () -> verify(mockRecordSchemaV1, times(numberOfRecords)).ack()
         );
     }
 
@@ -198,7 +209,7 @@ public class CloudStorageSinkBatchBlendTest {
         this.config.put("batchSize", 1);
 
         this.sink.open(this.config, this.mockSinkContext);
-        when(mockRecord.getSchema()).thenThrow(new OutOfMemoryError());
+        when(mockRecordSchemaV1.getSchema()).thenThrow(new OutOfMemoryError());
         sendMockRecord(1);
         await().atMost(Duration.ofSeconds(10)).untilAsserted(
                 () -> {
@@ -208,11 +219,31 @@ public class CloudStorageSinkBatchBlendTest {
         );
     }
 
+    @Test
+    public void testSchemaEvolution() throws Exception {
+        this.config.put("batchTimeMs", 1000000);
+        this.config.put("maxBatchBytes", 100 * PAYLOAD_BYTES);
+        this.config.put("batchSize", 10);
+
+        this.sink.open(this.config, this.mockSinkContext);
+
+        for (int i = 0; i < 3; i++) {
+            this.sink.write(mockRecordSchemaV1);
+        }
+        for (int i = 0; i < 7; i++) {
+            this.sink.write(mockRecordSchemaV2);
+        }
+
+        await().atMost(Duration.ofSeconds(10)).untilAsserted(
+                () -> verify(mockBlobWriter, times(2)).uploadBlob(eq("a/test.json"), any(ByteBuffer.class))
+        );
+    }
+
     private void verifyRecordAck(int numberOfRecords) throws Exception {
         this.sink.open(this.config, this.mockSinkContext);
         sendMockRecord(numberOfRecords);
         await().atMost(Duration.ofSeconds(30)).untilAsserted(
-                () -> verify(mockRecord, times(numberOfRecords)).ack()
+                () -> verify(mockRecordSchemaV1, times(numberOfRecords)).ack()
         );
     }
 
@@ -227,13 +258,13 @@ public class CloudStorageSinkBatchBlendTest {
                 () -> verify(mockBlobWriter, atLeastOnce()).uploadBlob(any(String.class), any(ByteBuffer.class))
         );
         await().atMost(Duration.ofSeconds(10)).untilAsserted(
-                () -> verify(mockRecord, atLeast(5)).ack()
+                () -> verify(mockRecordSchemaV1, atLeast(5)).ack()
         );
     }
 
     private void sendMockRecord(int numberOfRecords) throws Exception {
         for (int i = 0; i < numberOfRecords; i++) {
-            this.sink.write(mockRecord);
+            this.sink.write(mockRecordSchemaV1);
         }
     }
 
