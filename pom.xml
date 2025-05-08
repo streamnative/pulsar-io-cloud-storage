@@ -828,16 +828,9 @@
       <url>https://repo1.maven.org/maven2</url>
     </repository>
     <repository>
-        <id>maven_central</id>
-        <name>Maven Central</name>
-        <url>https://repo.maven.apache.org/maven2/</url>
-    </repository>
-    <repository>
-        <id>github</id>
-        <url>https://maven.pkg.github.com/streamnative/*</url>
-        <snapshots>
-            <enabled>true</enabled>
-        </snapshots>
+      <id>bintray-streamnative-maven</id>
+      <name>bintray</name>
+      <url>https://dl.bintray.com/streamnative/maven</url>
     </repository>
   </repositories>
 </project>
