@@ -832,12 +832,5 @@
       <name>bintray</name>
       <url>https://dl.bintray.com/streamnative/maven</url>
     </repository>
-    <repository>
-      <id>github</id>
-      <url>https://maven.pkg.github.com/streamnative/*</url>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
   </repositories>
 </project>
