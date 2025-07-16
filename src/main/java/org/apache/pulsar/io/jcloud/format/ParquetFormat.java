@@ -65,6 +65,7 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
     private boolean useHumanReadableSchemaVersion;
     private boolean includeTopicToMetadata;
     private boolean includePublishTimeToMetadata;
+    private boolean includeMessageKeyToMetadata;
 
     private CompressionCodecName compressionCodecName = CompressionCodecName.GZIP;
 
@@ -80,6 +81,7 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
         this.useHumanReadableSchemaVersion = configuration.isUseHumanReadableSchemaVersion();
         this.includeTopicToMetadata = configuration.isIncludeTopicToMetadata();
         this.includePublishTimeToMetadata = configuration.isIncludePublishTimeToMetadata();
+        this.includeMessageKeyToMetadata = configuration.isIncludeMessageKeyToMetadata();
         this.compressionCodecName = CompressionCodecName.fromConf(configuration.getParquetCodec());
     }
 
@@ -189,7 +191,8 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
                 rootAvroSchema = AvroRecordUtil.convertToAvroSchema(schema);
                 if (useMetadata) {
                     rootAvroSchema = MetadataUtil.setMetadataSchema(rootAvroSchema, useHumanReadableMessageId,
-                            useHumanReadableSchemaVersion, includeTopicToMetadata, includePublishTimeToMetadata);
+                            useHumanReadableSchemaVersion, includeTopicToMetadata, includePublishTimeToMetadata,
+                            includeMessageKeyToMetadata);
                 }
                 log.info("Using avro schema: {}", rootAvroSchema);
             }
@@ -252,7 +255,7 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
                         DynamicMessage.Builder messageBuilder = DynamicMessage.newBuilder(descriptor);
                         Metadata.PulsarIOCSCProtobufMessageMetadata metadata = getMetadataFromMessage(next,
                                 useHumanReadableMessageId, useHumanReadableSchemaVersion,
-                                includeTopicToMetadata, includePublishTimeToMetadata);
+                                includeTopicToMetadata, includePublishTimeToMetadata, includeMessageKeyToMetadata);
                         for (Descriptors.FieldDescriptor field : descriptor.getFields()) {
                             if (field.getName().equals(MESSAGE_METADATA_KEY)) {
                                 messageBuilder.setField(field, metadata);
@@ -276,7 +279,8 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
                                         useHumanReadableMessageId,
                                         useHumanReadableSchemaVersion,
                                         includeTopicToMetadata,
-                                        includePublishTimeToMetadata);
+                                        includePublishTimeToMetadata,
+                                        includeMessageKeyToMetadata);
                         writeRecord.put(MESSAGE_METADATA_KEY, metadataRecord);
                     }
                     if (parquetWriter != null) {

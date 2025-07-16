@@ -66,6 +66,7 @@ public class BlobStoreAbstractConfigTest {
         Assert.assertEquals(config.get("timePartitionDuration"), cloudStorageSinkConfig.getTimePartitionDuration());
         Assert.assertEquals(config.get("batchSize"), cloudStorageSinkConfig.getBatchSize());
         Assert.assertTrue(cloudStorageSinkConfig.isPartitionerWithTopicName());
+        Assert.assertFalse(cloudStorageSinkConfig.isIncludeTopicToMetadata());
         Assert.assertEquals(10000000L, cloudStorageSinkConfig.getMaxBatchBytes());
     }
 
@@ -212,6 +213,7 @@ public class BlobStoreAbstractConfigTest {
         config.put("timePartitionPattern", "yyyy-MM-dd");
         config.put("timePartitionDuration", "2d");
         config.put("batchSize", 10);
+        config.put("includeMessageKeyToMetadata", true);
 
         SinkContext sinkContext = Mockito.mock(SinkContext.class);
         Mockito.when(sinkContext.getSecret("accessKeyId"))
@@ -226,6 +228,7 @@ public class BlobStoreAbstractConfigTest {
         Assert.assertEquals(sinkConfig.getBucket(), "testbucket");
         Assert.assertEquals(sinkConfig.getSecretAccessKey(), "myAccessKey");
         Assert.assertEquals(sinkConfig.getAccessKeyId(), "myKeyId");
+        Assert.assertTrue(sinkConfig.isIncludeMessageKeyToMetadata());
     }
 
     @Test

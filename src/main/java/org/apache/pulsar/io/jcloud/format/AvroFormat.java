@@ -55,6 +55,7 @@ public class AvroFormat implements Format<GenericRecord> , InitConfiguration<Blo
     private boolean useHumanReadableSchemaVersion;
     private boolean includeTopicToMetadata;
     private boolean includePublishTimeToMetadata;
+    private boolean includeMessageKeyToMetadata;
     private CodecFactory codecFactory;
 
     @Override
@@ -69,6 +70,7 @@ public class AvroFormat implements Format<GenericRecord> , InitConfiguration<Blo
         this.useHumanReadableSchemaVersion = configuration.isUseHumanReadableSchemaVersion();
         this.includeTopicToMetadata = configuration.isIncludeTopicToMetadata();
         this.includePublishTimeToMetadata = configuration.isIncludePublishTimeToMetadata();
+        this.includeMessageKeyToMetadata = configuration.isIncludeMessageKeyToMetadata();
         String codecName = configuration.getAvroCodec();
         if (codecName == null) {
             this.codecFactory = CodecFactory.nullCodec();
@@ -90,7 +92,8 @@ public class AvroFormat implements Format<GenericRecord> , InitConfiguration<Blo
         rootAvroSchema = AvroRecordUtil.convertToAvroSchema(schema);
         if (useMetadata){
             rootAvroSchema = MetadataUtil.setMetadataSchema(rootAvroSchema, useHumanReadableMessageId,
-                    useHumanReadableSchemaVersion, includeTopicToMetadata, includePublishTimeToMetadata);
+                    useHumanReadableSchemaVersion, includeTopicToMetadata,
+                    includePublishTimeToMetadata, includeMessageKeyToMetadata);
         }
 
         LOGGER.debug("Using avro schema: {}", rootAvroSchema);
@@ -129,7 +132,7 @@ public class AvroFormat implements Format<GenericRecord> , InitConfiguration<Blo
                     org.apache.avro.generic.GenericRecord metadataRecord =
                             MetadataUtil.extractedMetadataRecord(next,
                                     useHumanReadableMessageId, useHumanReadableSchemaVersion,
-                                    includeTopicToMetadata, includePublishTimeToMetadata);
+                                    includeTopicToMetadata, includePublishTimeToMetadata, includeMessageKeyToMetadata);
                     writeRecord.put(MetadataUtil.MESSAGE_METADATA_KEY, metadataRecord);
                 }
                 fileWriter.append(writeRecord);

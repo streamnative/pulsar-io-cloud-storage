@@ -28,5 +28,6 @@ message PulsarIOCSCProtobufMessageMetadata {
   string message_id = 3;
   string topic = 4;
   int64 publish_time = 5;
+  string message_key = 6;
 }
 
