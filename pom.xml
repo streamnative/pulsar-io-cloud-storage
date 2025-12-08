@@ -44,14 +44,14 @@
     <testRetryCount>2</testRetryCount>
 
     <!-- connector dependencies -->
-    <jackson.version>2.13.2</jackson.version>
-    <jackson-databind.version>2.13.4.2</jackson-databind.version>
+    <jackson.version>2.15.4</jackson.version>
+    <jackson-databind.version>2.15.4</jackson-databind.version>
     <lombok.version>1.18.32</lombok.version>
     <pulsar.groupId>com.datastax.oss</pulsar.groupId>
     <pulsar.version>3.1.4.2</pulsar.version>
     <avro.version>1.11.4</avro.version>
-    <hadoop.version>3.3.6</hadoop.version>
-    <parquet.version>1.15.1</parquet.version>
+    <hadoop.version>3.4.0</hadoop.version>
+    <parquet.version>1.15.2</parquet.version>
     <awsjavasdk.version>1.12.698</awsjavasdk.version>
     <aws.java.sdk2.version>2.16.104</aws.java.sdk2.version>
     <jaxb-api>2.3.1</jaxb-api>
@@ -61,6 +61,14 @@
     <json-smart.version>2.4.9</json-smart.version>
     <protobuf3.version>3.25.5</protobuf3.version>
     <asynchttpclient.version>2.12.4</asynchttpclient.version>
+    <jersey-client.version>2.46</jersey-client.version>
+    <dnsjava.version>3.6.0</dnsjava.version>
+    <jettison.version>1.5.4</jettison.version>
+    <snappy.version>1.1.10.4</snappy.version>
+    <nimbusds.version>9.37.4</nimbusds.version>
+    <commons-beanutils.version>1.11.0</commons-beanutils.version>
+    <commons-configuration2.version>2.10.1</commons-configuration2.version>
+    <bouncycastle.version>1.79</bouncycastle.version>
     <protoc3.version>${protobuf3.version}</protoc3.version>
     <grpc.version>1.42.1</grpc.version>
     <protoc-gen-grpc-java.version>${grpc.version}</protoc-gen-grpc-java.version>
@@ -72,6 +80,7 @@
     <mockito.version>3.7.7</mockito.version>
     <powermock.version>2.0.2</powermock.version>
     <testcontainers.version>1.15.2</testcontainers.version>
+    <commons-lang3.version>3.18.0</commons-lang3.version>
 
     <!-- build plugin dependencies -->
     <license.plugin.version>3.0</license.plugin.version>
@@ -86,7 +95,7 @@
     <snakeyaml.version>2.0</snakeyaml.version>
     <reload4j.version>1.2.24</reload4j.version>
     <woodstox-core.version>5.4.0</woodstox-core.version>
-    <netty.version>4.1.86.Final</netty.version>
+    <netty.version>4.1.125.Final</netty.version>
     <libthrift.version>0.17.0</libthrift.version>
   </properties>
 
@@ -174,6 +183,54 @@
         <groupId>org.asynchttpclient</groupId>
         <artifactId>async-http-client</artifactId>
         <version>${asynchttpclient.version}</version>
+        <scope>runtime</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.glassfish.jersey.core</groupId>
+        <artifactId>jersey-client</artifactId>
+        <version>${jersey-client.version}</version>
+        <scope>runtime</scope>
+      </dependency>
+      <dependency>
+        <groupId>dnsjava</groupId>
+        <artifactId>dnsjava</artifactId>
+        <version>${dnsjava.version}</version>
+        <scope>runtime</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.codehaus.jettison</groupId>
+        <artifactId>jettison</artifactId>
+        <version>${jettison.version}</version>
+        <scope>runtime</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.xerial.snappy</groupId>
+        <artifactId>snappy-java</artifactId>
+        <version>${snappy.version}</version>
+        <scope>runtime</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.nimbusds</groupId>
+        <artifactId>nimbus-jose-jwt</artifactId>
+        <version>${nimbusds.version}</version>
+        <scope>runtime</scope>
+      </dependency>
+      <dependency>
+        <groupId>commons-beanutils</groupId>
+        <artifactId>commons-beanutils</artifactId>
+        <version>${commons-beanutils.version}</version>
+        <scope>runtime</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-configuration2</artifactId>
+        <version>${commons-configuration2.version}</version>
+        <scope>runtime</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcpkix-jdk18on</artifactId>
+        <version>${bouncycastle.version}</version>
         <scope>runtime</scope>
       </dependency>
       <dependency>
@@ -355,10 +412,12 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
+      <version>${jackson-databind.version}</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.dataformat</groupId>
       <artifactId>jackson-dataformat-yaml</artifactId>
+      <version>${jackson.version}</version>
     </dependency>
     <dependency>
       <groupId>${pulsar.groupId}</groupId>
@@ -397,6 +456,7 @@
     <dependency>
       <groupId>org.apache.parquet</groupId>
       <artifactId>parquet-avro</artifactId>
+      <version>${parquet.version}</version>
       <exclusions>
         <exclusion>
           <groupId>org.apache.avro</groupId>
@@ -407,18 +467,22 @@
     <dependency>
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java</artifactId>
+      <version>${protobuf3.version}</version>
     </dependency>
     <dependency>
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java-util</artifactId>
+      <version>${protobuf3.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.parquet</groupId>
       <artifactId>parquet-protobuf</artifactId>
+      <version>${parquet.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.parquet</groupId>
       <artifactId>parquet-hadoop</artifactId>
+      <version>${parquet.version}</version>
       <exclusions>
         <exclusion>
           <groupId>org.apache.avro</groupId>
@@ -429,6 +493,7 @@
     <dependency>
       <groupId>org.apache.avro</groupId>
       <artifactId>avro</artifactId>
+      <version>${avro.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
@@ -644,7 +709,7 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
-      <version>3.11</version>
+      <version>${commons-lang3.version}</version>
     </dependency>
     <dependency>
       <groupId>${pulsar.groupId}</groupId>
