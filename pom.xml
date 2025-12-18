@@ -50,7 +50,7 @@
     <pulsar.groupId>com.datastax.oss</pulsar.groupId>
     <pulsar.version>3.1.4.2</pulsar.version>
     <avro.version>1.11.4</avro.version>
-    <hadoop.version>3.4.0</hadoop.version>
+    <hadoop.version>3.4.1</hadoop.version>
     <parquet.version>1.15.2</parquet.version>
     <awsjavasdk.version>1.12.698</awsjavasdk.version>
     <aws.java.sdk2.version>2.16.104</aws.java.sdk2.version>
@@ -68,6 +68,7 @@
     <nimbusds.version>9.37.4</nimbusds.version>
     <commons-beanutils.version>1.11.0</commons-beanutils.version>
     <commons-configuration2.version>2.10.1</commons-configuration2.version>
+    <commons-io.version>2.14.0</commons-io.version>
     <bouncycastle.version>1.79</bouncycastle.version>
     <protoc3.version>${protobuf3.version}</protoc3.version>
     <grpc.version>1.42.1</grpc.version>
@@ -185,53 +186,73 @@
         <version>${asynchttpclient.version}</version>
         <scope>runtime</scope>
       </dependency>
+      <!-- Override transitive dependency version to fix vulnerability -->
       <dependency>
         <groupId>org.glassfish.jersey.core</groupId>
         <artifactId>jersey-client</artifactId>
         <version>${jersey-client.version}</version>
         <scope>runtime</scope>
       </dependency>
+      <!-- Override transitive dependency version to fix vulnerability -->
       <dependency>
         <groupId>dnsjava</groupId>
         <artifactId>dnsjava</artifactId>
         <version>${dnsjava.version}</version>
         <scope>runtime</scope>
       </dependency>
+      <!-- Override transitive dependency version to fix vulnerability -->
       <dependency>
         <groupId>org.codehaus.jettison</groupId>
         <artifactId>jettison</artifactId>
         <version>${jettison.version}</version>
         <scope>runtime</scope>
       </dependency>
+      <!-- Override transitive dependency version to fix vulnerability -->
       <dependency>
         <groupId>org.xerial.snappy</groupId>
         <artifactId>snappy-java</artifactId>
         <version>${snappy.version}</version>
         <scope>runtime</scope>
       </dependency>
+      <!-- Override transitive dependency version to fix vulnerability -->
       <dependency>
         <groupId>com.nimbusds</groupId>
         <artifactId>nimbus-jose-jwt</artifactId>
         <version>${nimbusds.version}</version>
         <scope>runtime</scope>
       </dependency>
+      <!-- Override transitive dependency version to fix vulnerability -->
       <dependency>
         <groupId>commons-beanutils</groupId>
         <artifactId>commons-beanutils</artifactId>
         <version>${commons-beanutils.version}</version>
         <scope>runtime</scope>
       </dependency>
+      <!-- Override transitive dependency version to fix vulnerability -->
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-configuration2</artifactId>
         <version>${commons-configuration2.version}</version>
         <scope>runtime</scope>
       </dependency>
+      <!-- Override transitive dependency version to fix vulnerability -->
       <dependency>
         <groupId>org.bouncycastle</groupId>
         <artifactId>bcpkix-jdk18on</artifactId>
         <version>${bouncycastle.version}</version>
         <scope>runtime</scope>
+      </dependency>
+      <!-- Override transitive dependency version to fix vulnerability -->
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcprov-jdk18on</artifactId>
+        <version>${bouncycastle.version}</version>
+        <scope>runtime</scope>
+      </dependency>
+      <dependency>
+        <groupId>commons-io</groupId>
+        <artifactId>commons-io</artifactId>
+        <version>${commons-io.version}</version>
       </dependency>
       <dependency>
         <groupId>com.google.protobuf</groupId>
@@ -456,7 +477,6 @@
     <dependency>
       <groupId>org.apache.parquet</groupId>
       <artifactId>parquet-avro</artifactId>
-      <version>${parquet.version}</version>
       <exclusions>
         <exclusion>
           <groupId>org.apache.avro</groupId>
@@ -467,22 +487,18 @@
     <dependency>
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java</artifactId>
-      <version>${protobuf3.version}</version>
     </dependency>
     <dependency>
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java-util</artifactId>
-      <version>${protobuf3.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.parquet</groupId>
       <artifactId>parquet-protobuf</artifactId>
-      <version>${parquet.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.parquet</groupId>
       <artifactId>parquet-hadoop</artifactId>
-      <version>${parquet.version}</version>
       <exclusions>
         <exclusion>
           <groupId>org.apache.avro</groupId>
@@ -493,34 +509,6 @@
     <dependency>
       <groupId>org.apache.avro</groupId>
       <artifactId>avro</artifactId>
-      <version>${avro.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.hadoop</groupId>
-      <artifactId>hadoop-client</artifactId>
-      <version>3.3.3</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.apache.hadoop</groupId>
-          <artifactId>hadoop-yarn-api</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.hadoop</groupId>
-          <artifactId>hadoop-yarn-client</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.hadoop</groupId>
-          <artifactId>hadoop-yarn-common</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.hadoop</groupId>
-          <artifactId>hadoop-mapreduce-client-jobclient</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.hadoop</groupId>
-          <artifactId>hadoop-hdfs-client</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
@@ -712,18 +700,9 @@
       <version>${commons-lang3.version}</version>
     </dependency>
     <dependency>
-      <groupId>${pulsar.groupId}</groupId>
-      <artifactId>pulsar-io-common</artifactId>
-    </dependency>
-    <dependency>
       <groupId>javax.xml.bind</groupId>
       <artifactId>jaxb-api</artifactId>
       <version>${jaxb-api}</version>
-    </dependency>
-    <dependency>
-      <groupId>${pulsar.groupId}</groupId>
-      <artifactId>pulsar-client-original</artifactId>
-      <version>${pulsar.version}</version>
     </dependency>
     <dependency>
       <groupId>${pulsar.groupId}</groupId>
@@ -735,11 +714,6 @@
       <artifactId>jna</artifactId>
       <version>5.7.0</version>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>${pulsar.groupId}</groupId>
-      <artifactId>pulsar-common</artifactId>
-      <version>${pulsar.version}</version>
     </dependency>
   </dependencies>
 
