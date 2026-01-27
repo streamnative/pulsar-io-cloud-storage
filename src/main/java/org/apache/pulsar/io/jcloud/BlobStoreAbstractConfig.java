@@ -45,6 +45,7 @@ import org.apache.pulsar.io.jcloud.format.ParquetFormat;
 import org.apache.pulsar.io.jcloud.partitioner.PartitionerType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.services.s3.model.StorageClass;
 
 
 /**
@@ -79,6 +80,7 @@ public class BlobStoreAbstractConfig implements Serializable {
     // #### common configuration ####
     private boolean usePathStyleUrl = true;
     private String awsCannedAcl = "";
+    private String s3StorageClass = "STANDARD";
     private boolean skipFailedMessages = false;
 
     // #### partitioner configuration ####
@@ -125,6 +127,11 @@ public class BlobStoreAbstractConfig implements Serializable {
         if (provider.equalsIgnoreCase(PROVIDER_AWSS3) || provider.equalsIgnoreCase(PROVIDER_AWSS3V2)) {
             checkArgument(isNotBlank(region) || isNotBlank(endpoint),
                     "Either the aws-end-point or aws-region must be set.");
+        }
+        if (provider.equalsIgnoreCase(PROVIDER_AWSS3V2) && isNotBlank(s3StorageClass)) {
+            StorageClass storageClass = StorageClass.fromValue(s3StorageClass);
+            checkArgument(storageClass != StorageClass.UNKNOWN_TO_SDK_VERSION,
+                    "s3StorageClass property is not a valid S3 storage class: " + s3StorageClass);
         }
         if (isNotBlank(endpoint)) {
             checkArgument(hasURIScheme(endpoint), "endpoint property needs to specify URI scheme.");

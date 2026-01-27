@@ -3,6 +3,7 @@
 .project
 .settings/
 .recommenders/
+.factorypath
 
 # Intellij
 .idea/

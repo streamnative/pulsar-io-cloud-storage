@@ -34,6 +34,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.StorageClass;
 import software.amazon.awssdk.services.sts.StsClient;
 import software.amazon.awssdk.services.sts.StsClientBuilder;
 import software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider;
@@ -51,6 +52,7 @@ public class S3BlobWriter implements BlobWriter {
     private final S3Client s3;
     private final String bucket;
     private ObjectCannedACL acl;
+    private StorageClass storageClass;
 
     public S3BlobWriter(CloudStorageSinkConfig sinkConfig) {
 
@@ -67,6 +69,9 @@ public class S3BlobWriter implements BlobWriter {
         if (StringUtils.isNotEmpty(sinkConfig.getAwsCannedAcl())) {
             acl = ObjectCannedACL.fromValue(sinkConfig.getAwsCannedAcl());
         }
+        if (StringUtils.isNotEmpty(sinkConfig.getS3StorageClass())) {
+            storageClass = StorageClass.fromValue(sinkConfig.getS3StorageClass());
+        }
     }
 
     @Override
@@ -74,6 +79,9 @@ public class S3BlobWriter implements BlobWriter {
         PutObjectRequest.Builder req = PutObjectRequest.builder().bucket(bucket).key(key);
         if (acl != null) {
             req.acl(acl);
+        }
+        if (storageClass != null) {
+            req.storageClass(storageClass);
         }
 
         s3.putObject(req.build(), RequestBody.fromByteBuffer(payload));

@@ -19,6 +19,7 @@
 package org.apache.pulsar.io.jcloud.writer;
 
 import static org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig.PROVIDER_AWSS3V2;
+import static org.junit.Assert.assertThrows;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -44,6 +45,67 @@ public class S3BlobWriterTest {
         config.put("timePartitionPattern", "yyyy-MM-dd");
         config.put("timePartitionDuration", "2d");
         config.put("batchSize", 10);
+        CloudStorageSinkConfig cloudStorageSinkConfig = CloudStorageSinkConfig.load(config);
+        cloudStorageSinkConfig.validate();
+
+        S3BlobWriter o = new S3BlobWriter(cloudStorageSinkConfig);
+        o.close();
+    }
+
+    @Test
+    public void testValidStorageClass() throws IOException {
+        Map<String, Object> config = new HashMap<>();
+        config.put("provider", PROVIDER_AWSS3V2);
+        config.put("accessKeyId", "aws-s3");
+        config.put("secretAccessKey", "aws-s3");
+        config.put("bucket", "testbucket");
+        config.put("region", "us-east-1");
+        config.put("endpoint", "https://us-standard");
+        config.put("pathPrefix", "pulsar/");
+        config.put("formatType", "avro");
+        config.put("partitionerType", "default");
+        config.put("batchSize", 10);
+        config.put("s3StorageClass", "STANDARD_IA");
+        CloudStorageSinkConfig cloudStorageSinkConfig = CloudStorageSinkConfig.load(config);
+        cloudStorageSinkConfig.validate();
+
+        S3BlobWriter o = new S3BlobWriter(cloudStorageSinkConfig);
+        o.close();
+    }
+
+    @Test
+    public void testInvalidStorageClassFailsValidation() throws IOException {
+        Map<String, Object> config = new HashMap<>();
+        config.put("provider", PROVIDER_AWSS3V2);
+        config.put("accessKeyId", "aws-s3");
+        config.put("secretAccessKey", "aws-s3");
+        config.put("bucket", "testbucket");
+        config.put("region", "us-east-1");
+        config.put("endpoint", "https://us-standard");
+        config.put("pathPrefix", "pulsar/");
+        config.put("formatType", "avro");
+        config.put("partitionerType", "default");
+        config.put("batchSize", 10);
+        config.put("s3StorageClass", "INVALID_STORAGE_CLASS");
+        CloudStorageSinkConfig cloudStorageSinkConfig = CloudStorageSinkConfig.load(config);
+
+        assertThrows(IllegalArgumentException.class, cloudStorageSinkConfig::validate);
+    }
+
+    @Test
+    public void testDefaultStorageClass() throws IOException {
+        Map<String, Object> config = new HashMap<>();
+        config.put("provider", PROVIDER_AWSS3V2);
+        config.put("accessKeyId", "aws-s3");
+        config.put("secretAccessKey", "aws-s3");
+        config.put("bucket", "testbucket");
+        config.put("region", "us-east-1");
+        config.put("endpoint", "https://us-standard");
+        config.put("pathPrefix", "pulsar/");
+        config.put("formatType", "avro");
+        config.put("partitionerType", "default");
+        config.put("batchSize", 10);
+        // s3StorageClass not set, should default to STANDARD
         CloudStorageSinkConfig cloudStorageSinkConfig = CloudStorageSinkConfig.load(config);
         cloudStorageSinkConfig.validate();
 
