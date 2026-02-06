@@ -74,7 +74,7 @@ public class S3BlobWriterTest {
     }
 
     @Test
-    public void testInvalidStorageClassFailsValidation() throws IOException {
+    public void testEmptyStorageClassFailsValidation() throws IOException {
         Map<String, Object> config = new HashMap<>();
         config.put("provider", PROVIDER_AWSS3V2);
         config.put("accessKeyId", "aws-s3");
@@ -86,10 +86,28 @@ public class S3BlobWriterTest {
         config.put("formatType", "avro");
         config.put("partitionerType", "default");
         config.put("batchSize", 10);
-        config.put("s3StorageClass", "INVALID_STORAGE_CLASS");
+        config.put("s3StorageClass", "");
         CloudStorageSinkConfig cloudStorageSinkConfig = CloudStorageSinkConfig.load(config);
 
         assertThrows(IllegalArgumentException.class, cloudStorageSinkConfig::validate);
+    }
+
+    @Test
+    public void testKnownStorageClassPassesValidation() throws IOException {
+        Map<String, Object> config = new HashMap<>();
+        config.put("provider", PROVIDER_AWSS3V2);
+        config.put("accessKeyId", "aws-s3");
+        config.put("secretAccessKey", "aws-s3");
+        config.put("bucket", "testbucket");
+        config.put("region", "us-east-1");
+        config.put("endpoint", "https://us-standard");
+        config.put("pathPrefix", "pulsar/");
+        config.put("formatType", "avro");
+        config.put("partitionerType", "default");
+        config.put("batchSize", 10);
+        config.put("s3StorageClass", "GLACIER_IR");
+        CloudStorageSinkConfig cloudStorageSinkConfig = CloudStorageSinkConfig.load(config);
+        cloudStorageSinkConfig.validate();
     }
 
     @Test
