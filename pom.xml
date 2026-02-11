@@ -70,7 +70,8 @@
     <awaitility.version>4.2.0</awaitility.version>
     <mockito.version>3.7.7</mockito.version>
     <powermock.version>2.0.2</powermock.version>
-    <testcontainers.version>1.15.2</testcontainers.version>
+    <testcontainers.version>1.19.3</testcontainers.version>
+    <junit-jupiter.version>5.10.1</junit-jupiter.version>
 
     <!-- build plugin dependencies -->
     <license.plugin.version>3.0</license.plugin.version>
@@ -247,6 +248,21 @@
         <groupId>org.testcontainers</groupId>
         <artifactId>pulsar</artifactId>
         <version>${testcontainers.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>junit-jupiter</artifactId>
+        <version>${testcontainers.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>localstack</artifactId>
+        <version>${testcontainers.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter</artifactId>
+        <version>${junit-jupiter.version}</version>
       </dependency>
       <dependency>
         <groupId>software.amazon.awssdk</groupId>
@@ -605,6 +621,21 @@
       <version>${pulsar.version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>localstack</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
 
   </dependencies>
 
@@ -631,6 +662,9 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
           <configuration>
+            <excludes>
+              <exclude>**/*IT.java</exclude>
+            </excludes>
             <reuseForks>false</reuseForks>
             <forkedProcessTimeoutInSeconds>1800</forkedProcessTimeoutInSeconds>
             <rerunFailingTestsCount>${testRetryCount}</rerunFailingTestsCount>
@@ -794,6 +828,47 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
+      </plugin>
+
+      <!-- integration test -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <version>3.2.3</version>
+        <configuration>
+          <includes>
+            <include>**/*IT.java</include>
+          </includes>
+          <argLine>
+            --add-opens java.base/java.io=ALL-UNNAMED
+            --add-opens java.base/java.lang=ALL-UNNAMED
+            --add-opens java.base/java.lang.reflect=ALL-UNNAMED
+            --add-opens java.base/java.lang.invoke=ALL-UNNAMED
+            --add-opens java.base/java.net=ALL-UNNAMED
+            --add-opens java.base/java.nio=ALL-UNNAMED
+            --add-opens java.base/java.nio.channels.spi=ALL-UNNAMED
+            --add-opens java.base/java.nio.file=ALL-UNNAMED
+            --add-opens java.base/java.util=ALL-UNNAMED
+            --add-opens java.base/java.util.concurrent=ALL-UNNAMED
+            --add-opens java.base/java.util.concurrent.atomic=ALL-UNNAMED
+            --add-opens java.base/java.util.stream=ALL-UNNAMED
+            --add-opens java.base/java.util.zip=ALL-UNNAMED
+            --add-opens java.base/java.time=ALL-UNNAMED
+            --add-opens java.base/jdk.internal.loader=ALL-UNNAMED
+            --add-opens java.base/sun.net.dns=ALL-UNNAMED
+            --add-opens java.base/sun.nio.ch=ALL-UNNAMED
+            --add-opens java.base/sun.security.jca=ALL-UNNAMED
+            --add-opens java.xml/jdk.xml.internal=ALL-UNNAMED
+          </argLine>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
 
       <!-- package -->
