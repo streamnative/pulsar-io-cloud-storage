@@ -70,7 +70,7 @@
     <awaitility.version>4.2.0</awaitility.version>
     <mockito.version>3.7.7</mockito.version>
     <powermock.version>2.0.2</powermock.version>
-    <testcontainers.version>1.19.3</testcontainers.version>
+    <testcontainers.version>1.21.4</testcontainers.version>
     <junit-jupiter.version>5.10.1</junit-jupiter.version>
 
     <!-- build plugin dependencies -->
@@ -241,23 +241,10 @@
       </dependency>
       <dependency>
         <groupId>org.testcontainers</groupId>
-        <artifactId>testcontainers</artifactId>
+        <artifactId>testcontainers-bom</artifactId>
         <version>${testcontainers.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.testcontainers</groupId>
-        <artifactId>pulsar</artifactId>
-        <version>${testcontainers.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.testcontainers</groupId>
-        <artifactId>junit-jupiter</artifactId>
-        <version>${testcontainers.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.testcontainers</groupId>
-        <artifactId>localstack</artifactId>
-        <version>${testcontainers.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>org.junit.jupiter</groupId>
