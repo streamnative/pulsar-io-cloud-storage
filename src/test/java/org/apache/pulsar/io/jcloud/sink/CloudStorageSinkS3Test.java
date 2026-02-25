@@ -68,7 +68,7 @@ import software.amazon.awssdk.services.s3.model.StorageClass;
  */
 @Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class CloudStorageSinkS3IT {
+public class CloudStorageSinkS3Test {
 
     private static final String TEST_BUCKET = "test-sink-bucket";
     private static final String TEST_TOPIC = "persistent://public/default/test-topic-partition-0";

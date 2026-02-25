@@ -649,9 +649,6 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
           <configuration>
-            <excludes>
-              <exclude>**/*IT.java</exclude>
-            </excludes>
             <reuseForks>false</reuseForks>
             <forkedProcessTimeoutInSeconds>1800</forkedProcessTimeoutInSeconds>
             <rerunFailingTestsCount>${testRetryCount}</rerunFailingTestsCount>
@@ -815,47 +812,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-      </plugin>
-
-      <!-- integration test -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <version>3.2.3</version>
-        <configuration>
-          <includes>
-            <include>**/*IT.java</include>
-          </includes>
-          <argLine>
-            --add-opens java.base/java.io=ALL-UNNAMED
-            --add-opens java.base/java.lang=ALL-UNNAMED
-            --add-opens java.base/java.lang.reflect=ALL-UNNAMED
-            --add-opens java.base/java.lang.invoke=ALL-UNNAMED
-            --add-opens java.base/java.net=ALL-UNNAMED
-            --add-opens java.base/java.nio=ALL-UNNAMED
-            --add-opens java.base/java.nio.channels.spi=ALL-UNNAMED
-            --add-opens java.base/java.nio.file=ALL-UNNAMED
-            --add-opens java.base/java.util=ALL-UNNAMED
-            --add-opens java.base/java.util.concurrent=ALL-UNNAMED
-            --add-opens java.base/java.util.concurrent.atomic=ALL-UNNAMED
-            --add-opens java.base/java.util.stream=ALL-UNNAMED
-            --add-opens java.base/java.util.zip=ALL-UNNAMED
-            --add-opens java.base/java.time=ALL-UNNAMED
-            --add-opens java.base/jdk.internal.loader=ALL-UNNAMED
-            --add-opens java.base/sun.net.dns=ALL-UNNAMED
-            --add-opens java.base/sun.nio.ch=ALL-UNNAMED
-            --add-opens java.base/sun.security.jca=ALL-UNNAMED
-            --add-opens java.xml/jdk.xml.internal=ALL-UNNAMED
-          </argLine>
-        </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>integration-test</goal>
-              <goal>verify</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
 
       <!-- package -->
