@@ -79,6 +79,7 @@ public class BlobStoreAbstractConfig implements Serializable {
     // #### common configuration ####
     private boolean usePathStyleUrl = true;
     private String awsCannedAcl = "";
+    private String s3StorageClass = "STANDARD";
     private boolean skipFailedMessages = false;
 
     // #### partitioner configuration ####
@@ -125,6 +126,10 @@ public class BlobStoreAbstractConfig implements Serializable {
         if (provider.equalsIgnoreCase(PROVIDER_AWSS3) || provider.equalsIgnoreCase(PROVIDER_AWSS3V2)) {
             checkArgument(isNotBlank(region) || isNotBlank(endpoint),
                     "Either the aws-end-point or aws-region must be set.");
+        }
+        if (provider.equalsIgnoreCase(PROVIDER_AWSS3V2)) {
+            checkArgument(isNotBlank(s3StorageClass),
+                    "s3StorageClass property must not be empty for s3v2 provider.");
         }
         if (isNotBlank(endpoint)) {
             checkArgument(hasURIScheme(endpoint), "endpoint property needs to specify URI scheme.");
