@@ -51,6 +51,7 @@ public class S3BlobWriter implements BlobWriter {
     private final S3Client s3;
     private final String bucket;
     private ObjectCannedACL acl;
+    private String storageClass;
 
     public S3BlobWriter(CloudStorageSinkConfig sinkConfig) {
 
@@ -67,6 +68,9 @@ public class S3BlobWriter implements BlobWriter {
         if (StringUtils.isNotEmpty(sinkConfig.getAwsCannedAcl())) {
             acl = ObjectCannedACL.fromValue(sinkConfig.getAwsCannedAcl());
         }
+        if (StringUtils.isNotEmpty(sinkConfig.getS3StorageClass())) {
+            storageClass = sinkConfig.getS3StorageClass();
+        }
     }
 
     @Override
@@ -74,6 +78,9 @@ public class S3BlobWriter implements BlobWriter {
         PutObjectRequest.Builder req = PutObjectRequest.builder().bucket(bucket).key(key);
         if (acl != null) {
             req.acl(acl);
+        }
+        if (storageClass != null) {
+            req.storageClass(storageClass);
         }
 
         s3.putObject(req.build(), RequestBody.fromByteBuffer(payload));
