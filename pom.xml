@@ -44,11 +44,11 @@
     <testRetryCount>2</testRetryCount>
 
     <!-- connector dependencies -->
-    <jackson.version>2.15.4</jackson.version>
-    <jackson-databind.version>2.15.4</jackson-databind.version>
+    <jackson.version>2.18.6</jackson.version>
+    <jackson-databind.version>2.18.6</jackson-databind.version>
     <lombok.version>1.18.32</lombok.version>
     <pulsar.groupId>com.datastax.oss</pulsar.groupId>
-    <pulsar.version>3.1.4.2</pulsar.version>
+    <pulsar.version>3.1.4.22</pulsar.version>
     <avro.version>1.11.4</avro.version>
     <hadoop.version>3.4.1</hadoop.version>
     <parquet.version>1.15.2</parquet.version>
@@ -69,6 +69,7 @@
     <commons-beanutils.version>1.11.0</commons-beanutils.version>
     <commons-configuration2.version>2.10.1</commons-configuration2.version>
     <commons-io.version>2.14.0</commons-io.version>
+    <aircompressor.version>2.0.3</aircompressor.version>
     <bouncycastle.version>1.79</bouncycastle.version>
     <protoc3.version>${protobuf3.version}</protoc3.version>
     <grpc.version>1.42.1</grpc.version>
@@ -96,7 +97,7 @@
     <snakeyaml.version>2.0</snakeyaml.version>
     <reload4j.version>1.2.24</reload4j.version>
     <woodstox-core.version>5.4.0</woodstox-core.version>
-    <netty.version>4.1.125.Final</netty.version>
+    <netty.version>4.1.130.Final</netty.version>
     <libthrift.version>0.17.0</libthrift.version>
   </properties>
 
@@ -253,6 +254,11 @@
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>
         <version>${commons-io.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.airlift</groupId>
+        <artifactId>aircompressor</artifactId>
+        <version>${aircompressor.version}</version>
       </dependency>
       <dependency>
         <groupId>com.google.protobuf</groupId>
