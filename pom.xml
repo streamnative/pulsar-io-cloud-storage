@@ -45,7 +45,7 @@
 
     <!-- connector dependencies -->
     <jackson.version>2.18.6</jackson.version>
-    <jackson-databind.version>2.18.6</jackson-databind.version>
+    <jackson-databind.version>2.21.2</jackson-databind.version>
     <lombok.version>1.18.32</lombok.version>
     <pulsar.groupId>com.datastax.oss</pulsar.groupId>
     <pulsar.version>3.1.4.22</pulsar.version>
@@ -60,7 +60,7 @@
     <log4j.version>2.17.1</log4j.version>
     <json-smart.version>2.4.9</json-smart.version>
     <protobuf3.version>3.25.5</protobuf3.version>
-    <asynchttpclient.version>2.12.4</asynchttpclient.version>
+    <asynchttpclient.version>2.14.5</asynchttpclient.version>
     <jersey-client.version>2.46</jersey-client.version>
     <dnsjava.version>3.6.0</dnsjava.version>
     <jettison.version>1.5.4</jettison.version>
@@ -70,7 +70,7 @@
     <commons-configuration2.version>2.10.1</commons-configuration2.version>
     <commons-io.version>2.14.0</commons-io.version>
     <aircompressor.version>2.0.3</aircompressor.version>
-    <bouncycastle.version>1.79</bouncycastle.version>
+    <bouncycastle.version>1.84</bouncycastle.version>
     <protoc3.version>${protobuf3.version}</protoc3.version>
     <grpc.version>1.42.1</grpc.version>
     <protoc-gen-grpc-java.version>${grpc.version}</protoc-gen-grpc-java.version>
@@ -97,7 +97,8 @@
     <snakeyaml.version>2.0</snakeyaml.version>
     <reload4j.version>1.2.24</reload4j.version>
     <woodstox-core.version>5.4.0</woodstox-core.version>
-    <netty.version>4.1.130.Final</netty.version>
+    <netty.version>4.1.132.Final</netty.version>
+    <kotlin-stdlib.version>2.1.0</kotlin-stdlib.version>
     <libthrift.version>0.17.0</libthrift.version>
   </properties>
 
@@ -248,6 +249,13 @@
         <groupId>org.bouncycastle</groupId>
         <artifactId>bcprov-jdk18on</artifactId>
         <version>${bouncycastle.version}</version>
+        <scope>runtime</scope>
+      </dependency>
+      <!-- Override transitive dependency version to fix vulnerability -->
+      <dependency>
+        <groupId>org.jetbrains.kotlin</groupId>
+        <artifactId>kotlin-stdlib</artifactId>
+        <version>${kotlin-stdlib.version}</version>
         <scope>runtime</scope>
       </dependency>
       <dependency>
