@@ -60,14 +60,14 @@
     <log4j.version>2.17.1</log4j.version>
     <json-smart.version>2.4.9</json-smart.version>
     <protobuf3.version>3.25.5</protobuf3.version>
-    <asynchttpclient.version>2.14.5</asynchttpclient.version>
+    <asynchttpclient.version>2.15.0</asynchttpclient.version>
     <jersey-client.version>2.46</jersey-client.version>
     <dnsjava.version>3.6.0</dnsjava.version>
     <jettison.version>1.5.4</jettison.version>
     <snappy.version>1.1.10.4</snappy.version>
     <nimbusds.version>9.37.4</nimbusds.version>
     <commons-beanutils.version>1.11.0</commons-beanutils.version>
-    <commons-configuration2.version>2.10.1</commons-configuration2.version>
+    <commons-configuration2.version>2.15.0</commons-configuration2.version>
     <commons-io.version>2.14.0</commons-io.version>
     <aircompressor.version>2.0.3</aircompressor.version>
     <bouncycastle.version>1.84</bouncycastle.version>
@@ -97,9 +97,10 @@
     <snakeyaml.version>2.0</snakeyaml.version>
     <reload4j.version>1.2.24</reload4j.version>
     <woodstox-core.version>5.4.0</woodstox-core.version>
-    <netty.version>4.1.132.Final</netty.version>
+    <netty.version>4.1.133.Final</netty.version>
     <kotlin-stdlib.version>2.1.0</kotlin-stdlib.version>
-    <libthrift.version>0.17.0</libthrift.version>
+    <libthrift.version>0.23.0</libthrift.version>
+    <httpcore5-h2.version>5.3.5</httpcore5-h2.version>
   </properties>
 
   <licenses>
@@ -257,6 +258,12 @@
         <artifactId>kotlin-stdlib</artifactId>
         <version>${kotlin-stdlib.version}</version>
         <scope>runtime</scope>
+      </dependency>
+      <!-- Override transitive dependency version to fix vulnerability -->
+      <dependency>
+        <groupId>org.apache.httpcomponents.core5</groupId>
+        <artifactId>httpcore5-h2</artifactId>
+        <version>${httpcore5-h2.version}</version>
       </dependency>
       <dependency>
         <groupId>commons-io</groupId>
