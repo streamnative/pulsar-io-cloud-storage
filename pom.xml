@@ -97,7 +97,7 @@
     <snakeyaml.version>2.0</snakeyaml.version>
     <reload4j.version>1.2.24</reload4j.version>
     <woodstox-core.version>5.4.0</woodstox-core.version>
-    <netty.version>4.1.133.Final</netty.version>
+    <netty.version>4.1.135.Final</netty.version>
     <kotlin-stdlib.version>2.1.0</kotlin-stdlib.version>
     <libthrift.version>0.23.0</libthrift.version>
     <httpcore5-h2.version>5.3.5</httpcore5-h2.version>
