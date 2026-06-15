@@ -19,4 +19,7 @@
 
 ARG PULSAR_VERSION
 FROM streamnative/pulsar-functions-java-runner:${PULSAR_VERSION}
+USER root
+RUN apk upgrade --no-cache
+USER $UID
 COPY --chown=$UID:$GID target/*.nar /pulsar/connectors/
