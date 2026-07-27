@@ -48,7 +48,7 @@
     <jackson-databind.version>2.21.2</jackson-databind.version>
     <lombok.version>1.18.32</lombok.version>
     <pulsar.groupId>com.datastax.oss</pulsar.groupId>
-    <pulsar.version>3.1.4.22</pulsar.version>
+    <pulsar.version>3.1.4.28</pulsar.version>
     <avro.version>1.11.4</avro.version>
     <hadoop.version>3.4.1</hadoop.version>
     <parquet.version>1.15.2</parquet.version>
