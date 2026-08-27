@@ -38,9 +38,32 @@ import org.apache.pulsar.client.impl.schema.generic.GenericAvroRecord;
 import org.apache.pulsar.common.schema.SchemaInfo;
 import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.functions.api.Record;
+import org.apache.pulsar.io.jcloud.util.AvroRecordUtil;
 import org.junit.Test;
 
 public class ParquetMultiRecordUnionTest {
+
+    @Test
+    public void testSingleRecordUnionAllowsGeneratedNamespace() {
+        org.apache.avro.Schema nativeSchema = SchemaBuilder.record("ValueRecord")
+                .fields().requiredString("content").endRecord();
+        GenericData.Record nativeRecord = new GenericData.Record(nativeSchema);
+        nativeRecord.put("content", "value");
+        GenericRecord pulsarRecord = new GenericAvroRecord(
+                null, nativeSchema, toPulsarFields(nativeSchema), nativeRecord);
+
+        org.apache.avro.Schema outputSchema = SchemaBuilder.record("ValueRecord")
+                .namespace("_value")
+                .fields().requiredString("content").endRecord();
+        org.apache.avro.Schema nullableOutputSchema = org.apache.avro.Schema.createUnion(
+                org.apache.avro.Schema.create(org.apache.avro.Schema.Type.NULL), outputSchema);
+
+        org.apache.avro.generic.GenericRecord converted =
+                AvroRecordUtil.convertGenericRecord(pulsarRecord, nullableOutputSchema);
+
+        assertEquals("_value.ValueRecord", converted.getSchema().getFullName());
+        assertEquals("value", converted.get("content").toString());
+    }
 
     @Test
     public void testWriteNonFirstRecordUnionBranch() throws Exception {

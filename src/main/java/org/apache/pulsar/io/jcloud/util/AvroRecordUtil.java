@@ -286,11 +286,17 @@ public class AvroRecordUtil {
     }
 
     private static Schema resolveRecordSchema(GenericRecord recordValue, Schema unionSchema) {
+        List<Schema> recordSchemas = unionSchema.getTypes().stream()
+                .filter(schema -> schema.getType().equals(Schema.Type.RECORD))
+                .collect(Collectors.toList());
+        if (recordSchemas.size() == 1) {
+            return recordSchemas.get(0);
+        }
+
         Object nativeObject = recordValue.getNativeObject();
         if (nativeObject instanceof org.apache.avro.generic.IndexedRecord) {
             Schema actualSchema = ((org.apache.avro.generic.IndexedRecord) nativeObject).getSchema();
-            return unionSchema.getTypes().stream()
-                    .filter(schema -> schema.getType().equals(Schema.Type.RECORD))
+            return recordSchemas.stream()
                     .filter(schema -> schema.getFullName().equals(actualSchema.getFullName()))
                     .findFirst()
                     .orElseThrow(() -> new IllegalArgumentException(
@@ -298,12 +304,6 @@ public class AvroRecordUtil {
                                     + " is not a member of union " + unionSchema));
         }
 
-        List<Schema> recordSchemas = unionSchema.getTypes().stream()
-                .filter(schema -> schema.getType().equals(Schema.Type.RECORD))
-                .collect(Collectors.toList());
-        if (recordSchemas.size() == 1) {
-            return recordSchemas.get(0);
-        }
         throw new UnsupportedOperationException(
                 "Cannot determine record branch for multi-record union " + unionSchema);
     }
