@@ -245,26 +245,17 @@ public class AvroRecordUtil {
             return recordHolder;
         }
 
-        // handle nullable fields that are union[null,record]
+        // Resolve the concrete record branch for unions such as [null, record]
+        // and unions containing multiple record types.
         if (rootAvroSchema.isUnion()) {
-            rootAvroSchema = rootAvroSchema.getTypes().stream()
-                    .filter(schema -> schema.getType().equals(Schema.Type.RECORD))
-                    .findFirst()
-                    .get();
+            rootAvroSchema = resolveRecordSchema(recordValue, rootAvroSchema);
         }
         org.apache.avro.generic.GenericRecord recordHolder = new GenericData.Record(rootAvroSchema);
         for (org.apache.pulsar.client.api.schema.Field field : recordValue.getFields()) {
             Schema.Field field1 = rootAvroSchema.getField(field.getName());
             Object valueField = readValue(recordValue, field);
             if (valueField instanceof GenericRecord) {
-                Schema subSchema = field1.schema();
-                if (field1.schema().isUnion()) {
-                    subSchema = field1.schema().getTypes().stream()
-                            .filter(schema -> schema.getType().equals(Schema.Type.RECORD))
-                            .findFirst()
-                            .get();
-                }
-                valueField = convertGenericRecord((GenericRecord) valueField, subSchema);
+                valueField = convertGenericRecord((GenericRecord) valueField, field1.schema());
             } else if (valueField instanceof DynamicMessage) {
                 Schema subSchema = field1.schema();
                 if (field1.schema().isUnion()) {
@@ -292,6 +283,29 @@ public class AvroRecordUtil {
             recordHolder.put(field.getName(), valueField);
         }
         return recordHolder;
+    }
+
+    private static Schema resolveRecordSchema(GenericRecord recordValue, Schema unionSchema) {
+        Object nativeObject = recordValue.getNativeObject();
+        if (nativeObject instanceof org.apache.avro.generic.IndexedRecord) {
+            Schema actualSchema = ((org.apache.avro.generic.IndexedRecord) nativeObject).getSchema();
+            return unionSchema.getTypes().stream()
+                    .filter(schema -> schema.getType().equals(Schema.Type.RECORD))
+                    .filter(schema -> schema.getFullName().equals(actualSchema.getFullName()))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Record schema " + actualSchema.getFullName()
+                                    + " is not a member of union " + unionSchema));
+        }
+
+        List<Schema> recordSchemas = unionSchema.getTypes().stream()
+                .filter(schema -> schema.getType().equals(Schema.Type.RECORD))
+                .collect(Collectors.toList());
+        if (recordSchemas.size() == 1) {
+            return recordSchemas.get(0);
+        }
+        throw new UnsupportedOperationException(
+                "Cannot determine record branch for multi-record union " + unionSchema);
     }
 
     private static Object readValue(GenericRecord recordValue, org.apache.pulsar.client.api.schema.Field field) {
