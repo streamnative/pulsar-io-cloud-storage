@@ -49,6 +49,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.avro.SchemaBuilder;
 import org.apache.avro.generic.GenericData;
@@ -342,6 +347,7 @@ public class SchemalessSinkTest {
         verify(pending, never()).fail();
         verify(pending.getMessage().get()).release();
         Record<GenericRecord> afterClose = record("{\"id\":2}");
+        when(afterClose.getValue()).thenThrow(new AssertionError("Stopped input must not decode the record"));
         sink.write(afterClose);
         verify(afterClose.getMessage().get()).release();
         verify(afterClose, never()).fail();
@@ -392,5 +398,40 @@ public class SchemalessSinkTest {
         when(record.getMessage().get().getMessageId()).thenReturn(new MessageIdImpl(12, 34, -1));
         assertEquals("public/default/iot/12.34.-1.parquet",
                 sink.buildPartitionPath(record, sink.partitioner, sink.format, 42));
+    }
+
+    @Test
+    public void concurrentCloseAndNormalizationDoesNotReportSystemFailure() throws Exception {
+        sink.open(config, context);
+        Record<GenericRecord> record = record("{\"id\":1}");
+        GenericRecord value = record.getValue();
+        CountDownLatch normalizing = new CountDownLatch(1);
+        CountDownLatch proceed = new CountDownLatch(1);
+        when(record.getValue()).thenAnswer(call -> {
+            normalizing.countDown();
+            assertTrue(proceed.await(5, TimeUnit.SECONDS));
+            return value;
+        });
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            Future<?> writing = executor.submit(() -> {
+                try {
+                    sink.write(record);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            assertTrue(normalizing.await(5, TimeUnit.SECONDS));
+            sink.close();
+            proceed.countDown();
+            writing.get(5, TimeUnit.SECONDS);
+            verify(record.getMessage().get()).release();
+            verify(record, never()).ack();
+            verify(record, never()).fail();
+            verify(context, never()).fatal(any());
+        } finally {
+            proceed.countDown();
+            executor.shutdownNow();
+        }
     }
 }

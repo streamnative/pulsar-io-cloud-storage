@@ -246,7 +246,8 @@ processing and `skipFailedMessages` keep their existing semantics.
 
 #### Runtime acceptance test
 
-The opt-in test builds on actual Docker Pulsar IO workers (two instances), a
+The opt-in test covers non-partitioned and two-partition topics using actual
+Docker Pulsar IO workers (two instances), a
 packaged NAR, pooled messages and MinIO; it reads Parquet from S3, exercises
 good/bad/good and typed messages, checks DLQ payload/key/properties/event time,
 checks exactly two bad-message redeliveries, restarts after a registry schema

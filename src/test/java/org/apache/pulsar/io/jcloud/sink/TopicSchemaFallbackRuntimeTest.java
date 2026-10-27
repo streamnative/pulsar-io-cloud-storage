@@ -53,8 +53,9 @@ import org.apache.pulsar.common.schema.SchemaInfo;
 import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.io.jcloud.PulsarContainer;
 import org.apache.pulsar.io.jcloud.format.ParquetInputFile;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.containers.Container.ExecResult;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
@@ -76,8 +77,9 @@ public class TopicSchemaFallbackRuntimeTest {
     private static final String DLQ = TOPIC + "-dlq";
     private static final String BUCKET = "fallback-test";
 
-    @Test
-    public void packagedIoWorkerParquetRedeliveryAndDlq() throws Exception {
+    @ParameterizedTest(name = "partitioned={0}")
+    @ValueSource(booleans = {false, true})
+    public void packagedIoWorkerParquetRedeliveryAndDlq(boolean partitioned) throws Exception {
         Path nar = Path.of(System.getProperty("topicSchemaFallback.nar",
                 "target/pulsar-io-cloud-storage-0.0.1.nar")).toAbsolutePath();
         assertTrue(Files.isRegularFile(nar), "Build the NAR with mvn package -DskipTests first");
@@ -95,7 +97,7 @@ public class TopicSchemaFallbackRuntimeTest {
             minio.start();
             pulsar.start();
             try {
-                runScenario(pulsar, minio, nar);
+                runScenario(pulsar, minio, nar, partitioned);
             } catch (Throwable failure) {
                 Files.writeString(Path.of("target/topic-schema-runtime-broker.log"), pulsar.getLogs());
                 ExecResult instanceLogs = pulsar.execInContainer("sh", "-c",
@@ -106,7 +108,8 @@ public class TopicSchemaFallbackRuntimeTest {
         }
     }
 
-    private void runScenario(PulsarContainer pulsar, GenericContainer<?> minio, Path nar) throws Exception {
+    private void runScenario(PulsarContainer pulsar, GenericContainer<?> minio, Path nar, boolean partitioned)
+            throws Exception {
         try (PulsarAdmin admin = PulsarAdmin.builder().serviceHttpUrl(pulsar.getHttpServiceUrl()).build();
              PulsarClient client = PulsarClient.builder().serviceUrl(pulsar.getPulsarBrokerUrl()).build();
              S3Client s3 = S3Client.builder()
@@ -120,6 +123,9 @@ public class TopicSchemaFallbackRuntimeTest {
             minioCommand(minio, "admin", "user", "add", "local", "sinkwriter", "test-sink-writer-secret");
             minioCommand(minio, "admin", "policy", "attach", "local", "readwrite", "--user", "sinkwriter");
             SchemaInfo info = schema(false);
+            if (partitioned) {
+                admin.topics().createPartitionedTopic(TOPIC, 2);
+            }
             admin.schemas().createSchema(TOPIC, info);
             // An IP endpoint makes the AWS SDK use path addressing against MinIO.
             String endpoint = "http://" + minio.getContainerInfo().getNetworkSettings().getNetworks()
@@ -174,9 +180,7 @@ public class TopicSchemaFallbackRuntimeTest {
                 awaitRows(s3, Set.of(1, 3, 4, 5));
                 assertNull(dlq.receive(2, TimeUnit.SECONDS));
                 await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
-                    long unacked = admin.topics().getStats(TOPIC).getSubscriptions().values().stream()
-                            .mapToLong(subscription -> subscription.getUnackedMessages()).sum();
-                    assertEquals(0, unacked);
+                    assertEquals(0, unacked(admin, partitioned));
                 });
                 minioCommand(minio, "admin", "user", "disable", "local", "sinkwriter");
                 try {
@@ -189,8 +193,7 @@ public class TopicSchemaFallbackRuntimeTest {
                     awaitStatus(pulsar, 2);
                     assertNull(dlq.receive(3, TimeUnit.SECONDS), "Storage outage must not send good data to the DLQ");
                     awaitRows(s3, Set.of(1, 3, 4, 5));
-                    assertTrue(admin.topics().getStats(TOPIC).getSubscriptions().values().stream()
-                            .anyMatch(subscription -> subscription.getUnackedMessages() > 0));
+                    assertTrue(unacked(admin, partitioned) > 0);
                 } finally {
                     minioCommand(minio, "admin", "user", "enable", "local", "sinkwriter");
                 }
@@ -211,6 +214,13 @@ public class TopicSchemaFallbackRuntimeTest {
                 : SchemaBuilder.record("Event").fields().requiredInt("id").endRecord();
         return SchemaInfo.builder().type(SchemaType.JSON).name("Event")
                 .schema(avro.toString().getBytes(StandardCharsets.UTF_8)).properties(Map.of()).build();
+    }
+
+    private static long unacked(PulsarAdmin admin, boolean partitioned) throws Exception {
+        org.apache.pulsar.common.policies.data.TopicStats stats = partitioned
+                ? admin.topics().getPartitionedStats(TOPIC, false) : admin.topics().getStats(TOPIC);
+        return stats.getSubscriptions().values().stream()
+                .mapToLong(subscription -> subscription.getUnackedMessages()).sum();
     }
 
     private static void awaitStatus(PulsarContainer pulsar, int expectedDeliveries) {

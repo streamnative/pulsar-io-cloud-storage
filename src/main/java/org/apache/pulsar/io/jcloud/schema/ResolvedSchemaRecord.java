@@ -36,7 +36,7 @@ public final class ResolvedSchemaRecord implements Record<GenericRecord> {
     private final AtomicBoolean completed = new AtomicBoolean();
 
     public ResolvedSchemaRecord(Record<GenericRecord> original) {
-        this(original, original.getValue(), null, null, null);
+        this(original, null, null, null, null);
     }
 
     ResolvedSchemaRecord(Record<GenericRecord> original, GenericRecord value, Schema<GenericRecord> schema,
@@ -62,7 +62,7 @@ public final class ResolvedSchemaRecord implements Record<GenericRecord> {
 
     @Override
     public GenericRecord getValue() {
-        return value;
+        return isResolved() ? value : original.getValue();
     }
 
     @Override

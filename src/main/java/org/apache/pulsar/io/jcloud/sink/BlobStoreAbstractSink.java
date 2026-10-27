@@ -157,7 +157,9 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         } catch (Exception e) {
             // Do not throw after a callback: the worker would call fail() again on the original record.
             accepted.releaseUnacknowledged();
-            stopForFailure(e, true);
+            if (isRunning) {
+                stopForFailure(e, true);
+            }
         }
     }
 
