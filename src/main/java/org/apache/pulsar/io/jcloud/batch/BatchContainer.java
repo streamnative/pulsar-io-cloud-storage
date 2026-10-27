@@ -44,6 +44,7 @@ public class BatchContainer {
     private final List<Record<GenericRecord>> pendingFlushList;
     private final ReentrantLock lock = new ReentrantLock();
     private final Condition notFull = lock.newCondition();
+    private boolean closed;
 
     public BatchContainer(long maxBatchSize, long maxBatchBytes, long maxBatchTimeMs) {
         this.maxBatchSize = maxBatchSize;
@@ -56,6 +57,9 @@ public class BatchContainer {
     public void add(Record<GenericRecord> record) throws InterruptedException {
         lock.lock();
         try {
+            if (closed) {
+                throw new IllegalStateException("Batch container is closed");
+            }
             // Allow exceeding the maximum value once
             long recordSize = record.getMessage().get().size();
             pendingFlushList.add(record);
@@ -63,7 +67,7 @@ public class BatchContainer {
             currentBatchBytes.addAndGet(recordSize);
 
             // Wait if the batch needs to be flushed
-            while (needFlush()) {
+            while (!closed && needFlush()) {
                 notFull.await();
             }
         } finally {
@@ -80,12 +84,23 @@ public class BatchContainer {
     }
 
     public List<Record<GenericRecord>> pollNeedFlushRecords() {
-        if (currentBatchSize.get() == 0) {
+        return pollRecords(false);
+    }
+
+    public List<Record<GenericRecord>> closeAndDrain() {
+        return pollRecords(true);
+    }
+
+    private List<Record<GenericRecord>> pollRecords(boolean close) {
+        if (!close && currentBatchSize.get() == 0) {
             return Collections.emptyList();
         }
         lock.lock();
         try {
-            if (!needFlush()) {
+            if (close) {
+                closed = true;
+            }
+            if (!close && !needFlush()) {
                 return Collections.emptyList();
             }
             List<Record<GenericRecord>> needFlushRecords = new ArrayList<>(pendingFlushList);
@@ -96,8 +111,11 @@ public class BatchContainer {
             lastPollRecordsTime = System.currentTimeMillis();
             return needFlushRecords;
         } finally {
-            notFull.signalAll();
-            lock.unlock();
+            try {
+                notFull.signalAll();
+            } finally {
+                lock.unlock();
+            }
         }
     }
 

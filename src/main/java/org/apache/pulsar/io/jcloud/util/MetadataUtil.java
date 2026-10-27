@@ -62,7 +62,9 @@ public class MetadataUtil {
                 useHumanReadableSchemaVersion, includeTopicToMetadata,
                 includePublishTimeToMetadata, includeMessageKeyToMetadata));
         record.put(METADATA_PROPERTIES_KEY, message.getProperties());
-        if (useHumanReadableSchemaVersion) {
+        if (message.getSchemaVersion() == null) {
+            record.put(METADATA_SCHEMA_VERSION_KEY, null);
+        } else if (useHumanReadableSchemaVersion) {
             record.put(METADATA_SCHEMA_VERSION_KEY,
                     MetadataUtil.parseSchemaVersionFromBytes(message.getSchemaVersion()));
         } else {
