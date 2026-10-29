@@ -43,6 +43,7 @@ import org.apache.pulsar.io.jcloud.format.Format;
 import org.apache.pulsar.io.jcloud.format.JsonFormat;
 import org.apache.pulsar.io.jcloud.format.ParquetFormat;
 import org.apache.pulsar.io.jcloud.partitioner.PartitionerType;
+import org.apache.pulsar.io.jcloud.schema.TopicSchemaFallbackConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,6 +82,12 @@ public class BlobStoreAbstractConfig implements Serializable {
     private String awsCannedAcl = "";
     private String s3StorageClass = "STANDARD";
     private boolean skipFailedMessages = false;
+    private TopicSchemaFallbackConfig topicSchemaFallback = new TopicSchemaFallbackConfig();
+    private SchemalessDecodeFailureAction schemalessDecodeFailureAction = SchemalessDecodeFailureAction.REDELIVER;
+
+    public enum SchemalessDecodeFailureAction {
+        REDELIVER, LOG_AND_DROP
+    }
 
     // #### partitioner configuration ####
     // Options: PARTITION, TIME
@@ -121,6 +128,13 @@ public class BlobStoreAbstractConfig implements Serializable {
     private boolean includeMessageKeyToMetadata;
 
     public void validate() {
+        checkNotNull(topicSchemaFallback, "topicSchemaFallback must not be null");
+        if (topicSchemaFallback.isEnabled()) {
+            checkArgument("parquet".equalsIgnoreCase(formatType), "topicSchemaFallback requires Parquet output");
+            checkArgument(!skipFailedMessages, "topicSchemaFallback forbids skipFailedMessages=true");
+            checkNotNull(schemalessDecodeFailureAction, "schemalessDecodeFailureAction must not be null");
+            topicSchemaFallback.validate();
+        }
         checkNotNull(provider, "provider not set.");
         checkNotNull(bucket, "bucket property not set.");
         if (provider.equalsIgnoreCase(PROVIDER_AWSS3) || provider.equalsIgnoreCase(PROVIDER_AWSS3V2)) {

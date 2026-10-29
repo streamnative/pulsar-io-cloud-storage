@@ -38,6 +38,7 @@ public class PartitionedBatchManager implements BatchManager {
     private final long maxBatchBytes;
     private final long maxBatchTimeMs;
     private final Map<String, BatchContainer> topicBatchContainer;
+    private boolean closed;
 
     public PartitionedBatchManager(long maxBatchSize, long maxBatchBytes,
                                    long maxBatchTimeMs) {
@@ -83,7 +84,19 @@ public class PartitionedBatchManager implements BatchManager {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    private BatchContainer getBatchContainer(String topicName) {
+    @Override
+    public synchronized Map<String, List<Record<GenericRecord>>> closeAndDrain() {
+        closed = true;
+        return topicBatchContainer.entrySet().stream()
+                .map(entry -> Map.entry(entry.getKey(), entry.getValue().closeAndDrain()))
+                .filter(entry -> !entry.getValue().isEmpty())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    private synchronized BatchContainer getBatchContainer(String topicName) {
+        if (closed) {
+            throw new IllegalStateException("Batch manager is closed");
+        }
         return topicBatchContainer.computeIfAbsent(topicName,
                 k -> new BatchContainer(maxBatchSize, maxBatchBytes, maxBatchTimeMs));
     }

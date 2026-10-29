@@ -76,6 +76,205 @@ You can also choose to use a variety of other tools to create a connector:
 - [Function Mesh](https://functionmesh.io/docs/connectors/run-connector): The docker image can be found at the beginning of the document.
 {% /callout %}
 
+### Opt in: unversioned JSON bytes to Parquet
+
+Some ingress paths (for example AWS IoT through the Kafka protocol) publish JSON
+as schemaless BYTES even when the Pulsar topic has a registered JSON schema.
+The default connector behavior still rejects BYTES for Parquet. To interpret
+these messages, explicitly enable topic schema fallback and pin a registry
+version for each full logical topic. This is a reader interpretation, not a
+recovered historical writer schema. There is no inference or implicit latest.
+
+Example IO sink configuration file (credentials are illustrative placeholders;
+use your deployment's existing secret mechanism):
+
+```yaml
+tenant: public
+namespace: default
+name: iot-parquet
+parallelism: 1
+inputs:
+  - persistent://public/default/iot-events
+processingGuarantees: ATLEAST_ONCE
+autoAck: false
+retainOrdering: false
+maxMessageRetries: 10
+deadLetterTopic: persistent://public/default/iot-events-dlq
+negativeAckRedeliveryDelayMs: 60000
+configs:
+  provider: s3v2
+  region: us-east-1
+  bucket: example-iot-archive
+  accessKeyId: YOUR_ACCESS_KEY
+  secretAccessKey: YOUR_SECRET_KEY
+  formatType: parquet
+  partitionerType: partition
+  batchSize: 100
+  batchTimeMs: 1000
+  skipFailedMessages: false
+  topicSchemaFallback:
+    enabled: true
+    topicVersions:
+      persistent://public/default/iot-events: 3
+    maxPayloadBytes: 1048576
+    lookupTimeoutMs: 10000
+  schemalessDecodeFailureAction: REDELIVER
+```
+
+Create it using `pulsar-admin sinks create --archive /path/to/connector.nar
+--sink-config-file /path/to/sink.yaml --max-redeliver-count 10
+--dead-letter-topic persistent://public/default/iot-events-dlq`. Some CLI
+versions overwrite the YAML retry fields with command defaults; pass the retry
+flags explicitly and inspect `pulsar-admin sinks get` to verify the effective
+`maxMessageRetries` and `deadLetterTopic` values. Select the version by inspecting your
+topic's registry history, then validate representative producer payloads against
+that exact schema before enabling. The registry entry must be Pulsar JSON
+(an Avro-shaped record definition), not a JSON Schema draft document.
+
+| Connector option | Default | Meaning |
+| --- | --- | --- |
+| `topicSchemaFallback.enabled` | `false` | Enables this behavior only for Parquet output. |
+| `topicSchemaFallback.topicVersions` | empty | Full logical topic to nonnegative numeric registry version; required when enabled, at most 128 entries. Partition suffixes and short topic names are rejected. |
+| `topicSchemaFallback.maxPayloadBytes` | `1048576` | Maximum fallback payload size, configurable from 1 byte to 16 MiB. Oversize records follow the decode failure policy. |
+| `topicSchemaFallback.lookupTimeoutMs` | `10000` | Timeout per pinned schema lookup at startup and per partition lookup when pausing failed input, from 1 to 60000 ms. |
+| `schemalessDecodeFailureAction` | `REDELIVER` | Either `REDELIVER` or explicitly lossy `LOG_AND_DROP`. Applies only to malformed fallback records. |
+
+Only configured topics, BYTES values, and original messages without a wire
+schema version are eligible. Partition topics use their logical topic for
+lookup; original topic, properties, key, event time, partition information and
+message remain unchanged, including their absent wire schema version. Typed or
+versioned messages retain the existing path. Effective schemas are internal
+and fallback records use separate Parquet writer groups from typed records.
+
+All pins are loaded before consumption with the framework client's existing
+authentication. A failed lookup, missing version, non-JSON schema or unsupported
+schema shape prevents startup. There is no per-record remote lookup, refresh,
+Admin client, extra endpoint or unauthenticated retry. Each entry's definition
+is limited to 1 MiB and retained until the instance closes. The adapter uses
+`PulsarClientImpl.getSchemaProviderLoadingCache()` adapter and public
+`SchemaInfoProvider.getSchemaByVersion(versionBytes)` from the
+build dependency `io.streamnative:pulsar-client-original:4.2.1.1`;
+`BaseContext.getPulsarClient()` supplies the shared client, which the sink never
+closes. Validate API compatibility on the actual worker version before rollout;
+this dependency version does not identify a customer's deployed runtime.
+
+#### Validation and delivery semantics
+
+Fallback requires explicit `ATLEAST_ONCE` with `autoAck: false`, no ACK
+timeout (`timeoutMs` absent or zero), and no transform function. Other guarantees (including `EFFECTIVELY_ONCE` cumulative
+ACK) and `skipFailedMessages: true` are rejected when fallback is enabled.
+Use Shared consumption (`retainOrdering: false`) for DLQ support; configure
+and verify the worker/broker's DLQ support before relying on it. Producers
+should disable batching for strict poison-message isolation, or separately
+validate batch-index acknowledgment and redelivery on their worker/broker.
+
+Before batching, the connector checks strict UTF-8, a single JSON object,
+duplicate/unknown fields, required/null values, scalar types, int/long ranges,
+finite floating point values and nested record/array/map elements. It converts
+the validated values to Avro before queueing. Missing nullable fields become
+null; non-null fields must be present even if the registry definition includes
+a default. Floating point conversion uses the configured Avro float/double
+precision. Supported types are records, strings, booleans, int, long, float,
+double, enums, arrays, string-keyed maps and nullable single-type unions.
+Binary/fixed fields, logical types, multi-type unions, recursive schemas and
+schema nesting deeper than 32 are rejected at startup. JSON nesting is limited
+to 64. No automatic schema inference or arbitrary binary conversion is provided.
+
+- `REDELIVER` invokes only the malformed original record's fail callback. Other
+  valid records can continue to S3. There is no fatal restart for ordinary bad
+  input and no automatic switch from retry to drop. Configure the existing IO
+  `--max-redeliver-count` / `--dead-letter-topic` options (YAML
+  `maxMessageRetries` / `deadLetterTopic`) for eventual DLQ delivery. This
+  connector does not publish its own DLQ copy or implement a separate retry count.
+- `LOG_AND_DROP` logs a bounded reason and ACKs only the malformed record.
+  **This permanently loses that record. Logs contain no payload and are not a
+  recoverable data copy.** It must be explicitly selected.
+- Schema/infrastructure/writer errors never use `LOG_AND_DROP`. Upload gets
+  three sink-level attempts with 100/200 ms backoff, the same object path and a fresh
+  buffer view; the storage client's own request retries/timeouts also apply.
+  If exhausted, the sink pauses input and keeps the worker/client alive, reports
+  the pause metric and requires explicit operator recovery. It does not ACK or negative-ACK those
+  records into the DLQ. Records still owned by the sink are released without
+  acknowledgment on shutdown; they remain in the subscription and must be
+  redelivered after consumer recovery. This avoids an automatic restart loop
+  spending healthy messages' broker redelivery budget. Restore storage, inspect
+  backlog/retry counts, and restart the sink with the same pins to resume;
+  manual restarts still follow the broker's redelivery policy. Schema/writer
+  failures and inability to pause input report fatal system errors. Pausing
+  resolves the actual partition names with the shared client's partition lookup
+  and pauses each partition index individually; a non-partitioned topic uses
+  index -1. A failure on one partition does not skip the others. If any lookup
+  or pause fails, the sink reports the failure and does not claim a successful
+  pause; operator intervention is required to prevent restart loops.
+  Already extracted groups are handled
+  independently, including when an earlier group cannot resolve its schema.
+- Valid records are ACKed only after upload succeeds. Each local completion
+  is attempted once, even if a callback throws; telemetry cannot change the
+  result. The worker callback owns normal pooled-message release. Shutdown and
+  system failure release unacknowledged references without invoking a second
+  callback. An asynchronous ACK failure is not observable through `Record.ack()`;
+  monitor the worker/client and allow broker redelivery.
+
+A fallback-enabled sink adds a unique suffix to every flushed object's name;
+topic/partition directories keep their original layout. A replay with different
+batch membership or a changed pin therefore cannot overwrite a previous object.
+Retries within the same upload reuse its object path. This filename behavior
+also applies to typed records handled by an instance with fallback enabled.
+A crash after S3 upload and before ACK can repeat output. This is at-least-once,
+not S3 exactly-once. Infrastructure recovery may require restarting the sink;
+logs and the DLQ are not substitutes for monitoring a stopped consumer.
+
+Metrics have no message ID or payload labels: `_cloud_storage_schemaless_decoded_`,
+`_cloud_storage_schemaless_malformed_`,
+`_cloud_storage_schemaless_redelivered_` (fail callback requests, not broker
+delivery counts), `_cloud_storage_schemaless_explicitly_dropped_`,
+`_cloud_storage_schema_lookup_failure_` and
+`_cloud_storage_upload_failure_` (failed sink-level upload attempts), and
+`_cloud_storage_sink_paused_` (successful all-input pause events requiring recovery),
+and `_cloud_storage_sink_pause_failure_` (failed pause attempts reported as system errors).
+
+#### Pin upgrades, disablement and rollback
+
+To change a pin, first stop ingress or otherwise establish a controlled input
+boundary, drain and confirm the old sink's S3 batches and subscription backlog,
+then stop all instances and update them to the same explicit version before
+resuming. Pending/in-flight unacknowledged messages replay under the new pin,
+including after a crash; already written objects retain their previous schema.
+Never run different pins on instances sharing the subscription. Rolling back
+the pin similarly reinterprets pending messages; it cannot recover their
+historical writer schema or rewrite existing S3 objects. Retain original
+messages and use a separate, deliberate replay when their interpretation must
+be audited or changed.
+
+Set `topicSchemaFallback.enabled: false` to disable, then restart consistently
+across instances. BYTES-to-Parquet returns to its original unsupported behavior;
+drain or route remaining schemaless messages before disabling. Feature-off
+processing and `skipFailedMessages` keep their existing semantics.
+
+#### Runtime acceptance test
+
+The opt-in test covers non-partitioned and two-partition topics using actual
+Docker Pulsar IO workers (two instances), a
+packaged NAR, pooled messages and MinIO; it reads Parquet from S3, exercises
+good/bad/good and typed messages, checks DLQ payload/key/properties/event time,
+checks exactly two bad-message redeliveries, restarts after a registry schema
+upgrade while keeping pin 0, and denies/restores S3 uploads to verify safe
+pause and recovery without routing good data to the DLQ. Two further waves of
+input with a small receiver queue verify that the actual worker consumers stop
+reading after bounded prefetch drains, including each partition consumer:
+
+```bash
+mvn -B -ntp package -DskipTests
+mvn -B -ntp -Dtest=TopicSchemaFallbackRuntimeTest -DtopicSchemaFallback.integration=true test
+```
+
+Docker and the test images must be available. The default broker test image is
+`apachepulsar/pulsar:4.2.1`, overridable with `-Dpulsar.systemtest.image=...`.
+This test is skipped unless explicitly enabled. Unit tests for permission
+denial, lookup timeout, upload/callback/metrics failure and conversion edge
+cases are separate from this end-to-end test. Verify authentication, batching,
+network outages and crash recovery in the intended deployment before rollout.
+
 ### 2. Send messages to the topic
 
 {% callout title="Note" type="note" %}

@@ -65,4 +65,10 @@ public class BlendBatchManager implements BatchManager {
         List<Record<GenericRecord>> records = batchContainer.pollNeedFlushRecords();
         return records.stream().collect(Collectors.groupingBy(record -> record.getTopicName().get()));
     }
+
+    @Override
+    public Map<String, List<Record<GenericRecord>>> closeAndDrain() {
+        return batchContainer.closeAndDrain().stream()
+                .collect(Collectors.groupingBy(record -> record.getTopicName().get()));
+    }
 }

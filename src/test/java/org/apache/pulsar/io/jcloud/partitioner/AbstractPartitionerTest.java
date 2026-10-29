@@ -75,4 +75,17 @@ public class AbstractPartitionerTest {
         return mockRecord;
     }
 
+    @Test
+    public void testRuntimeMessageIdThroughPublicApi() {
+        AbstractPartitioner<Object> partitioner = new AbstractPartitioner<>() {
+            @Override
+            public String encodePartition(Record<Object> record) {
+                return getFileName(record);
+            }
+        };
+        MessageId runtimeId = mock(MessageId.class);
+        when(runtimeId.toByteArray()).thenReturn(new BatchMessageIdImpl(12, 34, -1, 2).toByteArray());
+        Assert.assertEquals("12.34.2", partitioner.getFileName(getMessageRecord(runtimeId)));
+    }
+
 }

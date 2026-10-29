@@ -18,12 +18,15 @@
  */
 package org.apache.pulsar.io.jcloud.partitioner;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.client.api.Message;
+import org.apache.pulsar.client.api.MessageId;
 import org.apache.pulsar.client.api.MessageIdAdv;
+import org.apache.pulsar.client.impl.MessageIdImpl;
 import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
@@ -96,11 +99,23 @@ public abstract class AbstractPartitioner<T> implements Partitioner<T> {
             }
         }
         return record.getMessage()
-                .map(msg -> (MessageIdAdv) msg.getMessageId())
+                .map(msg -> advancedMessageId(msg.getMessageId()))
                 .map(msgId -> String.format("%s.%s.%s",
                         msgId.getLedgerId(), msgId.getEntryId(), msgId.getBatchIndex()))
                 .orElseThrow(() -> new RuntimeException("found empty message"));
 
+    }
+
+    private static MessageIdAdv advancedMessageId(MessageId messageId) {
+        if (messageId instanceof MessageIdAdv) {
+            return (MessageIdAdv) messageId;
+        }
+        // Workers can expose only the shared MessageId API across NAR classloaders.
+        try {
+            return (MessageIdAdv) MessageIdImpl.fromByteArray(messageId.toByteArray());
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Cannot decode message ID for the object filename", e);
+        }
     }
 
 }

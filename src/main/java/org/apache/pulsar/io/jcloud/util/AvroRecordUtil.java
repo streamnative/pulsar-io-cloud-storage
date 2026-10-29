@@ -47,6 +47,7 @@ import org.apache.pulsar.common.schema.KeyValue;
 import org.apache.pulsar.common.schema.SchemaInfo;
 import org.apache.pulsar.common.schema.SchemaType;
 import org.apache.pulsar.functions.api.Record;
+import org.apache.pulsar.io.jcloud.schema.ResolvedSchemaRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,6 +75,10 @@ public class AvroRecordUtil {
 
     public static org.apache.pulsar.client.api.Schema<GenericRecord> getPulsarSchema(
             Record<GenericRecord> record) {
+
+        if (record instanceof ResolvedSchemaRecord && ((ResolvedSchemaRecord) record).isResolved()) {
+            return record.getSchema();
+        }
 
         org.apache.pulsar.client.api.Schema<GenericRecord> schema = record.getSchema();
         if (record.getValue().getSchemaVersion() == null && record.getValue().getSchemaType() != SchemaType.BYTES) {

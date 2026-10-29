@@ -80,6 +80,9 @@ public interface BatchManager {
      */
     Map<String, List<Record<GenericRecord>>> pollNeedFlushData();
 
+    /** Stop accepting records, wake blocked producers and return every pending record. */
+    Map<String, List<Record<GenericRecord>>> closeAndDrain();
+
     /**
      * Retrieves the current batch size for a given topic.
      * @param topicName the name of the topic

@@ -31,7 +31,6 @@ import java.util.Iterator;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.Schema;
-import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.parquet.avro.AvroParquetWriter;
 import org.apache.parquet.hadoop.ParquetFileWriter;
@@ -47,6 +46,7 @@ import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.jcloud.BlobStoreAbstractConfig;
 import org.apache.pulsar.io.jcloud.format.parquet.ProtobufParquetWriter;
 import org.apache.pulsar.io.jcloud.format.parquet.proto.Metadata;
+import org.apache.pulsar.io.jcloud.schema.ResolvedSchemaRecord;
 import org.apache.pulsar.io.jcloud.util.AvroRecordUtil;
 import org.apache.pulsar.io.jcloud.util.BytesOutputStream;
 import org.apache.pulsar.io.jcloud.util.MetadataUtil;
@@ -88,18 +88,20 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
     @Override
     public void initSchema(org.apache.pulsar.client.api.Schema<GenericRecord> schema) {
         if (!schema.equals(internalSchema)) {
-            internalSchema = schema;
-            if (internalSchema.getSchemaInfo().getType().isPrimitive()) {
+            internalSchema = null;
+            descriptor = null;
+            rootAvroSchema = null;
+            if (schema.getSchemaInfo().getType().isPrimitive()) {
                 throw new UnsupportedOperationException(
-                        "Parquet format do not support primitive record (schemaType=" + internalSchema.getSchemaInfo()
+                        "Parquet format do not support primitive record (schemaType=" + schema.getSchemaInfo()
                                 .getType() + ")");
             }
-            if (internalSchema.getSchemaInfo().getType() == SchemaType.PROTOBUF_NATIVE) {
+            if (schema.getSchemaInfo().getType() == SchemaType.PROTOBUF_NATIVE) {
                 if (useMetadata) {
                     // Very hacky way to append metadata schema into protobuf message's descriptor.
                     try {
                         ProtobufNativeSchemaData schemaData =
-                                new ObjectMapper().readValue(internalSchema.getSchemaInfo().getSchema(),
+                                new ObjectMapper().readValue(schema.getSchemaInfo().getSchema(),
                                 ProtobufNativeSchemaData.class);
 
                         // Get the descriptor from the pulsar schema.
@@ -184,7 +186,7 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
                         throw new UnsupportedOperationException("Cannot extract schema from record", e);
                     }
                 } else {
-                    descriptor = (Descriptors.Descriptor) internalSchema.getNativeSchema().orElse(null);
+                    descriptor = (Descriptors.Descriptor) schema.getNativeSchema().orElse(null);
                 }
                 log.info("Using protobuf descriptor: {}", descriptor.toProto().getFieldList());
             } else {
@@ -199,6 +201,7 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
             if (descriptor == null && rootAvroSchema == null) {
                 throw new UnsupportedOperationException("Cannot extract schema from record");
             }
+            internalSchema = schema;
         }
     }
 
@@ -271,8 +274,18 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
                         parquetWriter.write(protoRecord);
                     }
                 } else {
-                    org.apache.avro.generic.GenericRecord writeRecord = AvroRecordUtil
-                            .convertGenericRecord(genericRecord, rootAvroSchema);
+                    org.apache.avro.generic.GenericRecord writeRecord;
+                    if (next instanceof ResolvedSchemaRecord && ((ResolvedSchemaRecord) next).isResolved()) {
+                        // Copy into the writer schema so metadata never mutates the validated value.
+                        org.apache.avro.generic.GenericRecord validated =
+                                ((ResolvedSchemaRecord) next).getAvroRecord();
+                        writeRecord = new org.apache.avro.generic.GenericData.Record(rootAvroSchema);
+                        for (Schema.Field field : validated.getSchema().getFields()) {
+                            writeRecord.put(field.name(), validated.get(field.pos()));
+                        }
+                    } else {
+                        writeRecord = AvroRecordUtil.convertGenericRecord(genericRecord, rootAvroSchema);
+                    }
                     if (useMetadata) {
                         org.apache.avro.generic.GenericRecord metadataRecord =
                                 MetadataUtil.extractedMetadataRecord(next,
@@ -289,7 +302,10 @@ public class ParquetFormat implements Format<GenericRecord>, InitConfiguration<B
                 }
             }
         } finally {
-            IOUtils.closeQuietly(parquetWriter);
+            if (parquetWriter != null) {
+                // A failed footer/close must prevent upload and ACK of a corrupt file.
+                parquetWriter.close();
+            }
         }
         return ByteBuffer.wrap(file.toByteArray());
     }

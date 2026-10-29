@@ -27,6 +27,11 @@ To build the the Cloud Storage sink connector from the source code, follow these
     ./pulsar-io-cloud-storage/target/pulsar-io-cloud-storage-${version}.nar
     ```
 
+Unversioned JSON bytes can optionally use an explicitly pinned topic JSON schema
+for Parquet output. This feature is disabled by default and requires
+`ATLEAST_ONCE` with individual acknowledgments. See the
+[configuration, failure policies and rollout guide](docs/aws-s3-sink.md#opt-in-unversioned-json-bytes-to-parquet).
+
 ## Configuration 
 
 The Cloud Storage sink connector supports the following properties.
