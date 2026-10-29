@@ -25,6 +25,7 @@ import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyDouble;
@@ -59,6 +60,7 @@ import org.apache.avro.SchemaBuilder;
 import org.apache.avro.generic.GenericData;
 import org.apache.parquet.avro.AvroParquetReader;
 import org.apache.parquet.hadoop.ParquetReader;
+import org.apache.pulsar.client.api.PulsarClientException;
 import org.apache.pulsar.client.api.Schema;
 import org.apache.pulsar.client.api.schema.GenericRecord;
 import org.apache.pulsar.client.impl.LookupService;
@@ -432,6 +434,75 @@ public class SchemalessSinkTest {
         } finally {
             proceed.countDown();
             executor.shutdownNow();
+        }
+    }
+
+    @Test
+    public void pauseResolvesActualPartitionIndicesAndNonPartitionedTopics() throws Exception {
+        String other = TOPIC + "-other";
+        when(context.getInputTopics()).thenReturn(List.of(TOPIC, other));
+        when(context.getPulsarClient().getPartitionsForTopic(TOPIC, false)).thenReturn(
+                CompletableFuture.completedFuture(List.of(TOPIC + "-partition-0", TOPIC + "-partition-1")));
+        BlobStoreAbstractSink.pauseInputConsumers(context, 1000);
+        verify(context).pause(TOPIC, 0);
+        verify(context).pause(TOPIC, 1);
+        verify(context).pause(other, -1);
+        verify(context, never()).pause(TOPIC, -1);
+        verify(context.getPulsarClient(), never()).close();
+    }
+
+    @Test
+    public void pauseFailureDoesNotSkipRemainingPartitionsOrTopics() throws Exception {
+        String other = TOPIC + "-other";
+        when(context.getInputTopics()).thenReturn(List.of(TOPIC, other));
+        when(context.getPulsarClient().getPartitionsForTopic(TOPIC, false)).thenReturn(
+                CompletableFuture.completedFuture(List.of(TOPIC + "-partition-0", TOPIC + "-partition-1")));
+        doThrow(new PulsarClientException("partition unavailable")).when(context).pause(TOPIC, 0);
+        IllegalStateException failure = assertThrows(IllegalStateException.class,
+                () -> BlobStoreAbstractSink.pauseInputConsumers(context, 1000));
+        assertEquals(1, failure.getSuppressed().length);
+        verify(context).pause(TOPIC, 1);
+        verify(context).pause(other, -1);
+    }
+
+    @Test
+    public void partitionLookupTimeoutIsBoundedAndOtherTopicsAreStillPaused() throws Exception {
+        String other = TOPIC + "-other";
+        when(context.getInputTopics()).thenReturn(List.of(TOPIC, other));
+        when(context.getPulsarClient().getPartitionsForTopic(TOPIC, false)).thenReturn(new CompletableFuture<>());
+        IllegalStateException failure = assertThrows(IllegalStateException.class,
+                () -> BlobStoreAbstractSink.pauseInputConsumers(context, 10));
+        assertTrue(failure.getSuppressed()[0] instanceof java.util.concurrent.TimeoutException);
+        verify(context).pause(other, -1);
+        verify(context.getPulsarClient(), never()).close();
+    }
+
+    @Test
+    public void emptyOrDeniedPartitionLookupCannotReportSuccessfulPause() {
+        for (CompletableFuture<List<String>> result : List.<CompletableFuture<List<String>>>of(
+                CompletableFuture.completedFuture(List.of()),
+                CompletableFuture.failedFuture(new SecurityException("denied")))) {
+            when(context.getPulsarClient().getPartitionsForTopic(TOPIC, false)).thenReturn(result);
+            assertThrows(IllegalStateException.class, () -> BlobStoreAbstractSink.pauseInputConsumers(context, 1000));
+        }
+    }
+
+    @Test
+    public void uploadPauseFailureIsReportedAsSystemFailureWithoutCompletingRecords() throws Exception {
+        doThrow(new IOException("storage unavailable")).when(writer).uploadBlob(anyString(), any());
+        doThrow(new PulsarClientException("cannot pause")).when(context).pause(TOPIC, -1);
+        sink.open(config, context);
+        Record<GenericRecord> first = record("{\"id\":1}");
+        Record<GenericRecord> last = record("{\"id\":2}");
+        sink.write(first);
+        sink.write(last);
+        await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> verify(context).fatal(any()));
+        verify(context).recordMetric("_cloud_storage_sink_pause_failure_", 1);
+        verify(context, never()).recordMetric("_cloud_storage_sink_paused_", 1);
+        for (Record<GenericRecord> record : List.of(first, last)) {
+            verify(record, never()).ack();
+            verify(record, never()).fail();
+            verify(record.getMessage().get()).release();
         }
     }
 }

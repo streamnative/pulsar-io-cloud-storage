@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pulsar.client.api.Schema;
 import org.apache.pulsar.client.api.schema.GenericRecord;
+import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.functions.api.Record;
 import org.apache.pulsar.io.core.Sink;
 import org.apache.pulsar.io.core.SinkContext;
@@ -359,14 +360,15 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
         }
         // Backpressure stops consumption. Do not negative-ACK healthy messages into a DLQ during an outage.
         if (sinkContext != null) {
-            metric("_cloud_storage_sink_paused_", 1);
-            log.error("Cloud storage input stopped; explicit recovery is required (fatal={})", fatal);
             try {
-                for (String topic : sinkContext.getInputTopics()) {
-                    sinkContext.pause(topic, -1);
-                }
+                pauseInputConsumers(sinkContext, sinkConfig.getTopicSchemaFallback().getLookupTimeoutMs());
+                metric("_cloud_storage_sink_paused_", 1);
+                log.error("Cloud storage input partitions paused; explicit recovery is required (fatal={})", fatal);
             } catch (Exception e) {
-                log.warn("Unable to pause sink inputs; runtime restart required");
+                metric("_cloud_storage_sink_pause_failure_", 1);
+                log.error("Unable to pause all sink input partitions; reporting fatal system failure", e);
+                failure.addSuppressed(e);
+                fatal = true;
             }
             if (fatal) {
                 try {
@@ -375,6 +377,35 @@ public abstract class BlobStoreAbstractSink<V extends BlobStoreAbstractConfig> i
                     log.error("Unable to notify runtime of system failure", e);
                 }
             }
+        }
+    }
+
+    static void pauseInputConsumers(SinkContext context, long timeoutMs) throws Exception {
+        IllegalStateException failure = new IllegalStateException("Unable to pause all sink input partitions");
+        for (String topic : context.getInputTopics()) {
+            List<String> partitions;
+            try {
+                partitions = context.getPulsarClient().getPartitionsForTopic(topic, false)
+                        .get(timeoutMs, TimeUnit.MILLISECONDS);
+                if (partitions.isEmpty()) {
+                    throw new IllegalStateException("No partitions found for sink input " + topic);
+                }
+            } catch (Exception e) {
+                failure.addSuppressed(e);
+                continue;
+            }
+            for (String partition : partitions) {
+                try {
+                    TopicName name = TopicName.get(partition);
+                    // ContextImpl looks up a single consumer; -1 is only valid for a non-partitioned topic.
+                    context.pause(name.getPartitionedTopicName(), name.getPartitionIndex());
+                } catch (Exception e) {
+                    failure.addSuppressed(e);
+                }
+            }
+        }
+        if (failure.getSuppressed().length != 0) {
+            throw failure;
         }
     }
 

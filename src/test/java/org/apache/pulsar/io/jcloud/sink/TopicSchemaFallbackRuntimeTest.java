@@ -139,7 +139,8 @@ public class TopicSchemaFallbackRuntimeTest {
             connector.put("schemalessDecodeFailureAction", "REDELIVER");
             Map<String, Object> runtime = new HashMap<>(Map.of("tenant", "public", "namespace", "default",
                     "name", "pinned-json", "parallelism", 2, "processingGuarantees", "ATLEAST_ONCE",
-                    "autoAck", false, "inputSpecs", Map.of(TOPIC, Map.of("poolMessages", true)),
+                    "autoAck", false, "inputSpecs", Map.of(TOPIC,
+                            Map.of("poolMessages", true, "receiverQueueSize", 1)),
                     "maxMessageRetries", 2, "deadLetterTopic", DLQ, "negativeAckRedeliveryDelayMs", 100));
             runtime.put("configs", connector);
             pulsar.copyFileToContainer(MountableFile.forHostPath(nar), "/tmp/cloud-storage.nar");
@@ -183,6 +184,7 @@ public class TopicSchemaFallbackRuntimeTest {
                     assertEquals(0, unacked(admin, partitioned));
                 });
                 minioCommand(minio, "admin", "user", "disable", "local", "sinkwriter");
+                Set<Integer> recovered = new HashSet<>(Set.of(1, 3, 4, 5, 6));
                 try {
                     bytes.send("{\"id\":6}".getBytes(StandardCharsets.UTF_8));
                     await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
@@ -191,6 +193,21 @@ public class TopicSchemaFallbackRuntimeTest {
                         assertTrue(logs.getStdout().contains("explicit recovery is required (fatal=false)"));
                     });
                     awaitStatus(pulsar, 2);
+                    // Saturate outstanding permits, then keep publishing after both instances must have stopped.
+                    for (int id = 7; id < 71; id++) {
+                        bytes.send(("{\"id\":" + id + "}").getBytes(StandardCharsets.UTF_8));
+                        recovered.add(id);
+                    }
+                    await().during(Duration.ofSeconds(3)).atMost(Duration.ofSeconds(15)).untilAsserted(() ->
+                            assertTrue(deliveries(pulsar) <= 32, "Only bounded prefetch may drain after pause"));
+                    long stoppedDeliveries = deliveries(pulsar);
+                    for (int id = 71; id < 135; id++) {
+                        bytes.send(("{\"id\":" + id + "}").getBytes(StandardCharsets.UTF_8));
+                        recovered.add(id);
+                    }
+                    await().during(Duration.ofSeconds(3)).atMost(Duration.ofSeconds(15)).untilAsserted(() ->
+                            assertEquals(stoppedDeliveries, deliveries(pulsar),
+                                    "The actual worker partition consumers must stay paused under continued input"));
                     assertNull(dlq.receive(3, TimeUnit.SECONDS), "Storage outage must not send good data to the DLQ");
                     awaitRows(s3, Set.of(1, 3, 4, 5));
                     assertTrue(unacked(admin, partitioned) > 0);
@@ -198,7 +215,7 @@ public class TopicSchemaFallbackRuntimeTest {
                     minioCommand(minio, "admin", "user", "enable", "local", "sinkwriter");
                 }
                 command(pulsar, "sinks", "restart", "--name", "pinned-json");
-                awaitRows(s3, Set.of(1, 3, 4, 5, 6));
+                awaitRows(s3, recovered);
                 assertNull(dlq.receive(2, TimeUnit.SECONDS));
                 String status = command(pulsar, "sinks", "status", "--name", "pinned-json");
                 Files.writeString(Path.of("target/topic-schema-runtime-status.json"), status);
@@ -238,6 +255,17 @@ public class TopicSchemaFallbackRuntimeTest {
             }
             assertEquals(expectedDeliveries, deliveries);
         });
+    }
+
+    private static long deliveries(PulsarContainer pulsar) throws Exception {
+        JsonNode status = new ObjectMapper().readTree(command(pulsar, "sinks", "status", "--name", "pinned-json"));
+        assertEquals(2, status.get("numRunning").asInt());
+        long deliveries = 0;
+        for (JsonNode instance : status.get("instances")) {
+            assertEquals(0, instance.get("status").get("numRestarts").asLong());
+            deliveries += instance.get("status").get("numReadFromPulsar").asLong();
+        }
+        return deliveries;
     }
 
     private static void awaitRows(S3Client s3, Set<Integer> expected) {

@@ -136,7 +136,7 @@ that exact schema before enabling. The registry entry must be Pulsar JSON
 | `topicSchemaFallback.enabled` | `false` | Enables this behavior only for Parquet output. |
 | `topicSchemaFallback.topicVersions` | empty | Full logical topic to nonnegative numeric registry version; required when enabled, at most 128 entries. Partition suffixes and short topic names are rejected. |
 | `topicSchemaFallback.maxPayloadBytes` | `1048576` | Maximum fallback payload size, configurable from 1 byte to 16 MiB. Oversize records follow the decode failure policy. |
-| `topicSchemaFallback.lookupTimeoutMs` | `10000` | Timeout per pinned schema lookup at startup, from 1 to 60000 ms. |
+| `topicSchemaFallback.lookupTimeoutMs` | `10000` | Timeout per pinned schema lookup at startup and per partition lookup when pausing failed input, from 1 to 60000 ms. |
 | `schemalessDecodeFailureAction` | `REDELIVER` | Either `REDELIVER` or explicitly lossy `LOG_AND_DROP`. Applies only to malformed fallback records. |
 
 Only configured topics, BYTES values, and original messages without a wire
@@ -200,7 +200,13 @@ to 64. No automatic schema inference or arbitrary binary conversion is provided.
   spending healthy messages' broker redelivery budget. Restore storage, inspect
   backlog/retry counts, and restart the sink with the same pins to resume;
   manual restarts still follow the broker's redelivery policy. Schema/writer
-  bugs report fatal system errors. Already extracted groups are handled
+  failures and inability to pause input report fatal system errors. Pausing
+  resolves the actual partition names with the shared client's partition lookup
+  and pauses each partition index individually; a non-partitioned topic uses
+  index -1. A failure on one partition does not skip the others. If any lookup
+  or pause fails, the sink reports the failure and does not claim a successful
+  pause; operator intervention is required to prevent restart loops.
+  Already extracted groups are handled
   independently, including when an earlier group cannot resolve its schema.
 - Valid records are ACKed only after upload succeeds. Each local completion
   is attempted once, even if a callback throws; telemetry cannot change the
@@ -224,7 +230,8 @@ Metrics have no message ID or payload labels: `_cloud_storage_schemaless_decoded
 delivery counts), `_cloud_storage_schemaless_explicitly_dropped_`,
 `_cloud_storage_schema_lookup_failure_` and
 `_cloud_storage_upload_failure_` (failed sink-level upload attempts), and
-`_cloud_storage_sink_paused_` (stop/pause events requiring recovery).
+`_cloud_storage_sink_paused_` (successful all-input pause events requiring recovery),
+and `_cloud_storage_sink_pause_failure_` (failed pause attempts reported as system errors).
 
 #### Pin upgrades, disablement and rollback
 
@@ -252,7 +259,9 @@ packaged NAR, pooled messages and MinIO; it reads Parquet from S3, exercises
 good/bad/good and typed messages, checks DLQ payload/key/properties/event time,
 checks exactly two bad-message redeliveries, restarts after a registry schema
 upgrade while keeping pin 0, and denies/restores S3 uploads to verify safe
-pause and recovery without routing good data to the DLQ:
+pause and recovery without routing good data to the DLQ. Two further waves of
+input with a small receiver queue verify that the actual worker consumers stop
+reading after bounded prefetch drains, including each partition consumer:
 
 ```bash
 mvn -B -ntp package -DskipTests

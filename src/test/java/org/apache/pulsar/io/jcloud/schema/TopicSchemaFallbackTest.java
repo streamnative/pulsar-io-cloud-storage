@@ -119,6 +119,8 @@ public class TopicSchemaFallbackTest {
         PulsarClientImpl client = mock(PulsarClientImpl.class);
         LookupService lookup = mock(LookupService.class);
         when(context.getPulsarClient()).thenReturn(client);
+        when(client.getPartitionsForTopic(any(String.class), eq(false))).thenAnswer(call ->
+                CompletableFuture.completedFuture(List.of((String) call.getArgument(0))));
         when(client.getLookup(any(String.class))).thenReturn(lookup);
         when(client.getLookup()).thenReturn(lookup);
         LoadingCache<String, SchemaInfoProvider> cache = mock(LoadingCache.class);
